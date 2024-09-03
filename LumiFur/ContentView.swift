@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreBluetooth
 
 struct SplashView: View {
     
@@ -55,8 +56,8 @@ struct SplashView: View {
                     Text("Start")
                     .font(.title2)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(.ultraThinMaterial)
+                    .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerSize: CGSize(width: 20, height: 10)))
                     
                 }
@@ -78,7 +79,6 @@ struct ContentView: View {
     @State private var connectionZ_Wave: Bool = false
     @State private var signalStrength: Int = 0
     
-    
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter, z_wave
@@ -98,9 +98,9 @@ struct ContentView: View {
                         .frame(width: 100, height: 100)
                     
                     Text("LumiFur")
-                        .font(/*@START_MENU_TOKEN@*/.title/*@END_MENU_TOKEN@*/)
+                        .font(.title)
                         .fontDesign(.monospaced)
-                        .padding()
+                        .padding(.horizontal)
                     
                     Spacer()
                     
@@ -112,7 +112,7 @@ struct ContentView: View {
                     
                     HStack {
                         Image(systemName: "cellularbars")
-                        
+
                         Image(systemName: connectionWIFI ? "wifi": "wifi.slash")
                             .foregroundStyle(connectionWIFI ? .blue : .gray )
                         Image("Symbol")
@@ -122,6 +122,7 @@ struct ContentView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
                 }
+                .offset(CGSize(width: 0.0, height: -40.0))
                 
                 // Grid of squares
                 VStack {
@@ -129,13 +130,11 @@ struct ContentView: View {
                         LedGridView()
                         LedGridView()
                     }
-                    
+                    .padding([.leading, .bottom, .trailing])
                     ControlsGridView()
                     
                     Text("Actions")
                 }
-                
-                Spacer()
                 
                 // Settings Button
                 HStack {
@@ -167,16 +166,17 @@ struct ContentView: View {
         let spacing: CGFloat = 10 // Space between rows and columns
         
         var body: some View {
+            
             LazyVGrid(columns: columns, spacing: 5) {  // Y Spacing
                 ForEach(squares.indices, id: \.self) { index in
                     Rectangle()
                         .fill(squares[index])
                         .frame(width: 15, height: 15)
                         .cornerRadius(5)
-                     //.blur(radius: /*@START_MENU_TOKEN@*/3.0/*@END_MENU_TOKEN@*/) //Potential blur effect?
+                        //.blur(radius: /*@START_MENU_TOKEN@*/3.0/*@END_MENU_TOKEN@*/) //Potential blur effect?
                 }
             }
-            .padding(.top, spacing)
+            .padding()
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
         }
@@ -187,16 +187,21 @@ struct ContentView: View {
         return colors.randomElement() ?? .clear
     }
     
-let squareSize: CGFloat = 150
-let spacingDesired: CGFloat = 15
+let squareSize: CGFloat = 100
+let spacingDesired: CGFloat = 20
 
+// Define the grid layout with 2 rows
+ let rows = [
+     GridItem(.fixed(100), spacing: 20, alignment: .center), // Fixed size rows with desired spacing
+     GridItem(.fixed(100), spacing: 20, alignment: .center)
+ ]
 
 struct ControlsGridView: View {
     
-    let rows = [
-        GridItem(.fixed(squareSize), spacing: spacingDesired, alignment: .center),
-                GridItem(.fixed(squareSize), spacing: spacingDesired, alignment: .center)
-            ]
+    let columns = [
+        GridItem(spacing: spacingDesired, alignment: .center),
+        GridItem(spacing: spacingDesired, alignment: .center)
+    ]
     
     //Long Press Gesture
     @GestureState private var isDetectingLongPress = false
@@ -220,44 +225,66 @@ struct ControlsGridView: View {
     
     // State to track which button is pressed
     @State private var pressedButtonIndex: Int? = nil
-     
-     var body: some View {
-         VStack {
-             // Grid with 4 squares
-             LazyHGrid(rows: rows, alignment: .center, spacing: spacingDesired) {
-                 ForEach(0..<4) { index in
-                     Button(action: {
-                         print("Button \(index + 1) Clicked")
-                     }, label: {
-                         Text("Button \(index + 1)")
-                             .frame(width: squareSize, height: squareSize)
-                             .cornerRadius(10)
-                     })
-                     .buttonStyle(.bordered)
-                     .scaleEffect(pressedButtonIndex == index ? 0.8 : 1.0) // Scale down to 80% when pressed
-                     .animation(
-                         .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0),
-                         value: pressedButtonIndex
-                     )
-                     .gesture(
-                         TapGesture()
-                             .onEnded {
-                                 // Set the pressed button index to the current button
-                                 pressedButtonIndex = index
-                                 
-                                 // Reset the button state after a delay (to simulate pressing)
-                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                     pressedButtonIndex = nil
-                                 }
-                             }
-                     )
-                 }
-             }
-             .padding(.top)
-             Spacer()
-         }
-     }
- }
+    
+    var body: some View {
+        VStack {
+            // Grid with 4 squares
+            LazyHGrid(rows: rows, alignment: .center, spacing: spacingDesired) {
+                ForEach(0..<4) { index in
+                    Button(action: {
+                        print("Button \(index + 1) Clicked")
+                    }) {
+                        RoundedRectangle(cornerRadius: 5.0)
+                            .fill(.clear)
+                            .overlay(
+                                Text("Button \(index + 1)")
+                                    .foregroundStyle(.primary)
+                            )
+                            .scaleEffect(pressedButtonIndex == index ? 0.8 : 1.0) // Scale down to 80% when pressed
+                            .animation(
+                                .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0),
+                                value: pressedButtonIndex
+                            )
+                            .gesture(
+                                TapGesture()
+                                    .onEnded {
+                                        // Set the pressed button index to the current button
+                                        pressedButtonIndex = index
+                                        
+                                        // Reset the button state after a delay (to simulate pressing)
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            pressedButtonIndex = nil
+                                        }
+                                    }
+                            )
+                    }
+                    .scaleEffect(pressedButtonIndex == index ? 0.8 : 1.0) // Scale down to 80% when pressed
+                    .animation(
+                        .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0),
+                        value: pressedButtonIndex
+                    )
+                    .gesture(
+                        TapGesture()
+                            .onEnded {
+                                // Set the pressed button index to the current button
+                                pressedButtonIndex = index
+                                
+                                // Reset the button state after a delay (to simulate pressing)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    pressedButtonIndex = nil
+                                }
+                            }
+                    )
+                    .buttonStyle(.bordered)
+                    .frame(width: squareSize, height: squareSize)
+                    //.border(Color.red)
+                }
+            }
+        }
+        .frame(width: .infinity, height: .infinity)
+        .border(Color.white)
+    }
+}
 
     struct settingsView: View {
         
@@ -296,7 +323,7 @@ struct ControlsGridView: View {
                     
                     List {
                         Picker("Connection", selection: $selectedConnection) {
-                            Text("Wifi").tag(Connection.wifi)
+                            Text("Wi-Fi").tag(Connection.wifi)
                             Text("Bluetooth").tag(Connection.bluetooth)
                             Text("Matter").tag(Connection.matter)
                         }
