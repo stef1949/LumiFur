@@ -11,6 +11,7 @@
 		350811A82C89EF720071C68C /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 350811A62C89EF720071C68C /* blinking.mp4 */; };
 		350811AC2C8B3D930071C68C /* SharedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AB2C8B3D930071C68C /* SharedViewModel.swift */; };
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
+		3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358427992C8CDCB00096B1D0 /* BluetoothManager.swift */; };
 		35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */; };
 		35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A612C8739FB0039D19D /* ContentView.swift */; };
 		35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35DA3A632C8739FD0039D19D /* Assets.xcassets */; };
@@ -41,6 +42,7 @@
 		350811A62C89EF720071C68C /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
 		350811AB2C8B3D930071C68C /* SharedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModel.swift; sourceTree = "<group>"; };
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
+		358427992C8CDCB00096B1D0 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		35DA3A5C2C8739FB0039D19D /* LumiFur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LumiFur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumiFurApp.swift; sourceTree = "<group>"; };
 		35DA3A612C8739FB0039D19D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
+				358427992C8CDCB00096B1D0 /* BluetoothManager.swift */,
 				350811AB2C8B3D930071C68C /* SharedViewModel.swift */,
 				35DA3A632C8739FD0039D19D /* Assets.xcassets */,
 				35DA3A652C8739FD0039D19D /* LumiFur.entitlements */,
@@ -275,6 +278,7 @@
 				350811AC2C8B3D930071C68C /* SharedViewModel.swift in Sources */,
 				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
+				3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

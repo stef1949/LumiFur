@@ -305,6 +305,8 @@ struct ContentView: View {
     }
     
     struct SettingsView: View {
+        @ObservedObject var bluetoothManager = BluetoothManager()
+        
         //Connectivity Options
         enum Connection: String, CaseIterable, Identifiable {
             case bluetooth, wifi, matter, z_wave
@@ -345,6 +347,11 @@ struct ContentView: View {
                             Text("Matter").tag(Connection.matter)
                         }
                         .pickerStyle(.segmented)
+                        
+                        // Perform an action whenever selectedConnection changes
+                        onChange(of: selectedConnection) { oldValue, newValue in
+                            performAction(for: newValue)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     
@@ -361,14 +368,12 @@ struct ContentView: View {
                                     .foregroundColor(.red)
                             }
                             Spacer()
-                                
                         }
                             Picker("Matrix Style", selection: $selectedMatrix) {
                                 Text("DOT").tag(Matrixstyle.dot)
                                 Text("Array").tag(Matrixstyle.array)
                                 Text("WLED").tag(Matrixstyle.wled)
                         }
-                        
                     }
                 }
                 Spacer()
@@ -378,7 +383,13 @@ struct ContentView: View {
             //.navigationTitle("Settings") //navigationStack provides navigationTitle
             //.navigationBarTitleDisplayMode(.automatic)
         }
+        // Function to perform an action based on the selected connection
+            private func performAction(for selection: Connection) {
+                print("Selected connection: \(selection.rawValue)")
+                // Add your custom logic here
+            }
     }
+
 
 struct VideoDotMatrixView: View {
     let videoURL: URL
@@ -684,6 +695,119 @@ struct InfoView: View {
         .padding()
     }
 }
+
+struct ConnectTestView: View {
+    @ObservedObject var bluetoothManager = BluetoothManager()
+
+    let addOBJObjectCommand = "ADD_OBJ_OBJECT"
+    let addFBXObjectCommand = "ADD_FBX_OBJECT"
+    let addImageMaterialCommand = "ADD_IMAGE_MATERIAL:path/to/image.png"
+    let addGIFMaterialCommand = "ADD_GIF_MATERIAL:path/to/animation.gif"
+    let createShaderMaterialCommand = "CREATE_SHADER_MATERIAL:shader code here"
+    let modify3DObjectCommand = "MODIFY_3D_OBJECT:objectID:newProperties"
+    let keyframeAnimationCommand = "KEYFRAME_ANIMATION:animationID:keyframes"
+    
+        let rows = [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ]
+        
+        var body: some View {
+            ScrollView(.horizontal) {
+                LazyHGrid(rows: rows, spacing: 20) {
+                    Button(action: {
+                        bluetoothManager.startScanning()
+                    }) {
+                        Text("Connect")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "ADD_OBJ_OBJECT".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Add OBJ")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "ADD_FBX_OBJECT".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Add FBX")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "ADD_IMAGE_MATERIAL:path/to/image.png".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Add Image")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "ADD_GIF_MATERIAL:path/to/animation.gif".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Add GIF")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "CREATE_SHADER_MATERIAL:shader code here".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Create Shader")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "MODIFY_3D_OBJECT:objectID:newProperties".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Modify 3D")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                    
+                    Button(action: {
+                        let data = "KEYFRAME_ANIMATION:animationID:keyframes".data(using: .utf8)!
+                        bluetoothManager.sendData(data: data)
+                    }) {
+                        Text("Keyframe")
+                            .frame(width: 100, height: 100)
+                            .background(.ultraThinMaterial)
+                            
+                            .cornerRadius(15)
+                    }
+                }
+                .padding()
+            }
+            .frame(height: 300)
+            .border(Color.black)
+        }
+    }
 
 
 #Preview {

@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>588</string>
+					<string>637</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>587</string>
+					<string>636</string>
 					<key>Timestamp</key>
-					<string>747333829.4511499</string>
+					<string>747431936.019195</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,16 +53,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>       }
+				<string>                    )
 </string>
 				<key>leading</key>
-				<string>               }
-           }
+				<string>                        }
+                            .padding()
 </string>
 				<key>trailing</key>
-				<string>
-struct InfoView: View {
-    var body: some View {
+				<string>                    .padding()
+                Rectangle()
+                    .foregroundStyle(.clear)
 </string>
 			</dict>
 			<key>type</key>
@@ -76,13 +76,13 @@ struct InfoView: View {
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>588</string>
+					<string>637</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>587</string>
+					<string>636</string>
 					<key>Timestamp</key>
-					<string>747333829.451144</string>
+					<string>747431936.019188</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -98,16 +98,16 @@ struct InfoView: View {
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>       }
+				<string>                    )
 </string>
 				<key>leading</key>
-				<string>               }
-           }
+				<string>                        }
+                            .padding()
 </string>
 				<key>trailing</key>
-				<string>
-struct InfoView: View {
-    var body: some View {
+				<string>                    .padding()
+                Rectangle()
+                    .foregroundStyle(.clear)
 </string>
 			</dict>
 			<key>type</key>
@@ -121,13 +121,13 @@ struct InfoView: View {
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>588</string>
+					<string>637</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>587</string>
+					<string>636</string>
 					<key>Timestamp</key>
-					<string>747333829.451111</string>
+					<string>747431936.019166</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -143,16 +143,16 @@ struct InfoView: View {
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>       }
+				<string>                    )
 </string>
 				<key>leading</key>
-				<string>               }
-           }
+				<string>                        }
+                            .padding()
 </string>
 				<key>trailing</key>
-				<string>
-struct InfoView: View {
-    var body: some View {
+				<string>                    .padding()
+                Rectangle()
+                    .foregroundStyle(.clear)
 </string>
 			</dict>
 			<key>type</key>
@@ -166,13 +166,58 @@ struct InfoView: View {
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>307</string>
+					<string>347</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>346</string>
+					<key>Timestamp</key>
+					<string>747431504.844451</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>                            Text("Matter").tag(Connection.matter)
+</string>
+				<key>leading</key>
+				<string>                            Text("Wi-Fi").tag(Connection.wifi)
+                            Text("Bluetooth").tag(Connection.bluetooth)
+</string>
+				<key>trailing</key>
+				<string>                        }
+                        .pickerStyle(.segmented)
+                        
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>29</string>
+					<key>EndingLineNumber</key>
+					<string>306</string>
+					<key>StartingColumnNumber</key>
+					<string>25</string>
 					<key>StartingLineNumber</key>
 					<string>306</string>
 					<key>Timestamp</key>
-					<string>747333829.4511369</string>
+					<string>747430718.21024</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,16 +233,15 @@ struct InfoView: View {
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    struct SettingsView: View {
-</string>
+				<string>View</string>
 				<key>leading</key>
 				<string>    }
     
-</string>
+    struct SettingsView: </string>
 				<key>trailing</key>
-				<string>        //Connectivity Options
-        enum Connection: String, CaseIterable, Identifiable {
-            case bluetooth, wifi, matter, z_wave
+				<string> {
+        @ObservedObject var bluetoothManager = BluetoothManager()
+        
 </string>
 			</dict>
 			<key>type</key>
