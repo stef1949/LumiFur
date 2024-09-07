@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>637</string>
+					<string>726</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>636</string>
+					<string>725</string>
 					<key>Timestamp</key>
-					<string>747431936.019195</string>
+					<string>747435050.4036601</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>637</string>
+					<string>726</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>636</string>
+					<string>725</string>
 					<key>Timestamp</key>
-					<string>747431936.019188</string>
+					<string>747435050.403685</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>637</string>
+					<string>726</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>636</string>
+					<string>725</string>
 					<key>Timestamp</key>
-					<string>747431936.019166</string>
+					<string>747435050.4036911</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>347</string>
+					<string>436</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>346</string>
+					<string>435</string>
 					<key>Timestamp</key>
-					<string>747431504.844451</string>
+					<string>747435050.4036781</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -209,15 +209,15 @@
 				<key>location-parameters</key>
 				<dict>
 					<key>EndingColumnNumber</key>
-					<string>29</string>
+					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>306</string>
+					<string>396</string>
 					<key>StartingColumnNumber</key>
-					<string>25</string>
+					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>306</string>
+					<string>395</string>
 					<key>Timestamp</key>
-					<string>747430718.21024</string>
+					<string>747435050.403697</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,15 +233,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>View</string>
+				<string>    struct SettingsView: View {
+</string>
 				<key>leading</key>
 				<string>    }
     
-    struct SettingsView: </string>
+</string>
 				<key>trailing</key>
-				<string> {
-        @ObservedObject var bluetoothManager = BluetoothManager()
+				<string>        @ObservedObject var bluetoothManager = BluetoothManager()
         
+        //Connectivity Options
 </string>
 			</dict>
 			<key>type</key>

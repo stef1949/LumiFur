@@ -9,6 +9,7 @@ import SwiftUI
 import CoreBluetooth
 import AVKit
 import CoreImage
+import Charts
 
 // IOS 18.0 features
 //import AccessorySetupKit
@@ -117,6 +118,8 @@ struct SplashView: View {
 
 
 struct ContentView: View {
+    @ObservedObject var bluetoothManager = BluetoothManager()
+    
     //Environment Variables
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var sharedViewModel: SharedViewModel
@@ -251,9 +254,95 @@ struct ContentView: View {
                 
                 // Settings Button
                 HStack {
-                    
                     Spacer()
+                    VStack {
+                                       Chart(bluetoothManager.cpuUsageData) {
+                                           LineMark(
+                                               x: .value("Time", $0.timestamp),
+                                               y: .value("CPU Usage", $0.cpuUsage)
+                                           )
+                                           .foregroundStyle(Color.blue)
+                                           .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                                           .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
+                                       }
+                                       .chartYScale(domain: 0...100)
+                                       .chartXAxis {
+                                           AxisMarks(values: .stride(by: 1)) { value in
+                                              
+                                             
+                                               AxisValueLabel {
+                                                   if let dateValue = value.as(Date.self) {
+                                                       Text(dateValue, format: .dateTime.hour().minute().second())
+                                                   }
+                                               }
+                                           }
+                                       }
+                                       .chartYAxis {
+                                           AxisMarks(values: .stride(by: 50)) { value in
+                                               AxisValueLabel {
+                                                   if let intValue = value.as(Int.self) {
+                                                       Text("\(intValue)%")
+                                                   }
+                                               }
+                                           }
+                                       }
+                                       .padding()
+                                       .background(.ultraThinMaterial)
+                                       .cornerRadius(10)
+                                       .frame(height: 50)
+                        
+                        Text("CPU")
+                            .fontDesign(.rounded)
+                            .bold()
+                        
+                        
+                                   }
+                    .frame(width: .infinity, height: 100)
+                    VStack {
+                        Chart(bluetoothManager.cpuUsageData) {
+                            LineMark(
+                                x: .value("Time", $0.timestamp),
+                                y: .value("CPU Usage", $0.cpuUsage)
+                            )
+                            .foregroundStyle(Color.blue)
+                            .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                            .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
+                        }
+                        .chartYScale(domain: 0...100)
+                        .chartXAxis {
+                            AxisMarks(values: .stride(by: 1)) { value in
+                               
+                              
+                                AxisValueLabel {
+                                    if let dateValue = value.as(Date.self) {
+                                        Text(dateValue, format: .dateTime.hour().minute().second())
+                                    }
+                                }
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(values: .stride(by: 50)) { value in
+                                AxisValueLabel {
+                                    if let intValue = value.as(Int.self) {
+                                        Text("\(intValue)%")
+                                            .font(.caption2)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                        .frame(height: 50)
+         
+         Text("Memory")
+             .fontDesign(.rounded)
+             .bold()
+         
+                    }
+                    .frame(width: .infinity, height: 100)
                     
+                   
                     
                     NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
                         Image(systemName: "gear")

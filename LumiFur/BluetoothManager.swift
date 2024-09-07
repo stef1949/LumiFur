@@ -1,10 +1,3 @@
-//
-//  BluetoothManager.swift
-//  LumiFur
-//
-//  Created by Stephan Ritchie on 07/09/2024.
-//
-
 import Foundation
 import CoreBluetooth
 
@@ -12,6 +5,7 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     var centralManager: CBCentralManager!
     var targetPeripheral: CBPeripheral?
     var targetCharacteristic: CBCharacteristic?
+    @Published var cpuUsageData: [CPUUsageDataPoint] = []
 
     override init() {
         super.init()
@@ -68,12 +62,18 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let data = characteristic.value {
-            // Process the received data
-            print("Received data: \(data)")
+        if let data = characteristic.value, let string = String(data: data, encoding: .utf8) {
+            if string.starts(with: "CPU Usage:") {
+                if let cpuUsage = Double(string.replacingOccurrences(of: "CPU Usage: ", with: "").replacingOccurrences(of: "%", with: "")) {
+                    DispatchQueue.main.async {
+                        let dataPoint = CPUUsageDataPoint(secondsAgo: self.cpuUsageData.count, cpuUsage: cpuUsage)
+                        self.cpuUsageData.append(dataPoint)
+                        if self.cpuUsageData.count > 20 {
+                            self.cpuUsageData.removeFirst()
+                        }
+                    }
+                }
+            }
         }
     }
 }
-
-
-
