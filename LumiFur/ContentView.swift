@@ -10,6 +10,10 @@ import CoreBluetooth
 import AVKit
 import CoreImage
 
+// IOS 18.0 features
+//import AccessorySetupKit
+
+
 struct SplashView: View {
     @Environment(\.colorScheme) var colorScheme
     
@@ -28,81 +32,83 @@ struct SplashView: View {
             if self.isActive {
                 ContentView()
             } else {
-                ZStack {
-                    VStack {
-                        animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
-                        
-                        ZStack {
+                NavigationStack {
+                    ZStack {
+                        VStack {
+                            animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
                             
-                            Image(systemName: "aqi.medium")
-                                .resizable()
-                                .scaledToFit()
-                                .font(/*@START_MENU_TOKEN@*/.title/*@END_MENU_TOKEN@*/)
-                                .symbolEffect(.variableColor.cumulative)
-                                .blur(radius: 10)
-                            
-                            Image(systemName: "aqi.medium")
-                                .resizable()
-                                .scaledToFit()
-                                .font(.title)
-                                .symbolEffect(.variableColor.cumulative)
-                                .blur(radius: 1)
-                                .opacity(0.5)
-                            
-                            Circle()
-                                .fill(RadialGradient(
-                                    gradient: Gradient(colors: [Color.clear, overlayColor]),
-                                    center: .center,
-                                    startRadius: 0,
-                                    endRadius: 150
-                                )
-                                )
-                                .scaleEffect(CGSize(width: 1.2, height: 1.2))
-                                .font(.title)
-                                .blur(radius: 3.0)
-                                .scaledToFit()
-                            
-                        }
-                        .padding()
-                        
-                        Text("Welcome to LumiFur")
-                            .font(.title)
-                            .multilineTextAlignment(.trailing)
-                            .fontDesign(.monospaced)
-                        
-                        Text("An app designed to control your fursuit LEDs & light systems")
-                            .multilineTextAlignment(.center)
-                            .padding([.leading, .bottom, .trailing])
-                            .fontDesign(.monospaced)
-                        
-                        
-                        Button(action: {
-                            withAnimation {
-                                self.isActive = true
+                            ZStack {
+                                
+                                Image(systemName: "aqi.medium")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .font(.title)
+                                    .symbolEffect(.variableColor.cumulative)
+                                    .blur(radius: 10)
+                                
+                                Image(systemName: "aqi.medium")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .font(.title)
+                                    .symbolEffect(.variableColor.cumulative)
+                                    .blur(radius: 1)
+                                    .opacity(0.5)
+                                
+                                Circle()
+                                    .fill(RadialGradient(
+                                        gradient: Gradient(colors: [Color.clear, overlayColor]),
+                                        center: .center,
+                                        startRadius: 0,
+                                        endRadius: 150
+                                    )
+                                    )
+                                    .scaleEffect(CGSize(width: 1.2, height: 1.2))
+                                    .font(.title)
+                                    .blur(radius: 3.0)
+                                    .scaledToFit()
+                                
                             }
-                        }) {
-                            Text("Start")
-                                .font(.title2)
-                                .padding()
-                                .padding(.horizontal)
-                                .background(.ultraThinMaterial)
-                                .tint(.gray)
-                                .clipShape(RoundedRectangle(cornerSize: CGSize(width: 15, height: 10)))
+                            .padding()
+                            
+                            Text("Welcome to LumiFur")
+                                .font(.title)
+                                .multilineTextAlignment(.trailing)
+                                .fontDesign(.monospaced)
+                            
+                            Text("An app designed to control your fursuit LEDs & light systems")
+                                .multilineTextAlignment(.center)
+                                .padding([.leading, .bottom, .trailing])
+                                .fontDesign(.monospaced)
+                            
+                            
+                            Button(action: {
+                                withAnimation {
+                                    self.isActive = true
+                                }
+                            }) {
+                                Text("Start")
+                                    .font(.title2)
+                                    .padding()
+                                    .padding(.horizontal)
+                                    .background(.ultraThinMaterial)
+                                    .tint(.gray)
+                                    .clipShape(RoundedRectangle(cornerSize: CGSize(width: 15, height: 10)))
+                            }
+                            
                         }
-                        
+                   }
+                    .overlay(alignment: .bottomTrailing) {
+                        NavigationLink(destination: InfoView()) {
+                            Image(systemName: "info.square")
+                                .imageScale(.large)
+                                .symbolRenderingMode(.multicolor)
+                                .tint(.gray)
+                                .padding()
+                                .offset(CGSize(width: -10.0, height: -5.0))
+                            
+                        }
                     }
                     .padding()
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    Button {
-                    } label: {
-                        Image(systemName: "info.square")
-                            .imageScale(.large)
-                            .symbolRenderingMode(.hierarchical)
-                            .tint(.gray)
-                            .padding()
-                            .offset(CGSize(width: -10.0, height: -5.0))
-                    }
                 }
             }
         }
@@ -282,7 +288,7 @@ struct ContentView: View {
                         .fill(squares[index])
                         .frame(width: 5, height: 5)
                         .cornerRadius(1)
-                        //.blur(radius: /*@START_MENU_TOKEN@*/3.0/*@END_MENU_TOKEN@*/) //Potential blur effect?
+                        //.blur(radius: 3.0) //Potential blur effect?
                 }
             }
             .padding(10.0)
@@ -340,7 +346,7 @@ struct ContentView: View {
                         }
                         .pickerStyle(.segmented)
                     }
-                    .frame(width: .infinity, height: 100)
+                    .frame(maxWidth: .infinity)
                     
                     Text("Matrix style")
                         .font(.title)
@@ -348,7 +354,12 @@ struct ContentView: View {
                     List {
                         HStack {
                             Spacer()
-                            LedGridView()
+                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                VideoDotMatrixView(videoURL: videoURL)
+                            } else {
+                                Text("Error: Video file not found.")
+                                    .foregroundColor(.red)
+                            }
                             Spacer()
                                 
                         }
@@ -575,6 +586,106 @@ struct CircleMatrixView: View {
                }
            }
        }
+
+struct InfoView: View {
+    var body: some View {
+        ScrollView {
+            VStack {
+                ZStack {
+                    Image("Logo")
+                        .resizable()
+                        .scaledToFit()
+                    
+                    Image("Logo")
+                        .resizable()
+                        .scaledToFit()
+                        .blur(radius: 10)
+                        .opacity(0.5)
+                }
+                .padding()
+                Rectangle()
+                    .foregroundStyle(.clear)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+                    .frame(height: 300)
+                    .overlay(
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("About")
+                                    .font(.title)
+                                    .multilineTextAlignment(.leading)
+                                    .fontDesign(.monospaced)
+                                Spacer()
+                            }
+                            Text("LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.")
+                            
+                                .padding()
+                        }
+                            .padding()
+                    )
+                    .padding()
+                Rectangle()
+                    .foregroundStyle(.clear)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+                    .frame(height: 800)
+                    .overlay(
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("Features")
+                                    .font(.title)
+                                    .fontDesign(.monospaced)
+                                    .padding()
+                                Spacer()
+                            }
+                            .padding()
+                            VStack {
+                                Spacer()
+                                Text("Bluetooth Connectivity")
+                                    .font(.headline)
+                                Text("Seamlessly connect to your fursuit's LED system using Bluetooth technology.")
+                                Spacer()
+                                Text("Wi-Fi Support")
+                                    .font(.headline)
+                                Text("Option to control your lighting system over Wi-Fi for extended range.")
+                                Spacer()
+                                Text("Multiple Connection Options")
+                                    .font(.headline)
+                                Text("Support for various connectivity methods including Bluetooth, Wi-Fi, Matter, and Z-Wave.")
+                                Spacer()
+                                Text("Interactive Dot Matrix Display")
+                                    .font(.headline)
+                                Text("Visualize and control your fursuit's LED patterns with an 8x8 dot matrix interface.")
+                                Spacer()
+                                Text("Customizable Lighting Patterns")
+                                    .font(.headline)
+                                Text("Create and save custom lighting sequences for your fursuit.")
+                                Spacer()
+                                Text("Real-time Preview")
+                                    .font(.headline)
+                                Text("See how your lighting patterns will look before applying them to your fursuit.")
+                                Spacer()
+                                Text("User-friendly Interface")
+                                    .font(.headline)
+                                Text("Intuitive controls designed for ease of use, even when wearing a fursuit.")
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding()
+                            Spacer()
+                                .padding()
+                        }
+                    )
+                    .padding()
+            }
+                    
+        }
+        .padding()
+    }
+}
+
+
 #Preview {
     ContentView()
 }

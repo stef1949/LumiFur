@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>577</string>
+					<string>588</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>576</string>
+					<string>587</string>
 					<key>Timestamp</key>
-					<string>747329127.510734</string>
+					<string>747333829.4511499</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -60,9 +60,9 @@
            }
 </string>
 				<key>trailing</key>
-				<string>#Preview {
-    ContentView()
-}
+				<string>
+struct InfoView: View {
+    var body: some View {
 </string>
 			</dict>
 			<key>type</key>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>577</string>
+					<string>588</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>576</string>
+					<string>587</string>
 					<key>Timestamp</key>
-					<string>747329127.510705</string>
+					<string>747333829.451144</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -105,9 +105,9 @@
            }
 </string>
 				<key>trailing</key>
-				<string>#Preview {
-    ContentView()
-}
+				<string>
+struct InfoView: View {
+    var body: some View {
 </string>
 			</dict>
 			<key>type</key>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>577</string>
+					<string>588</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>576</string>
+					<string>587</string>
 					<key>Timestamp</key>
-					<string>747329127.510844</string>
+					<string>747333829.451111</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -150,9 +150,9 @@
            }
 </string>
 				<key>trailing</key>
-				<string>#Preview {
-    ContentView()
-}
+				<string>
+struct InfoView: View {
+    var body: some View {
 </string>
 			</dict>
 			<key>type</key>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>301</string>
+					<string>307</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>300</string>
+					<string>306</string>
 					<key>Timestamp</key>
-					<string>747328649.041881</string>
+					<string>747333829.4511369</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>

@@ -10,4 +10,8 @@ import SwiftUI
 
 class SharedViewModel: ObservableObject {
     @Published var protogenImage: Image? = Image("Protogen") // Your Protogen image
+        
+        .resizable()
+        .interpolation(.high)
+        .antialiased(true)
 }
