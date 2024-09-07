@@ -12,8 +12,8 @@
 
 LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.
 
-## Features
-
+## Planned Features
+- **ProtoTracer Support**: PLanned interoperability with ProtoTracer for controlling fursuit LEDS.
 - **Bluetooth Connectivity**: Seamlessly connect to your fursuit's LED system using Bluetooth technology.
 - **Wi-Fi Support**: Option to control your lighting system over Wi-Fi for extended range.
 - **Multiple Connection Options**: Support for various connectivity methods including Bluetooth, Wi-Fi, Matter, and Z-Wave.
