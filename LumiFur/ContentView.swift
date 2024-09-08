@@ -1333,19 +1333,31 @@ struct ContentView3: View {
     
     var body: some View {
         VStack {
-            if let currentGrid = config.grids[currentGridKey] {
-                LEDMatrix3(grid: currentGrid)
-            } else {
-                Text("No grid data available")
+            VStack {
+                if let currentGrid = config.grids[currentGridKey] {
+                    LEDMatrix3(grid: currentGrid)
+                    
+                } else {
+                    Text("Awaiting grid data")
+                }
             }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 25.0))
             
-            Text("Matrix: \(config.rows)x\(config.columns * config.chain)")
-            Text("Current Grid: \(currentGridKey)")
-            
+            VStack {
+                Text("Matrix: \(config.rows)x\(config.columns * config.chain)")
+                Text("Current Grid: \(currentGridKey)")
+            }
+            .padding()
+            .background(.gray)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+                
             Button("Import File") {
-                isImporting = true
-            }
-            
+                    isImporting = true
+                }
+                .buttonStyle(.borderedProminent)
+
             if let errorMessage = errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
