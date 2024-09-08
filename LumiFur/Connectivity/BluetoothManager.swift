@@ -2,23 +2,36 @@ import Foundation
 import CoreBluetooth
 
 class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
-    var centralManager: CBCentralManager!
+    private var centralManager: CBCentralManager!
     var targetPeripheral: CBPeripheral?
     var targetCharacteristic: CBCharacteristic?
     @Published var cpuUsageData: [CPUUsageDataPoint] = []
 
     override init() {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        centralManager = CBCentralManager.init(delegate: self, queue: nil)
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        if central.state == .poweredOn {
-            // Optionally start scanning immediately
-            // startScanning()
-        } else {
-            print("Bluetooth is not available.")
-        }
+        var consoleLog = ""
+
+              switch central.state {
+              case .poweredOff:
+                  consoleLog = "BLE is powered off"
+              case .poweredOn:
+                  consoleLog = "BLE is poweredOn"
+              case .resetting:
+                  consoleLog = "BLE is resetting"
+              case .unauthorized:
+                  consoleLog = "BLE is unauthorized"
+              case .unknown:
+                  consoleLog = "BLE is unknown"
+              case .unsupported:
+                  consoleLog = "BLE is unsupported"
+              default:
+                  consoleLog = "default"
+              }
+              print(consoleLog)
     }
 
     func startScanning() {

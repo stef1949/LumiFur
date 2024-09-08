@@ -10,6 +10,8 @@ import CoreBluetooth
 import AVKit
 import CoreImage
 import Charts
+import UniformTypeIdentifiers
+import os
 
 // IOS 18.0 features
 //import AccessorySetupKit
@@ -170,13 +172,14 @@ struct ContentView: View {
                     // Use the common utility function to display and animate the image
                                 animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
                         
-                        .border(Color.red)
+                        //.border(Color.red)
                         .scaledToFill()
                         .frame(height: 100)
                         .offset(CGSize(width: 0.0, height: 30.0))
                     
                     Text("LumiFur")
                         .font(.title)
+                        .multilineTextAlignment(.trailing)
                         .fontDesign(.monospaced)
                         .padding(.horizontal)
                     
@@ -184,46 +187,72 @@ struct ContentView: View {
                     
                 }
                 
-                // Status Indicators and Signal Strength
-                HStack {
-                    
-                    Spacer()
-                    
+                VStack {
+                    // Status Indicators and Signal Strength
                     HStack {
-                        Image(systemName: "cellularbars")
                         
-                        Image(systemName: connectionWIFI ? "wifi": "wifi.slash")
-                            .foregroundStyle(connectionWIFI ? .blue : .gray )
-                        Image("Symbol")
-                            .foregroundStyle(connectionBluetooth ? .blue : .gray )
+                        Spacer()
+                        
+                        HStack {
+                            Image(systemName: "cellularbars")
+                            
+                            Image(systemName: connectionWIFI ? "wifi": "wifi.slash")
+                                .foregroundStyle(connectionWIFI ? .blue : .gray )
+                            Image("bluetooth.fill")
+                                .foregroundStyle(connectionBluetooth ? .blue : .gray )
+                        }
+                        .padding(.all, 10.0)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
                     }
-                    .padding(.all, 10.0)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
+                    .border(.purple)
+                    .offset(CGSize(width: 0.0, height: -40.0))
                 }
-                .offset(CGSize(width: 0.0, height: -40.0))
-                
-                HStack {
-                    
-                    Spacer()
-                    
-                    if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                        VideoDotMatrixView(videoURL: videoURL)
-                    } else {
-                        Text("Error: Video file not found.")
-                            .foregroundColor(.red)
+                //LED ARRAY MAIN VIEW
+                    VStack {
+                        HStack {
+                            Spacer()
+                            
+                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                VideoDotMatrixView(videoURL: videoURL)
+                            } else {
+                                Text("Error: Video file not found.")
+                                    .foregroundColor(.red)
+                            }
+                            
+                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                VideoDotMatrixView(videoURL: videoURL)
+                            } else {
+                                Text("Error: Video file not found.")
+                                    .foregroundColor(.red)
+                            }
+                            Spacer()
+                        }
+                        
+                        HStack {
+                            Spacer()
+                            
+                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                VideoDotMatrixView(videoURL: videoURL)
+                            } else {
+                                Text("Error: Video file not found.")
+                                    .foregroundColor(.red)
+                            }
+                            
+                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                VideoDotMatrixView(videoURL: videoURL)
+                            } else {
+                                Text("Error: Video file not found.")
+                                    .foregroundColor(.red)
+                            }
+                            Spacer()
+                        }
                     }
-                    
-                    if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                        VideoDotMatrixView(videoURL: videoURL)
-                    } else {
-                        Text("Error: Video file not found.")
-                            .foregroundColor(.red)
-                    }
-                    
-                    Spacer()
-                    
-                }
+                    .padding()
+                    .background(.gray)
+                .clipShape(RoundedRectangle(cornerRadius: 25.0))
+                .frame(width: .infinity, height: .infinity)
+                .border(Color.red)
                 
                 Spacer()
                 
@@ -237,14 +266,17 @@ struct ContentView: View {
                             }) {
                                 Image(systemName: item)
                                     .imageScale(.large)
+                                    .font(.system(size: 20))
                                     .frame(maxWidth: .infinity, maxHeight: .infinity) // Makes the image fill the available space
+                                    .border(Color.green)
+                                    .symbolRenderingMode(.multicolor)
                             }
                         }
                         .aspectRatio(1, contentMode: .fit)
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
-                        .frame(width: 125)
+                        .frame(width: 175)
                     }
                 }
                 .border(Color.yellow)
@@ -255,49 +287,48 @@ struct ContentView: View {
                 // Settings Button
                 HStack {
                     Spacer()
+                    HStack {
                     VStack {
-                                       Chart(bluetoothManager.cpuUsageData) {
-                                           LineMark(
-                                               x: .value("Time", $0.timestamp),
-                                               y: .value("CPU Usage", $0.cpuUsage)
-                                           )
-                                           .foregroundStyle(Color.blue)
-                                           .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                                           .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
-                                       }
-                                       .chartYScale(domain: 0...100)
-                                       .chartXAxis {
-                                           AxisMarks(values: .stride(by: 1)) { value in
-                                              
-                                             
-                                               AxisValueLabel {
-                                                   if let dateValue = value.as(Date.self) {
-                                                       Text(dateValue, format: .dateTime.hour().minute().second())
-                                                   }
-                                               }
-                                           }
-                                       }
-                                       .chartYAxis {
-                                           AxisMarks(values: .stride(by: 50)) { value in
-                                               AxisValueLabel {
-                                                   if let intValue = value.as(Int.self) {
-                                                       Text("\(intValue)%")
-                                                   }
-                                               }
-                                           }
-                                       }
-                                       .padding()
-                                       .background(.ultraThinMaterial)
-                                       .cornerRadius(10)
-                                       .frame(height: 50)
+                        Chart(bluetoothManager.cpuUsageData) {
+                            LineMark(
+                                x: .value("Time", $0.timestamp),
+                                y: .value("CPU Usage", $0.cpuUsage)
+                            )
+                            .foregroundStyle(Color.blue)
+                            .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                            .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage=
+                        }
+                        .chartYScale(domain: 0...100)
+                        .chartXAxis {
+                            AxisMarks(values: .stride(by: 1)) { value in
+                                
+                                
+                                AxisValueLabel {
+                                    if let dateValue = value.as(Date.self) {
+                                        Text(dateValue, format: .dateTime.hour().minute().second())
+                                    }
+                                }
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(values: .stride(by: 50)) { value in
+                                AxisValueLabel {
+                                    if let intValue = value.as(Int.self) {
+                                        Text("\(intValue)%")
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                        .frame(height: 50)
                         
                         Text("CPU")
                             .fontDesign(.rounded)
                             .bold()
-                        
-                        
-                                   }
-                    .frame(width: .infinity, height: 100)
+                    }
+                    //.frame(width: 30, height: 50)
                     VStack {
                         Chart(bluetoothManager.cpuUsageData) {
                             LineMark(
@@ -311,8 +342,8 @@ struct ContentView: View {
                         .chartYScale(domain: 0...100)
                         .chartXAxis {
                             AxisMarks(values: .stride(by: 1)) { value in
-                               
-                              
+                                
+                                
                                 AxisValueLabel {
                                     if let dateValue = value.as(Date.self) {
                                         Text(dateValue, format: .dateTime.hour().minute().second())
@@ -334,16 +365,16 @@ struct ContentView: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
                         .frame(height: 50)
-         
-         Text("Memory")
-             .fontDesign(.rounded)
-             .bold()
-         
+                        
+                        Text("Memory")
+                            .fontDesign(.rounded)
+                            .bold()
+                        
                     }
-                    .frame(width: .infinity, height: 100)
-                    
+                    //.frame(maxWidth: 30, maxHeight: 50)
+                }
                    
-                    
+                    NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
                     NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
                         Image(systemName: "gear")
                             .imageScale(.large)
@@ -897,8 +928,589 @@ struct ConnectTestView: View {
             .border(Color.black)
         }
     }
+// MARK: -WORKING- Testing matrix arducode code
 
+struct MatrixTestView4_4: View {
+    static let X_SEGMENTS = 4
+    static let Y_SEGMENTS = 4
+    static let NUM_SEGMENTS = X_SEGMENTS * Y_SEGMENTS
+    
+    @State private var framebuffer = [UInt8](repeating: 0, count: 8 * NUM_SEGMENTS)
+    @State private var isAnimating = false
+    @State private var timer: Timer?
+    @State private var sx1: Int32 = 15 << 8
+    @State private var sx2: Int32 = 15 << 8
+    @State private var sy1: Int32 = 0
+    @State private var sy2: Int32 = 0
+    @State private var travel: UInt8 = 0
+    
+    var body: some View {
+        VStack {
+            VStack {
+                // Display the LED matrix
+                ForEach(0..<Self.Y_SEGMENTS, id: \.self) { y in
+                    HStack {
+                        ForEach(0..<Self.X_SEGMENTS, id: \.self) { x in
+                            LEDMatrix(framebuffer: $framebuffer, xOffset: x * 8, yOffset: y * 8)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 25.0))
+           
+            Text("4x4_Test")
+                .font(.title)
+            
+            // Button to start/stop the animation
+            Button(action: toggleAnimation) {
+                Text(isAnimating ? "Stop" : "Start")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .padding(.top, 20)
+        }
+        .onAppear(perform: setup)
+    }
+    
+    func setup() {
+        clear()
+    }
+    
+    func toggleAnimation() {
+        isAnimating.toggle()
+        if isAnimating {
+            // Start the animation
+            timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                loop()
+            }
+        } else {
+            // Stop the animation
+            timer?.invalidate()
+            timer = nil
+        }
+    }
+    
+    func loop() {
+        sx1 = sx1 - (sy1 >> 6)
+        sy1 = sy1 + (sx1 >> 6)
+        sx2 = sx2 - (sy2 >> 5)
+        sy2 = sy2 + (sx2 >> 5)
+        
+        travel = travel &- 1
+        
+        let x_offset = Int32(sx1 >> 8) - Int32(Self.X_SEGMENTS * 4)
+        let y_offset = Int32(sx2 >> 8) - Int32(Self.Y_SEGMENTS * 4)
+        
+        clear()
+        drawCircles(x_offset: x_offset, y_offset: y_offset, travel: travel)
+    }
+    
+    func drawCircles(x_offset: Int32, y_offset: Int32, travel: UInt8) {
+        var x = x_offset
+        var y = y_offset
+        var ysumsquares = x_offset * x_offset + y * y
+        var yroot = Int32(sqrtf(Float(ysumsquares)))
+        var ynextsquare = yroot * yroot
+        
+        for screeny in 0..<(Self.Y_SEGMENTS * 8) {
+            x = x_offset
+            var xsumsquares = ysumsquares
+            var xroot = yroot
+            var xnextsquare = xroot * xroot
+            
+            for screenx in 0..<(Self.X_SEGMENTS * 8) {
+                let output = UInt8(((xroot + Int32(travel)) & 8) >> 3)
+                setPixel(x: UInt8(screenx), y: UInt8(screeny), mode: output)
+                
+                xsumsquares += 2 * x + 1
+                x += 1
+                
+                if x <= 0 {
+                    if xsumsquares < xnextsquare {
+                        xnextsquare -= 2 * xroot - 1
+                        xroot -= 1
+                    }
+                } else {
+                    if xsumsquares >= xnextsquare {
+                        xroot += 1
+                        xnextsquare = (xroot + 1) * (xroot + 1)
+                    }
+                }
+            }
+            
+            ysumsquares += 2 * y + 1
+            y += 1
+            
+            if y <= 0 {
+                if ysumsquares < ynextsquare {
+                    ynextsquare -= 2 * yroot - 1
+                    yroot -= 1
+                }
+            } else {
+                if ysumsquares >= ynextsquare {
+                    yroot += 1
+                    ynextsquare = (yroot + 1) * (yroot + 1)
+                }
+            }
+        }
+    }
+    
+    func setPixel(x: UInt8, y: UInt8, mode: UInt8) {
+        let addr = Int(x / 8 + y * UInt8(Self.X_SEGMENTS))
+        let mask: UInt8 = 128 >> (x % 8)
+        switch mode {
+        case 0: framebuffer[addr] &= ~mask // clear pixel
+        case 1: framebuffer[addr] |= mask  // plot pixel
+        default: break
+        }
+    }
+    
+    func clear() {
+        framebuffer = [UInt8](repeating: 0, count: 8 * Self.NUM_SEGMENTS)
+    }
+}
+    // Individual LED arrays
+struct LEDMatrix: View {
+    @Binding var framebuffer: [UInt8]
+    let xOffset: Int
+    let yOffset: Int
+    
+    var body: some View {
+        VStack(spacing: 1) {
+            ForEach(0..<8, id: \.self) { row in
+                HStack(spacing: 1) {
+                    ForEach(0..<8, id: \.self) { col in
+                        Rectangle()
+                            .fill(ledColor(row: row, col: col))
+                            .frame(width: 5, height: 5)
+                    }
+                }
+            }
+        }
+        .background(.gray)
+        .clipShape(RoundedRectangle(cornerRadius: 2.0))
+    }
+    
+    private func ledColor(row: Int, col: Int) -> Color {
+        let index = (yOffset + row) * MatrixTestView4_4.X_SEGMENTS + (xOffset / 8)
+        let bit = 7 - col
+        return framebuffer[index] & (1 << bit) != 0 ? .green : .black
+    }
+}
+
+struct MatrixTestView_FileImporter: View {
+    static let X_SEGMENTS = 4
+    static let Y_SEGMENTS = 4
+    static let NUM_SEGMENTS = X_SEGMENTS * Y_SEGMENTS
+
+    @State private var framebuffer = [UInt8](repeating: 0, count: 8 * NUM_SEGMENTS)
+    @State private var isAnimating = false
+    @State private var timer: Timer?
+    @State private var sx1: Int32 = 15 << 8
+    @State private var sx2: Int32 = 15 << 8
+    @State private var sy1: Int32 = 0
+    @State private var sy2: Int32 = 0
+    @State private var travel: UInt8 = 0
+    @State private var showingFileImporter = false
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
+    
+    
+    var body: some View {
+        VStack {
+            VStack {
+                // Display the LED matrix
+                ForEach(0..<Self.Y_SEGMENTS, id: \.self) { y in
+                    HStack {
+                        ForEach(0..<Self.X_SEGMENTS, id: \.self) { x in
+                            LED_Matrix(framebuffer: $framebuffer, xOffset: x * 8, yOffset: y * 8)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 25.0))
+
+            Text("4x4_Test_File_Importer")
+                .font(.title)
+
+            // Button to start/stop the animation
+            Button(action: toggleAnimation) {
+                Text(isAnimating ? "Stop" : "Start")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .padding(.top, 20)
+
+            // Button to upload the matrix file
+            Button(action: { showingFileImporter = true }) {
+                Text("Upload Matrix File")
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: [.text]) { result in
+                handleFileImport(result: result)
+                print("importing")
+            }
+        }
+        .onAppear(perform: setup)
+    }
+
+    func setup() {
+        clear()
+    }
+
+    func toggleAnimation() {
+        isAnimating.toggle()
+        if isAnimating {
+            timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                loop()
+            }
+        } else {
+            timer?.invalidate()
+            timer = nil
+        }
+    }
+
+    func loop() {
+        sx1 = sx1 - (sy1 >> 6)
+        sy1 = sy1 + (sx1 >> 6)
+        sx2 = sx2 - (sy2 >> 5)
+        sy2 = sy2 + (sx2 >> 5)
+
+        travel = travel &- 1
+
+        let x_offset = Int32(sx1 >> 8) - Int32(Self.X_SEGMENTS * 4)
+        let y_offset = Int32(sx2 >> 8) - Int32(Self.Y_SEGMENTS * 4)
+
+        clear()
+        drawCircles(x_offset: x_offset, y_offset: y_offset, travel: travel)
+    }
+
+    func drawCircles(x_offset: Int32, y_offset: Int32, travel: UInt8) {
+        // Your drawing logic here
+    }
+
+    func setPixel(x: UInt8, y: UInt8, mode: UInt8) {
+        // Your setPixel logic here
+    }
+
+    func clear() {
+        framebuffer = [UInt8](repeating: 0, count: 8 * Self.NUM_SEGMENTS)
+    }
+
+    func handleFileImport(result: Result<URL, Error>) {
+        switch result {
+        case .success(let fileURL):
+            do {
+                let content = try String(contentsOf: fileURL)
+                parseMatrixFile(content: content)
+            } catch {
+                print("Error reading file: \(error.localizedDescription)")
+            }
+        case .failure(let error):
+            print("File import failed: \(error.localizedDescription)")
+        }
+    }
+
+    func parseMatrixFile(content: String) {
+        // Updated parsing logic to handle matrix format correctly
+        guard let startIndex = content.range(of: "const vector<vector<bool>> grid0 = {")?.upperBound else { return }
+        let matrixString = content[startIndex...].components(separatedBy: "};").first ?? ""
+
+        let rows = matrixString.split(separator: "{").dropFirst().map { $0.split(separator: "}") }
+        var matrix = [[Bool]]()
+
+        for row in rows {
+            let boolRow = row.first?.split(separator: ",").compactMap { $0.trimmingCharacters(in: .whitespaces) == "1" }
+            if let boolRow = boolRow {
+                matrix.append(boolRow)
+            }
+        }
+
+        // Update the framebuffer
+        updateFramebuffer(with: matrix)
+    }
+
+    func updateFramebuffer(with matrix: [[Bool]]) {
+        // Convert matrix data to framebuffer format
+        clear()
+        for (y, row) in matrix.enumerated() {
+            for (x, value) in row.enumerated() {
+                let mode: UInt8 = value ? 1 : 0
+                setPixel(x: UInt8(x), y: UInt8(y), mode: mode)
+            }
+        }
+    }
+}
+
+struct LED_Matrix: View {
+    @Binding var framebuffer: [UInt8]
+    let xOffset: Int
+    let yOffset: Int
+
+    var body: some View {
+        VStack(spacing: 1) {
+            ForEach(0..<8, id: \.self) { row in
+                HStack(spacing: 1) {
+                    ForEach(0..<8, id: \.self) { col in
+                        Rectangle()
+                            .fill(ledColor(row: row, col: col))
+                            .frame(width: 5, height: 5)
+                    }
+                }
+            }
+        }
+        .background(.gray)
+        .clipShape(RoundedRectangle(cornerRadius: 2.0))
+    }
+
+    private func ledColor(row: Int, col: Int) -> Color {
+        let index = (yOffset + row) * MatrixTestView_FileImporter.X_SEGMENTS + (xOffset / 8)
+        let bit = 7 - col
+        return framebuffer[index] & (1 << bit) != 0 ? .green : .black
+    }
+}
+
+struct Grid: Equatable {
+    let width: Int
+    let height: Int
+    let data: [Bool]
+    
+    init(width: Int, height: Int, data: [Bool]) {
+        self.width = width
+        self.height = height
+        self.data = data
+    }
+    
+    subscript(x: Int, y: Int) -> Bool {
+        data[y * width + x]
+    }
+}
+
+class MatrixConfig: ObservableObject {
+    @Published var rows: Int = 32
+    @Published var columns: Int = 64
+    @Published var chain: Int = 2
+    @Published var grids: [String: Grid] = [:]
+}
+
+struct LEDMatrix3: View {
+    let grid: Grid
+    
+    var body: some View {
+        VStack(spacing: 1) {
+            ForEach(0..<grid.height, id: \.self) { row in
+                HStack(spacing: 1) {
+                    ForEach(0..<grid.width, id: \.self) { column in
+                        Rectangle()
+                            .fill(grid[column, row] ? Color.white : Color.black)
+                            .frame(width: 3, height: 3)
+                    }
+                }
+            }
+        }
+        .background(Color.gray)
+        .padding()
+    }
+}
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
+
+struct ContentView3: View {
+    @StateObject private var config = MatrixConfig()
+    @State private var currentGridKey: String = ""
+    @State private var isImporting: Bool = false
+    @State private var errorMessage: String?
+    @State private var detailedErrorInfo: String?
+    
+    var body: some View {
+        VStack {
+            if let currentGrid = config.grids[currentGridKey] {
+                LEDMatrix3(grid: currentGrid)
+            } else {
+                Text("No grid data available")
+            }
+            
+            Text("Matrix: \(config.rows)x\(config.columns * config.chain)")
+            Text("Current Grid: \(currentGridKey)")
+            
+            Button("Import File") {
+                isImporting = true
+            }
+            
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+            }
+            
+            if let detailedErrorInfo = detailedErrorInfo {
+                Text("Detailed Error Info:")
+                    .font(.headline)
+                Text(detailedErrorInfo)
+                    .font(.caption)
+            }
+        }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.text],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let selectedFile: URL = try result.get().first else {
+                    throw NSError(domain: "FileImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "No file selected"])
+                }
+                logger.info("File selected: \(selectedFile.lastPathComponent)")
+                
+                guard selectedFile.startAccessingSecurityScopedResource() else {
+                    throw NSError(domain: "FileImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unable to access the file. Please check app permissions."])
+                }
+                
+                defer {
+                    selectedFile.stopAccessingSecurityScopedResource()
+                }
+                
+                let content = try String(contentsOf: selectedFile)
+                logger.info("File content read successfully, length: \(content.count) characters")
+                
+                try parseHeaderFile(content)
+                logger.info("File parsing completed successfully")
+            } catch {
+                logger.error("Error importing file: \(error.localizedDescription)")
+                errorMessage = "Error importing file: \(error.localizedDescription)"
+                if let detailedError = error as? DetailedParsingError {
+                    detailedErrorInfo = detailedError.detailedDescription
+                } else {
+                    detailedErrorInfo = nil
+                }
+            }
+        }
+    }
+    
+    struct DetailedParsingError: LocalizedError {
+        let description: String
+        let detailedDescription: String
+        
+        var errorDescription: String? {
+            return description
+        }
+    }
+    
+    func parseHeaderFile(_ content: String) throws {
+            logger.info("Starting to parse header file")
+            var grids: [String: Grid] = [:]
+            var currentGridData: [Bool] = []
+            var currentGridKey: String = ""
+            var rowCount = 0
+            var columnCount = 0
+            var linesParsed = 0
+            var gridDeclarationFound = false
+            var inGridDeclaration = false
+            var openBraceCount = 0
+            var continuationLine = ""
+            
+            let lines = content.components(separatedBy: .newlines)
+            logger.info("Number of lines in file: \(lines.count)")
+            
+            for (index, line) in lines.enumerated() {
+                linesParsed += 1
+                let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Skip preprocessor directives and includes
+                if trimmedLine.starts(with: "#") || trimmedLine.starts(with: "include") {
+                    logger.info("Skipping preprocessor line: \(trimmedLine)")
+                    continue
+                }
+                
+                // Handle multi-line declarations
+                if trimmedLine.hasSuffix("=") {
+                    continuationLine = trimmedLine
+                    continue
+                }
+                
+                let processLine = continuationLine + trimmedLine
+                continuationLine = ""
+                
+                if processLine.contains("const vector<vector<bool>> grid") {
+                    gridDeclarationFound = true
+                    inGridDeclaration = true
+                    if !currentGridData.isEmpty && !currentGridKey.isEmpty {
+                        logger.info("Completed parsing grid: \(currentGridKey), size: \(columnCount)x\(rowCount)")
+                        grids[currentGridKey] = Grid(width: columnCount, height: rowCount, data: currentGridData)
+                        currentGridData = []
+                        rowCount = 0
+                    }
+                    currentGridKey = processLine.components(separatedBy: " ").last?.replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    logger.info("Started parsing new grid: \(currentGridKey)")
+                }
+                
+                if inGridDeclaration {
+                    openBraceCount += processLine.filter { $0 == "{" }.count
+                    openBraceCount -= processLine.filter { $0 == "}" }.count
+                    
+                    let cleanedLine = processLine.replacingOccurrences(of: "[{},]", with: " ", options: .regularExpression)
+                    let values = cleanedLine.split(separator: " ").compactMap { Int($0) }
+                    
+                    if !values.isEmpty {
+                        let boolValues = values.map { $0 == 1 }
+                        currentGridData.append(contentsOf: boolValues)
+                        rowCount += 1
+                        columnCount = max(columnCount, boolValues.count)
+                        logger.info("Parsed row \(rowCount) with \(boolValues.count) values")
+                    }
+                    
+                    if openBraceCount == 0 {
+                        inGridDeclaration = false
+                        if !currentGridData.isEmpty {
+                            logger.info("Completed parsing grid: \(currentGridKey), size: \(columnCount)x\(rowCount)")
+                            grids[currentGridKey] = Grid(width: columnCount, height: rowCount, data: currentGridData)
+                            currentGridData = []
+                            rowCount = 0
+                            columnCount = 0
+                        }
+                    }
+                }
+                
+                if index % 100 == 0 {
+                    logger.info("Parsed \(index) lines")
+                }
+            }
+            
+            if grids.isEmpty {
+                if !gridDeclarationFound {
+                    throw DetailedParsingError(
+                        description: "No valid grid data found in the file",
+                        detailedDescription: "Parsed \(linesParsed) lines, but didn't find any grid declarations.\nExpected format: const vector<vector<bool>> grid0 = {...};"
+                    )
+                } else {
+                    throw DetailedParsingError(
+                        description: "No valid grid data found in the file",
+                        detailedDescription: "Found grid declaration(s), but couldn't parse any valid grid data.\nParsed \(linesParsed) lines. Last grid key: \(currentGridKey), Rows parsed: \(rowCount), Columns: \(columnCount)"
+                    )
+                }
+            }
+            
+            logger.info("Parsed \(grids.count) grids in total")
+            
+            DispatchQueue.main.async {
+                self.config.grids = grids
+                self.config.rows = rowCount
+                self.config.columns = columnCount / self.config.chain
+                self.currentGridKey = grids.keys.sorted().first ?? ""
+                self.errorMessage = nil
+                self.detailedErrorInfo = nil
+                logger.info("Updated UI with parsed data")
+            }
+        }
+    }
 
 #Preview {
-    ContentView()
+    ContentView3()
 }

@@ -7,12 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		350811A72C89EF720071C68C /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 350811A62C89EF720071C68C /* blinking.mp4 */; };
-		350811A82C89EF720071C68C /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 350811A62C89EF720071C68C /* blinking.mp4 */; };
 		350811AC2C8B3D930071C68C /* SharedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AB2C8B3D930071C68C /* SharedViewModel.swift */; };
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
 		3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358427992C8CDCB00096B1D0 /* BluetoothManager.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
+		358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 3584279F2C8CF5590096B1D0 /* blinking.mp4 */; };
 		35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */; };
 		35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A612C8739FB0039D19D /* ContentView.swift */; };
 		35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35DA3A632C8739FD0039D19D /* Assets.xcassets */; };
@@ -40,11 +39,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		350811A62C89EF720071C68C /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
 		350811AB2C8B3D930071C68C /* SharedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModel.swift; sourceTree = "<group>"; };
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		358427992C8CDCB00096B1D0 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
+		3584279F2C8CF5590096B1D0 /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
 		35DA3A5C2C8739FB0039D19D /* LumiFur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LumiFur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumiFurApp.swift; sourceTree = "<group>"; };
 		35DA3A612C8739FB0039D19D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -83,6 +82,33 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		358427A02C8CF5590096B1D0 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				35DA3A632C8739FD0039D19D /* Assets.xcassets */,
+				3584279F2C8CF5590096B1D0 /* blinking.mp4 */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
+		358427A32C8CF57F0096B1D0 /* Connectivity */ = {
+			isa = PBXGroup;
+			children = (
+				3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */,
+				358427992C8CDCB00096B1D0 /* BluetoothManager.swift */,
+			);
+			path = Connectivity;
+			sourceTree = "<group>";
+		};
+		358427A42C8CF59B0096B1D0 /* SharedViews */ = {
+			isa = PBXGroup;
+			children = (
+				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
+				350811AB2C8B3D930071C68C /* SharedViewModel.swift */,
+			);
+			path = SharedViews;
+			sourceTree = "<group>";
+		};
 		35DA3A532C8739FB0039D19D = {
 			isa = PBXGroup;
 			children = (
@@ -106,15 +132,12 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
-				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
-				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
-				358427992C8CDCB00096B1D0 /* BluetoothManager.swift */,
-				3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */,
-				350811AB2C8B3D930071C68C /* SharedViewModel.swift */,
-				35DA3A632C8739FD0039D19D /* Assets.xcassets */,
+				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
+				358427A32C8CF57F0096B1D0 /* Connectivity */,
+				358427A42C8CF59B0096B1D0 /* SharedViews */,
+				358427A02C8CF5590096B1D0 /* Assets */,
 				35DA3A652C8739FD0039D19D /* LumiFur.entitlements */,
-				350811A62C89EF720071C68C /* blinking.mp4 */,
 				35DA3A662C8739FD0039D19D /* Preview Content */,
 			);
 			path = LumiFur;
@@ -251,7 +274,7 @@
 			files = (
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
 				35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */,
-				350811A72C89EF720071C68C /* blinking.mp4 in Resources */,
+				358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,7 +282,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				350811A82C89EF720071C68C /* blinking.mp4 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +393,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -426,6 +452,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -446,6 +476,11 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -454,8 +489,7 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -484,6 +518,11 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -492,8 +531,7 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";

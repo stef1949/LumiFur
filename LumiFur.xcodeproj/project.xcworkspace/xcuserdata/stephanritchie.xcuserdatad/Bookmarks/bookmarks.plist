@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>726</string>
+					<string>757</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>725</string>
+					<string>756</string>
 					<key>Timestamp</key>
-					<string>747435050.4036601</string>
+					<string>747491438.283916</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>726</string>
+					<string>757</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>725</string>
+					<string>756</string>
 					<key>Timestamp</key>
-					<string>747435050.403685</string>
+					<string>747491438.283895</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>726</string>
+					<string>757</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>725</string>
+					<string>756</string>
 					<key>Timestamp</key>
-					<string>747435050.4036911</string>
+					<string>747491438.283924</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>436</string>
+					<string>467</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>435</string>
+					<string>466</string>
 					<key>Timestamp</key>
-					<string>747435050.4036781</string>
+					<string>747491438.283903</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>396</string>
+					<string>427</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>395</string>
+					<string>426</string>
 					<key>Timestamp</key>
-					<string>747435050.403697</string>
+					<string>747491438.28391</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -243,6 +243,51 @@
 				<string>        @ObservedObject var bluetoothManager = BluetoothManager()
         
         //Connectivity Options
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>211</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>210</string>
+					<key>Timestamp</key>
+					<string>747491438.283861</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>                //LED ARRAY MAIN VIEW
+</string>
+				<key>leading</key>
+				<string>                    .offset(CGSize(width: 0.0, height: -40.0))
+                }
+</string>
+				<key>trailing</key>
+				<string>                    VStack {
+                        HStack {
+                            Spacer()
 </string>
 			</dict>
 			<key>type</key>
