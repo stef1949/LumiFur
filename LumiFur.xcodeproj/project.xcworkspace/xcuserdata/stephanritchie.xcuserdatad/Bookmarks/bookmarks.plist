@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>761</string>
+					<string>763</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>760</string>
+					<string>762</string>
 					<key>Timestamp</key>
-					<string>751474605.646286</string>
+					<string>751477040.009513</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>761</string>
+					<string>763</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>760</string>
+					<string>762</string>
 					<key>Timestamp</key>
-					<string>751474605.646305</string>
+					<string>751477040.009557</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>761</string>
+					<string>763</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>760</string>
+					<string>762</string>
 					<key>Timestamp</key>
-					<string>751474605.646311</string>
+					<string>751477040.0095479</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>471</string>
+					<string>465</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>470</string>
+					<string>464</string>
 					<key>Timestamp</key>
-					<string>751474605.6463161</string>
+					<string>751476613.397159</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,16 +188,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                            Text("Matter").tag(Connection.matter)
+				<string>Text("Matter")
 </string>
 				<key>leading</key>
-				<string>                            Text("Wi-Fi").tag(Connection.wifi)
-                            Text("Bluetooth").tag(Connection.bluetooth)
-</string>
+				<string>                                Text("Bluetooth")
+                                    .tag(Connection.bluetooth)
+                                </string>
 				<key>trailing</key>
-				<string>                        }
-                        .pickerStyle(.segmented)
-                        
+				<string>                                    .tag(Connection.matter)
+                            }
+                            .pickerStyle(.segmented)
 </string>
 			</dict>
 			<key>type</key>
@@ -233,16 +233,15 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    struct SettingsView: View {
-</string>
+				<string>    struct SettingsView: View {</string>
 				<key>leading</key>
 				<string>    }
     
 </string>
 				<key>trailing</key>
-				<string>        @ObservedObject var bluetoothManager = BluetoothManager()
-        
-        //Connectivity Options
+				<string>
+           @State private var fontSize: CGFloat = 15
+           @State private var showLineNumbers = false
 </string>
 			</dict>
 			<key>type</key>

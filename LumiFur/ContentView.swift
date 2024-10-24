@@ -429,6 +429,9 @@ struct ContentView: View {
     }
     
     struct SettingsView: View {
+           @State private var fontSize: CGFloat = 15
+           @State private var showLineNumbers = false
+           @State private var showPreview = true
         @ObservedObject var bluetoothManager = BluetoothManager()
         
         //Connectivity Options
@@ -442,70 +445,69 @@ struct ContentView: View {
             case array, dot, wled
             var id: Self { self }
         }
-
+        //@AppStorage("selectedConnection") var selectedConnection = .bluetooth
         @State private var selectedConnection: Connection = .bluetooth
         @Binding var selectedMatrix: Matrixstyle
 
         
         var body: some View {
-            
-            VStack {
-                    Text("Settings")
-                        .font(.largeTitle)
-                        .padding([.top, .bottom, .trailing])
-                        .fontDesign(.monospaced)
-                
-                // Add your settings options here
-                Text("Adjust your preferences here.")
-                    .padding()
-            
-                // Connectivity List
+            NavigationStack {
                 VStack {
-                    Text("Connectivity")
-                        .font(.title)
-                    
+                    // Connectivity List
                     List {
-                        Picker("Connection", selection: $selectedConnection) {
-                            Text("Wi-Fi").tag(Connection.wifi)
-                            Text("Bluetooth").tag(Connection.bluetooth)
-                            Text("Matter").tag(Connection.matter)
-                        }
-                        .pickerStyle(.segmented)
-                        
-                        // Perform an action whenever selectedConnection changes
-                        onChange(of: selectedConnection) { oldValue, newValue in
-                            performAction(for: newValue)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    Text("Matrix style")
-                        .font(.title)
-                
-                    List {
-                        HStack {
-                            Spacer()
-                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                VideoDotMatrixView(videoURL: videoURL)
-                            } else {
-                                Text("Error: Video file not found.")
-                                    .foregroundColor(.red)
+                        // Connection Picker
+                        Section(header: Text("Connection")) {
+                            Picker("Connection", selection: $selectedConnection) {
+                                Text("Wi-Fi")
+                                    .tag(Connection.wifi)
+                                Text("Bluetooth")
+                                    .tag(Connection.bluetooth)
+                                Text("Matter")
+                                    .tag(Connection.matter)
                             }
-                            Spacer()
+                            .pickerStyle(.segmented)
+                            .onChange(of: selectedConnection) { oldValue, newValue in
+                                performAction(for: newValue)
+                            }
                         }
-                            Picker("Matrix Style", selection: $selectedMatrix) {
-                                Text("DOT").tag(Matrixstyle.dot)
-                                Text("Array").tag(Matrixstyle.array)
-                                Text("WLED").tag(Matrixstyle.wled)
+                        
+                        // Matrix Style Picker
+                        Section(header: Text("Matrix Style")) {
+                            VStack {
+                                Text("Matrix style")
+                                    .font(.title)
+                                
+                                HStack {
+                                    Spacer()
+                                    if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                        VideoDotMatrixView(videoURL: videoURL)
+                                    } else {
+                                        Text("Error: Video file not found.")
+                                            .foregroundColor(.red)
+                                    }
+                                    Spacer()
+                                }
+                                
+                                Picker("Matrix Style", selection: $selectedMatrix) {
+                                    Text("DOT").tag(Matrixstyle.dot)
+                                    Text("Array").tag(Matrixstyle.array)
+                                    Text("WLED").tag(Matrixstyle.wled)
+                                }
+                                .pickerStyle(.menu)
+                            }
                         }
                     }
+                    #if os(macOS)
+                    .listStyle(SidebarListStyle()) // Use a macOS-compatible list style
+                    #else
+                    .listStyle(InsetGroupedListStyle()) // Use InsetGroupedListStyle for iOS
+                    #endif
+                    
+                    Spacer()
                 }
-                Spacer()
-                Spacer()
+                .navigationTitle("Settings") //navigationStack provides navigationTitle
+                //.navigationBarTitleDisplayMode(.automatic)
             }
-            Spacer()
-            //.navigationTitle("Settings") //navigationStack provides navigationTitle
-            //.navigationBarTitleDisplayMode(.automatic)
         }
         // Function to perform an action based on the selected connection
             private func performAction(for selection: Connection) {
