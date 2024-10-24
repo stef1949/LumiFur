@@ -249,7 +249,7 @@ struct ContentView: View {
                         }
                     }
                     .padding()
-                    .background(.gray)
+                    .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 25.0))
                 .frame(width: .infinity, height: .infinity)
                 .border(Color.red)
@@ -267,21 +267,24 @@ struct ContentView: View {
                                 Image(systemName: item)
                                     .imageScale(.large)
                                     .font(.system(size: 20))
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Makes the image fill the available space
+                                    .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity) // Makes the image fill the available space
+                                    .aspectRatio(1, contentMode: .fill)
                                     .border(Color.green)
                                     .symbolRenderingMode(.multicolor)
+                                    .background(.clear)
                             }
                         }
                         .aspectRatio(1, contentMode: .fit)
-                        .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
-                        .frame(width: 175)
+                        .padding()
+                        .frame(width: 175, height:175)
                     }
                 }
                 .border(Color.yellow)
                 .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .padding()
                 
                 
                 // Settings Button
@@ -373,7 +376,8 @@ struct ContentView: View {
                     }
                     //.frame(maxWidth: 30, maxHeight: 50)
                 }
-                   
+                    .padding(.bottom,40)
+                    
                     NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
                     NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
                         Image(systemName: "gear")
@@ -1279,11 +1283,21 @@ struct LED_Matrix: View {
         return framebuffer[index] & (1 << bit) != 0 ? .green : .black
     }
 }
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
+
+struct DetailedParsingError: LocalizedError {
+    let description: String
+    let detailedDescription: String
+    
+    var errorDescription: String? {
+        return description
+    }
+}
 
 struct Grid: Equatable {
     let width: Int
     let height: Int
-    let data: [Bool]
+    private var data: [Bool]
     
     init(width: Int, height: Int, data: [Bool]) {
         self.width = width
@@ -1292,7 +1306,23 @@ struct Grid: Equatable {
     }
     
     subscript(x: Int, y: Int) -> Bool {
-        data[y * width + x]
+        get { data[y * width + x] }
+        set { data[y * width + x] = newValue }
+    }
+    
+    func swappedHalves() -> Grid {
+        var newData = [Bool]()
+        let halfWidth = width / 2
+        for y in 0..<height {
+            for x in 0..<width {
+                if x < halfWidth {
+                    newData.append(self[x + halfWidth, y])
+                } else {
+                    newData.append(self[x - halfWidth, y])
+                }
+            }
+        }
+        return Grid(width: width, height: height, data: newData)
     }
 }
 
@@ -1301,18 +1331,20 @@ class MatrixConfig: ObservableObject {
     @Published var columns: Int = 64
     @Published var chain: Int = 2
     @Published var grids: [String: Grid] = [:]
+    @Published var currentGridKey: String = ""
 }
 
 struct LEDMatrix3: View {
     let grid: Grid
     
     var body: some View {
+        let swappedGrid = grid.swappedHalves()
         VStack(spacing: 1) {
-            ForEach(0..<grid.height, id: \.self) { row in
+            ForEach(0..<swappedGrid.height, id: \.self) { row in
                 HStack(spacing: 1) {
-                    ForEach(0..<grid.width, id: \.self) { column in
+                    ForEach(0..<swappedGrid.width, id: \.self) { column in
                         Rectangle()
-                            .fill(grid[column, row] ? Color.white : Color.black)
+                            .fill(swappedGrid[column, row] ? Color.white : Color.black)
                             .frame(width: 3, height: 3)
                     }
                 }
@@ -1322,42 +1354,49 @@ struct LEDMatrix3: View {
         .padding()
     }
 }
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
 
 struct ContentView3: View {
     @StateObject private var config = MatrixConfig()
-    @State private var currentGridKey: String = ""
     @State private var isImporting: Bool = false
     @State private var errorMessage: String?
     @State private var detailedErrorInfo: String?
+    @State private var isAnimating: Bool = false
+    
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
         VStack {
+            if let currentGrid = config.grids[config.currentGridKey] {
+                LEDMatrix3(grid: currentGrid)
+            } else {
+                Text("No grid data available")
+            }
             VStack {
-                if let currentGrid = config.grids[currentGridKey] {
-                    LEDMatrix3(grid: currentGrid)
-                    
-                } else {
-                    Text("Awaiting grid data")
-                }
+                Text("Matrix: \(config.rows)x\(config.columns * config.chain)")
+                Text("Current Grid: \(config.currentGridKey)")
             }
             .padding()
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 25.0))
-            
-            VStack {
-                Text("Matrix: \(config.rows)x\(config.columns * config.chain)")
-                Text("Current Grid: \(currentGridKey)")
-            }
-            .padding()
-            .background(.gray)
             .clipShape(RoundedRectangle(cornerRadius: 5))
-                
-            Button("Import File") {
+            VStack {
+                Button("Import File") {
                     isImporting = true
                 }
                 .buttonStyle(.borderedProminent)
-
+                
+                Button(isAnimating ? "Stop Animation" : "Start Animation") {
+                    isAnimating.toggle()
+                    logger.info("Animation toggled: \(isAnimating)")
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Button("Next Grid") {
+                    showNextGrid()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            
             if let errorMessage = errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
@@ -1370,159 +1409,158 @@ struct ContentView3: View {
                     .font(.caption)
             }
         }
+        .onReceive(timer) { _ in
+            if isAnimating {
+                showNextGrid()
+            }
+        }
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: [.text],
             allowsMultipleSelection: false
         ) { result in
-            do {
-                guard let selectedFile: URL = try result.get().first else {
-                    throw NSError(domain: "FileImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "No file selected"])
-                }
-                logger.info("File selected: \(selectedFile.lastPathComponent)")
-                
-                guard selectedFile.startAccessingSecurityScopedResource() else {
-                    throw NSError(domain: "FileImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unable to access the file. Please check app permissions."])
-                }
-                
-                defer {
-                    selectedFile.stopAccessingSecurityScopedResource()
-                }
-                
-                let content = try String(contentsOf: selectedFile)
-                logger.info("File content read successfully, length: \(content.count) characters")
-                
-                try parseHeaderFile(content)
-                logger.info("File parsing completed successfully")
-            } catch {
-                logger.error("Error importing file: \(error.localizedDescription)")
-                errorMessage = "Error importing file: \(error.localizedDescription)"
-                if let detailedError = error as? DetailedParsingError {
-                    detailedErrorInfo = detailedError.detailedDescription
-                } else {
-                    detailedErrorInfo = nil
-                }
-            }
+            handleFileImport(result: result)
         }
     }
     
-    struct DetailedParsingError: LocalizedError {
-        let description: String
-        let detailedDescription: String
-        
-        var errorDescription: String? {
-            return description
+    func handleFileImport(result: Result<[URL], Error>) {
+        do {
+            guard let selectedFile: URL = try result.get().first else {
+                throw NSError(domain: "FileImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "No file selected"])
+            }
+            logger.info("File selected: \(selectedFile.lastPathComponent)")
+            
+            guard selectedFile.startAccessingSecurityScopedResource() else {
+                throw NSError(domain: "FileImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unable to access the file. Please check app permissions."])
+            }
+            
+            defer {
+                selectedFile.stopAccessingSecurityScopedResource()
+            }
+            
+            let content = try String(contentsOf: selectedFile)
+            logger.info("File content read successfully, length: \(content.count) characters")
+            
+            try parseHeaderFile(content)
+            logger.info("File parsing completed successfully")
+        } catch {
+            logger.error("Error importing file: \(error.localizedDescription)")
+            errorMessage = "Error importing file: \(error.localizedDescription)"
+            if let detailedError = error as? DetailedParsingError {
+                detailedErrorInfo = detailedError.detailedDescription
+            } else {
+                detailedErrorInfo = nil
+            }
         }
     }
     
     func parseHeaderFile(_ content: String) throws {
-            logger.info("Starting to parse header file")
-            var grids: [String: Grid] = [:]
-            var currentGridData: [Bool] = []
-            var currentGridKey: String = ""
-            var rowCount = 0
-            var columnCount = 0
-            var linesParsed = 0
-            var gridDeclarationFound = false
-            var inGridDeclaration = false
-            var openBraceCount = 0
-            var continuationLine = ""
+        logger.info("Starting to parse header file")
+        var grids: [String: Grid] = [:]
+        var currentGridData: [Bool] = []
+        var currentGridKey: String = ""
+        var rowCount = 0
+        var columnCount = 0
+        var linesParsed = 0
+        var inGridDeclaration = false
+        var openBraceCount = 0
+        var continuationLine = ""
+        
+        let lines = content.components(separatedBy: .newlines)
+        logger.info("Number of lines in file: \(lines.count)")
+        
+        for (index, line) in lines.enumerated() {
+            linesParsed += 1
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            let lines = content.components(separatedBy: .newlines)
-            logger.info("Number of lines in file: \(lines.count)")
+            if trimmedLine.starts(with: "#") || trimmedLine.starts(with: "include") {
+                logger.info("Skipping preprocessor line: \(trimmedLine)")
+                continue
+            }
             
-            for (index, line) in lines.enumerated() {
-                linesParsed += 1
-                let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine.hasSuffix("=") {
+                continuationLine = trimmedLine
+                continue
+            }
+            
+            let processLine = continuationLine + trimmedLine
+            continuationLine = ""
+            
+            if processLine.contains("const vector<vector<bool>> grid") {
+                inGridDeclaration = true
+                if !currentGridData.isEmpty && !currentGridKey.isEmpty {
+                    logger.info("Completed parsing grid: \(currentGridKey), size: \(columnCount)x\(rowCount)")
+                    grids[currentGridKey] = Grid(width: columnCount, height: rowCount, data: currentGridData)
+                    currentGridData = []
+                    rowCount = 0
+                }
+                currentGridKey = processLine.components(separatedBy: " ").last?.replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                logger.info("Started parsing new grid: \(currentGridKey)")
+            }
+            
+            if inGridDeclaration {
+                openBraceCount += processLine.filter { $0 == "{" }.count
+                openBraceCount -= processLine.filter { $0 == "}" }.count
                 
-                // Skip preprocessor directives and includes
-                if trimmedLine.starts(with: "#") || trimmedLine.starts(with: "include") {
-                    logger.info("Skipping preprocessor line: \(trimmedLine)")
-                    continue
+                let cleanedLine = processLine.replacingOccurrences(of: "[{},]", with: " ", options: .regularExpression)
+                let values = cleanedLine.split(separator: " ").compactMap { Int($0) }
+                
+                if !values.isEmpty {
+                    let boolValues = values.map { $0 == 1 }
+                    currentGridData.append(contentsOf: boolValues)
+                    rowCount += 1
+                    columnCount = max(columnCount, boolValues.count)
+                    logger.info("Parsed row \(rowCount) with \(boolValues.count) values")
                 }
                 
-                // Handle multi-line declarations
-                if trimmedLine.hasSuffix("=") {
-                    continuationLine = trimmedLine
-                    continue
-                }
-                
-                let processLine = continuationLine + trimmedLine
-                continuationLine = ""
-                
-                if processLine.contains("const vector<vector<bool>> grid") {
-                    gridDeclarationFound = true
-                    inGridDeclaration = true
-                    if !currentGridData.isEmpty && !currentGridKey.isEmpty {
+                if openBraceCount == 0 {
+                    inGridDeclaration = false
+                    if !currentGridData.isEmpty {
                         logger.info("Completed parsing grid: \(currentGridKey), size: \(columnCount)x\(rowCount)")
                         grids[currentGridKey] = Grid(width: columnCount, height: rowCount, data: currentGridData)
                         currentGridData = []
                         rowCount = 0
+                        columnCount = 0
                     }
-                    currentGridKey = processLine.components(separatedBy: " ").last?.replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    logger.info("Started parsing new grid: \(currentGridKey)")
-                }
-                
-                if inGridDeclaration {
-                    openBraceCount += processLine.filter { $0 == "{" }.count
-                    openBraceCount -= processLine.filter { $0 == "}" }.count
-                    
-                    let cleanedLine = processLine.replacingOccurrences(of: "[{},]", with: " ", options: .regularExpression)
-                    let values = cleanedLine.split(separator: " ").compactMap { Int($0) }
-                    
-                    if !values.isEmpty {
-                        let boolValues = values.map { $0 == 1 }
-                        currentGridData.append(contentsOf: boolValues)
-                        rowCount += 1
-                        columnCount = max(columnCount, boolValues.count)
-                        logger.info("Parsed row \(rowCount) with \(boolValues.count) values")
-                    }
-                    
-                    if openBraceCount == 0 {
-                        inGridDeclaration = false
-                        if !currentGridData.isEmpty {
-                            logger.info("Completed parsing grid: \(currentGridKey), size: \(columnCount)x\(rowCount)")
-                            grids[currentGridKey] = Grid(width: columnCount, height: rowCount, data: currentGridData)
-                            currentGridData = []
-                            rowCount = 0
-                            columnCount = 0
-                        }
-                    }
-                }
-                
-                if index % 100 == 0 {
-                    logger.info("Parsed \(index) lines")
                 }
             }
             
-            if grids.isEmpty {
-                if !gridDeclarationFound {
-                    throw DetailedParsingError(
-                        description: "No valid grid data found in the file",
-                        detailedDescription: "Parsed \(linesParsed) lines, but didn't find any grid declarations.\nExpected format: const vector<vector<bool>> grid0 = {...};"
-                    )
+            if index % 100 == 0 {
+                logger.info("Parsed \(index) lines")
+            }
+        }
+        if !grids.isEmpty {
+                    DispatchQueue.main.async {
+                        self.config.grids = grids
+                        self.config.rows = rowCount
+                        self.config.columns = columnCount / self.config.chain
+                        self.config.currentGridKey = grids.keys.sorted().first ?? ""
+                        self.errorMessage = nil
+                        self.detailedErrorInfo = nil
+                        logger.info("Updated UI with parsed data. Current grid key: \(self.config.currentGridKey)")
+                    }
                 } else {
                     throw DetailedParsingError(
                         description: "No valid grid data found in the file",
-                        detailedDescription: "Found grid declaration(s), but couldn't parse any valid grid data.\nParsed \(linesParsed) lines. Last grid key: \(currentGridKey), Rows parsed: \(rowCount), Columns: \(columnCount)"
+                        detailedDescription: "Parsed \(linesParsed) lines, but couldn't extract any valid grid data."
                     )
                 }
             }
             
-            logger.info("Parsed \(grids.count) grids in total")
-            
-            DispatchQueue.main.async {
-                self.config.grids = grids
-                self.config.rows = rowCount
-                self.config.columns = columnCount / self.config.chain
-                self.currentGridKey = grids.keys.sorted().first ?? ""
-                self.errorMessage = nil
-                self.detailedErrorInfo = nil
-                logger.info("Updated UI with parsed data")
-            }
+    func showNextGrid() {
+        let sortedKeys = config.grids.keys.sorted()
+        logger.info("Sorted keys: \(sortedKeys)")
+        if let currentIndex = sortedKeys.firstIndex(of: config.currentGridKey) {
+            let nextIndex = (currentIndex + 1) % sortedKeys.count
+            config.currentGridKey = sortedKeys[nextIndex]
+            logger.info("Switched to grid: \(config.currentGridKey)")
+        } else {
+            logger.warning("Current grid key not found in sorted keys")
         }
     }
+        }
+
 
 #Preview {
-    ContentView3()
+    ContentView()
 }
