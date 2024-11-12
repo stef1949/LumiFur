@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		350811AC2C8B3D930071C68C /* SharedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AB2C8B3D930071C68C /* SharedViewModel.swift */; };
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
+		35239A252CCFE06D00DD483B /* BluetoothViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* BluetoothViewModel.swift */; };
 		3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358427992C8CDCB00096B1D0 /* BluetoothManager.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
 		358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 3584279F2C8CF5590096B1D0 /* blinking.mp4 */; };
@@ -39,8 +39,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		350811AB2C8B3D930071C68C /* SharedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModel.swift; sourceTree = "<group>"; };
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
+		35239A242CCFE06300DD483B /* BluetoothViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothViewModel.swift; sourceTree = "<group>"; };
 		358427992C8CDCB00096B1D0 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
 		3584279F2C8CF5590096B1D0 /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
@@ -104,7 +104,6 @@
 			isa = PBXGroup;
 			children = (
 				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
-				350811AB2C8B3D930071C68C /* SharedViewModel.swift */,
 			);
 			path = SharedViews;
 			sourceTree = "<group>";
@@ -132,6 +131,7 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
+				35239A242CCFE06300DD483B /* BluetoothViewModel.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				358427A32C8CF57F0096B1D0 /* Connectivity */,
@@ -300,9 +300,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
-				350811AC2C8B3D930071C68C /* SharedViewModel.swift in Sources */,
 				3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */,
 				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
+				35239A252CCFE06D00DD483B /* BluetoothViewModel.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
 				3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */,
 			);
@@ -489,11 +489,12 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -531,11 +532,12 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
 				PRODUCT_NAME = "$(TARGET_NAME)";

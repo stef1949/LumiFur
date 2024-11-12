@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>763</string>
+					<string>826</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>762</string>
+					<string>825</string>
 					<key>Timestamp</key>
-					<string>751477040.009513</string>
+					<string>753144433.303695</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>763</string>
+					<string>826</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>762</string>
+					<string>825</string>
 					<key>Timestamp</key>
-					<string>751477040.009557</string>
+					<string>753144433.3036849</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>763</string>
+					<string>826</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>762</string>
+					<string>825</string>
 					<key>Timestamp</key>
-					<string>751477040.0095479</string>
+					<string>753144433.303674</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>465</string>
+					<string>492</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>464</string>
+					<string>491</string>
 					<key>Timestamp</key>
-					<string>751476613.397159</string>
+					<string>753144433.303661</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,16 +188,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>Text("Matter")
+				<string>                                }
 </string>
 				<key>leading</key>
-				<string>                                Text("Bluetooth")
-                                    .tag(Connection.bluetooth)
-                                </string>
+				<string>                                            .tag(connection)
+                                    }
+</string>
 				<key>trailing</key>
-				<string>                                    .tag(Connection.matter)
-                            }
-                            .pickerStyle(.segmented)
+				<string>                                .pickerStyle(.segmented)
+                                .onChange(of: selectedConnection) { oldValue, newValue in
+                                    performAction(for: newValue)
 </string>
 			</dict>
 			<key>type</key>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>431</string>
+					<string>453</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>430</string>
+					<string>452</string>
 					<key>Timestamp</key>
-					<string>751474605.646325</string>
+					<string>753144433.3037159</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,17 +233,20 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    struct SettingsView: View {</string>
+				<string>struct SettingsView: View {
+</string>
 				<key>leading</key>
-				<string>    }
-    
+				<string>// MARK: SettingsView
+
 </string>
 				<key>trailing</key>
-				<string>
-           @State private var fontSize: CGFloat = 15
-           @State private var showLineNumbers = false
+				<string>    @State private var fontSize: CGFloat = 15
+    @State private var showLineNumbers = false
+    @State private var showPreview = true
 </string>
 			</dict>
+			<key>title</key>
+			<string>Settings View</string>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>
@@ -255,13 +258,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>211</string>
+					<string>227</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>210</string>
+					<string>226</string>
 					<key>Timestamp</key>
-					<string>747491438.283861</string>
+					<string>753144433.303705</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -277,11 +280,11 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                //LED ARRAY MAIN VIEW
+				<string>                    //LED ARRAY MAIN VIEW
 </string>
 				<key>leading</key>
-				<string>                    .offset(CGSize(width: 0.0, height: -40.0))
-                }
+				<string>                        .offset(CGSize(width: -20.0, height: -40.0))
+                    }
 </string>
 				<key>trailing</key>
 				<string>                    VStack {

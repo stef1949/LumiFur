@@ -19,9 +19,9 @@ import os
 
 struct SplashView: View {
     @Environment(\.colorScheme) var colorScheme
-    
+
     var overlayColor: Color {
-        colorScheme == .dark ? .black : .white
+        colorScheme == .dark ? .black : .gray
     }
     
     @State var isActive: Bool = false
@@ -118,13 +118,12 @@ struct SplashView: View {
     }
 }
 
-
+// MARK: ContentView
 struct ContentView: View {
-    @ObservedObject var bluetoothManager = BluetoothManager()
-    
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     //Environment Variables
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var sharedViewModel: SharedViewModel
+        //@Environment(\.colorScheme) var colorScheme
+    //@EnvironmentObject var sharedViewModel: SharedViewModel
     
     //Connectivity Variables
     @State private var connectionBluetooth: Bool = true
@@ -159,56 +158,73 @@ struct ContentView: View {
     @State private var yOffset: CGFloat = 0
         private let animationDuration: Double = 1.0
     
-    var overlayColor: Color {
-            colorScheme == .dark ? .gray : .white
+    private var signalLevel: Double {
+            // Convert RSSI to 0-1 range
+            let signalStrength = Double(bluetoothManager.signalStrength)
+            let normalizedSignal = (signalStrength - (-100)) / ((-30) - (-100))
+            return min(max(normalizedSignal, 0.0), 1.0)
         }
     
     var body: some View {
-        NavigationStack {
+        ZStack {
+            Color.primary
+                .opacity(0.3)
+                .ignoresSafeArea()
             
-            //Title
-            VStack {
-                HStack {
-                    // Use the common utility function to display and animate the image
-                                animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
+            NavigationStack {
+                //Title
+                VStack {
+                    HStack {
+                        // Use the common utility function to display and animate the image
+                        animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
                         
                         //.border(Color.red)
-                        .scaledToFill()
-                        .frame(height: 100)
-                        .offset(CGSize(width: 0.0, height: 30.0))
-                    
-                    Text("LumiFur")
-                        .font(.title)
-                        .multilineTextAlignment(.trailing)
-                        .fontDesign(.monospaced)
-                        .padding(.horizontal)
-                    
-                    Spacer()
-                    
-                }
-                
-                VStack {
-                    // Status Indicators and Signal Strength
-                    HStack {
+                            .scaledToFill()
+                            .frame(height: 100)
+                            .offset(CGSize(width: 0.0, height: 68.0))
+                        
+                        Text("LumiFur")
+                            .font(.title)
+                            .multilineTextAlignment(.trailing)
+                            .fontDesign(.monospaced)
+                            .padding(.horizontal)
                         
                         Spacer()
                         
-                        HStack {
-                            Image(systemName: "cellularbars")
-                            
-                            Image(systemName: connectionWIFI ? "wifi": "wifi.slash")
-                                .foregroundStyle(connectionWIFI ? .blue : .gray )
-                            Image("bluetooth.fill")
-                                .foregroundStyle(connectionBluetooth ? .blue : .gray )
-                        }
-                        .padding(.all, 10.0)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
                     }
-                    .border(.purple)
-                    .offset(CGSize(width: 0.0, height: -40.0))
-                }
-                //LED ARRAY MAIN VIEW
+                    
+                    VStack {
+                        // Status Indicators and Signal Strength
+                        HStack {
+                            
+                            Spacer()
+                            
+                            HStack {
+                                // Signal Strength Indicator
+                                                SignalStrengthView(rssi: bluetoothManager.signalStrength)
+                                                
+                                                // Connection Status
+                                                Image(systemName: "antenna.radiowaves.left.and.right",
+                                                      variableValue: signalLevel)
+                                                    .symbolRenderingMode(.multicolor)
+                                                    .symbolEffect(.variableColor)
+                                                    .opacity(bluetoothManager.isConnected ? 1 : 0.3)
+                                                
+                                                // Bluetooth Status
+                                                Image(systemName: "bluetooth.fill",
+                                                      variableValue: bluetoothManager.isConnected ? 1.0 : 0.0)
+                                                    .symbolRenderingMode(.multicolor)
+                                                    .symbolEffect(.variableColor)
+                                                    .opacity(bluetoothManager.isConnected ? 1 : 0.3)
+                                        }
+                            .padding(.all, 10.0)
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
+                        }
+                        .border(.purple)
+                        .offset(CGSize(width: -20.0, height: -40.0))
+                    }
+                    //LED ARRAY MAIN VIEW
                     VStack {
                         HStack {
                             Spacer()
@@ -250,146 +266,150 @@ struct ContentView: View {
                     }
                     .padding()
                     .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 25.0))
-                .frame(width: .infinity, height: .infinity)
-                .border(Color.red)
-                
-                Spacer()
-                
-                // Grid of squares
-                LazyVGrid(columns: twoColumnGrid, alignment: .center) {
-                    ForEach(protoAction , id: \.self) { item in
-                        GeometryReader { gr in
-                            Button(action: {
-                                // Define the action for the button here
-                                print("\(item) button pressed")
-                            }) {
-                                Image(systemName: item)
-                                    .imageScale(.large)
-                                    .font(.system(size: 20))
-                                    .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity) // Makes the image fill the available space
-                                    .aspectRatio(1, contentMode: .fill)
-                                    .border(Color.green)
-                                    .symbolRenderingMode(.multicolor)
-                                    .background(.clear)
-                            }
-                        }
-                        .aspectRatio(1, contentMode: .fit)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .padding()
-                        .frame(width: 175, height:175)
-                    }
-                }
-                .border(Color.yellow)
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-                .padding()
-                
-                
-                // Settings Button
-                HStack {
-                    Spacer()
-                    HStack {
-                    VStack {
-                        Chart(bluetoothManager.cpuUsageData) {
-                            LineMark(
-                                x: .value("Time", $0.timestamp),
-                                y: .value("CPU Usage", $0.cpuUsage)
-                            )
-                            .foregroundStyle(Color.blue)
-                            .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                            .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage=
-                        }
-                        .chartYScale(domain: 0...100)
-                        .chartXAxis {
-                            AxisMarks(values: .stride(by: 1)) { value in
-                                
-                                
-                                AxisValueLabel {
-                                    if let dateValue = value.as(Date.self) {
-                                        Text(dateValue, format: .dateTime.hour().minute().second())
-                                    }
-                                }
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks(values: .stride(by: 50)) { value in
-                                AxisValueLabel {
-                                    if let intValue = value.as(Int.self) {
-                                        Text("\(intValue)%")
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .frame(height: 50)
-                        
-                        Text("CPU")
-                            .fontDesign(.rounded)
-                            .bold()
-                    }
-                    //.frame(width: 30, height: 50)
-                    VStack {
-                        Chart(bluetoothManager.cpuUsageData) {
-                            LineMark(
-                                x: .value("Time", $0.timestamp),
-                                y: .value("CPU Usage", $0.cpuUsage)
-                            )
-                            .foregroundStyle(Color.blue)
-                            .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                            .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
-                        }
-                        .chartYScale(domain: 0...100)
-                        .chartXAxis {
-                            AxisMarks(values: .stride(by: 1)) { value in
-                                
-                                
-                                AxisValueLabel {
-                                    if let dateValue = value.as(Date.self) {
-                                        Text(dateValue, format: .dateTime.hour().minute().second())
-                                    }
-                                }
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks(values: .stride(by: 50)) { value in
-                                AxisValueLabel {
-                                    if let intValue = value.as(Int.self) {
-                                        Text("\(intValue)%")
-                                            .font(.caption2)
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                        .frame(height: 50)
-                        
-                        Text("Memory")
-                            .fontDesign(.rounded)
-                            .bold()
-                        
-                    }
-                    //.frame(maxWidth: 30, maxHeight: 50)
-                }
-                    .padding(.bottom,40)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+                    .frame(width: .infinity, height: .infinity)
+                    .border(Color.red)
                     
-                    NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
-                    NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
-                        Image(systemName: "gear")
-                            .imageScale(.large)
-                            .symbolRenderingMode(.multicolor)
+                    Spacer()
+                    
+                    // Grid of squares
+                    LazyVGrid(columns: twoColumnGrid, alignment: .center) {
+                        ForEach(protoAction , id: \.self) { item in
+                            GeometryReader { gr in
+                                Button(action: {
+                                    // Define the action for the button here
+                                    print("\(item) button pressed")
+                                }) {
+                                    Image(systemName: item)
+                                        .imageScale(.large)
+                                        .font(.system(size: 20))
+                                        .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity) // Makes the image fill the available space
+                                        .aspectRatio(1, contentMode: .fill)
+                                        .border(Color.green)
+                                        .symbolRenderingMode(.multicolor)
+                                        .background(.clear)
+                                }
+                            }
+                            .aspectRatio(1, contentMode: .fit)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(10)
+                            .padding()
+                            .frame(width: 175, height:175)
+                        }
                     }
+                    .border(Color.yellow)
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
                     .padding()
+                    
+                    
+                    // Settings Button
+                    HStack {
+                        Spacer()
+                        HStack {
+                            VStack {
+                                Chart(bluetoothManager.cpuUsageData) {
+                                    LineMark(
+                                        x: .value("Time", $0.timestamp),
+                                        y: .value("CPU Usage", $0.cpuUsage)
+                                    )
+                                    .foregroundStyle(Color.blue)
+                                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                                    .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage=
+                                }
+                                .chartYScale(domain: 0...100)
+                                .chartXAxis {
+                                    AxisMarks(values: .stride(by: 1)) { value in
+                                        
+                                        
+                                        AxisValueLabel {
+                                            if let dateValue = value.as(Date.self) {
+                                                Text(dateValue, format: .dateTime.hour().minute().second())
+                                            }
+                                        }
+                                    }
+                                }
+                                .chartYAxis {
+                                    AxisMarks(values: .stride(by: 50)) { value in
+                                        AxisValueLabel {
+                                            if let intValue = value.as(Int.self) {
+                                                Text("\(intValue)%")
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(10)
+                                .frame(height: 50)
+                                
+                                Text("CPU")
+                                    .fontDesign(.rounded)
+                                    .bold()
+                            }
+                            //.frame(width: 30, height: 50)
+                            VStack {
+                                Chart(bluetoothManager.cpuUsageData) {
+                                    LineMark(
+                                        x: .value("Time", $0.timestamp),
+                                        y: .value("CPU Usage", $0.cpuUsage)
+                                    )
+                                    .foregroundStyle(Color.blue)
+                                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                                    .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
+                                }
+                                .chartYScale(domain: 0...100)
+                                .chartXAxis {
+                                    AxisMarks(values: .stride(by: 1)) { value in
+                                        
+                                        
+                                        AxisValueLabel {
+                                            if let dateValue = value.as(Date.self) {
+                                                Text(dateValue, format: .dateTime.hour().minute().second())
+                                            }
+                                        }
+                                    }
+                                }
+                                .chartYAxis {
+                                    AxisMarks(values: .stride(by: 50)) { value in
+                                        AxisValueLabel {
+                                            if let intValue = value.as(Int.self) {
+                                                Text("\(intValue)%")
+                                                    .font(.caption2)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(10)
+                                .frame(height: 50)
+                                
+                                Text("Temperature")
+                                    .fontDesign(.rounded)
+                                    .bold()
+                                
+                            }
+                            //.frame(maxWidth: 30, maxHeight: 50)
+                        }
+                        .padding(.bottom,40)
+                        
+                        NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
+                        NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
+                            Image(systemName: "gear")
+                                .imageScale(.large)
+                                .symbolRenderingMode(.multicolor)
+                            NavigationLink(destination: BluetoothConnectionView())
+                            {Image(systemName: "1.circle.fill")}
+                        }
+                        .padding()
+                    }
                 }
+                .background(Color.clear)
             }
+            .scrollContentBackground(.hidden)
+            .navigationTitle("LumiFur")
         }
-        .padding()
-        .navigationTitle("LumiFur")
     }
 }
     
@@ -427,95 +447,138 @@ struct ContentView: View {
         let colors: [Color] = [.red, .green, .blue, .white]
         return colors.randomElement() ?? .clear
     }
+
+// MARK: SettingsView
+
+struct SettingsView: View {
+    @State private var fontSize: CGFloat = 15
+    @State private var showLineNumbers = false
+    @State private var showPreview = true
+    @EnvironmentObject var bluetoothManager: BluetoothManager
     
-    struct SettingsView: View {
-           @State private var fontSize: CGFloat = 15
-           @State private var showLineNumbers = false
-           @State private var showPreview = true
-        @ObservedObject var bluetoothManager = BluetoothManager()
-        
-        //Connectivity Options
-        enum Connection: String, CaseIterable, Identifiable {
-            case bluetooth, wifi, matter, z_wave
-            var id: Self { self }
-        }
-        
-        //Matrix Options
-        enum Matrixstyle: String, CaseIterable, Identifiable {
-            case array, dot, wled
-            var id: Self { self }
-        }
-        //@AppStorage("selectedConnection") var selectedConnection = .bluetooth
-        @State private var selectedConnection: Connection = .bluetooth
-        @Binding var selectedMatrix: Matrixstyle
-
-        
-        var body: some View {
-            NavigationStack {
-                VStack {
-                    // Connectivity List
-                    List {
-                        // Connection Picker
-                        Section(header: Text("Connection")) {
-                            Picker("Connection", selection: $selectedConnection) {
-                                Text("Wi-Fi")
-                                    .tag(Connection.wifi)
-                                Text("Bluetooth")
-                                    .tag(Connection.bluetooth)
-                                Text("Matter")
-                                    .tag(Connection.matter)
-                            }
-                            .pickerStyle(.segmented)
-                            .onChange(of: selectedConnection) { oldValue, newValue in
-                                performAction(for: newValue)
-                            }
-                        }
-                        
-                        // Matrix Style Picker
-                        Section(header: Text("Matrix Style")) {
-                            VStack {
-                                Text("Matrix style")
-                                    .font(.title)
-                                
-                                HStack {
-                                    Spacer()
-                                    if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                        VideoDotMatrixView(videoURL: videoURL)
-                                    } else {
-                                        Text("Error: Video file not found.")
-                                            .foregroundColor(.red)
-                                    }
-                                    Spacer()
-                                }
-                                
-                                Picker("Matrix Style", selection: $selectedMatrix) {
-                                    Text("DOT").tag(Matrixstyle.dot)
-                                    Text("Array").tag(Matrixstyle.array)
-                                    Text("WLED").tag(Matrixstyle.wled)
-                                }
-                                .pickerStyle(.menu)
-                            }
-                        }
-                    }
-                    #if os(macOS)
-                    .listStyle(SidebarListStyle()) // Use a macOS-compatible list style
-                    #else
-                    .listStyle(InsetGroupedListStyle()) // Use InsetGroupedListStyle for iOS
-                    #endif
-                    
-                    Spacer()
-                }
-                .navigationTitle("Settings") //navigationStack provides navigationTitle
-                //.navigationBarTitleDisplayMode(.automatic)
-            }
-        }
-        // Function to perform an action based on the selected connection
-            private func performAction(for selection: Connection) {
-                print("Selected connection: \(selection.rawValue)")
-                // Add your custom logic here
-            }
+    //Connectivity Options
+    enum Connection: String, CaseIterable, Identifiable {
+        case bluetooth, wifi, matter, z_wave
+        var id: Self { self }
     }
+    
+    //Matrix Options
+    enum Matrixstyle: String, CaseIterable, Identifiable {
+        case array, dot, wled
+        var id: Self { self }
+    }
+    
+    //@AppStorage("selectedConnection") var selectedConnection = .bluetooth
+    @State private var selectedConnection: Connection = .bluetooth
+    @Binding var selectedMatrix: Matrixstyle
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.primary
+                    .opacity(0.3)
+                    .ignoresSafeArea()
+                HStack(spacing: 0.25) {
+                    VStack {
+                        // Connectivity List
+                        List {
+                            // Connection Picker
+                            Section(header: Text("Connection")) {
+                                Picker("Connection", selection: $selectedConnection) {
+                                    ForEach(Connection.allCases) { connection in
+                                        Text(connection.rawValue.capitalized)
+                                            .tag(connection)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .onChange(of: selectedConnection) { oldValue, newValue in
+                                    performAction(for: newValue)
+                                }
+                            }
+                            
+                            // Matrix Style Picker
+                            Section(header: Text("Matrix Style")) {
+                                VStack {
+                                    Text("Matrix style")
+                                        .font(.title)
+                                    
+                                    HStack {
+                                        Spacer()
+                                        if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
+                                            VideoDotMatrixView(videoURL: videoURL)
+                                        } else {
+                                            Text("Error: Video file not found.")
+                                                .foregroundColor(.red)
+                                        }
+                                        Spacer()
+                                    }
+                                    Picker("Matrix Style", selection: $selectedMatrix) {
+                                        ForEach(Matrixstyle.allCases) { style in
+                                            Text(style.rawValue.capitalized).tag(style)
+                                        }
+                                    }                     .pickerStyle(.menu)
+                                }
+                            }
+                        }
+                        .scrollContentBackground(.hidden)
+#if os(macOS)
+                        .listStyle(SidebarListStyle()) // Use a macOS-compatible list style
+#else
+                        .listStyle(InsetGroupedListStyle()) // Use InsetGroupedListStyle for iOS
+#endif
+                        
+                    }
+                    .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
+    }
+    
+    // Function to perform an action based on the selected connection
+    private func performAction(for selection: Connection) {
+        print("Selected connection: \(selection.rawValue)")
+        // Add your custom logic here
+    }
+}
 
+struct SignalStrengthView: View {
+    let rssi: Int
+    
+    // Convert RSSI to signal strength value (0.0 to 1.0)
+    private var signalLevel: Double {
+        // RSSI typically ranges from -30 (strong) to -100 (weak)
+        let maxRSSI: Double = -30
+        let minRSSI: Double = -100
+        
+        let signalStrength = Double(rssi)
+        let normalizedSignal = (signalStrength - minRSSI) / (maxRSSI - minRSSI)
+        return min(max(normalizedSignal, 0.0), 1.0) // Clamp between 0 and 1
+    }
+    
+    // Check if there's an active connection
+    private var isConnected: Bool {
+        return rssi > -100
+    }
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 2) {
+            Image(systemName: "cellularbars", variableValue: signalLevel)
+                .symbolRenderingMode(.multicolor)
+                .imageScale(.medium)
+                .symbolEffect(.variableColor)
+                .opacity(isConnected ? 1 : 0.3)
+                .animation(.smooth, value: isConnected)
+            
+            if isConnected {
+                Text("\(rssi) dBm")
+                    .font(.system(size: 8))
+                    .transition(.opacity)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
 
 struct VideoDotMatrixView: View {
     let videoURL: URL
@@ -823,7 +886,7 @@ struct InfoView: View {
 }
 
 struct ConnectTestView: View {
-    @ObservedObject var bluetoothManager = BluetoothManager()
+    @EnvironmentObject var bluetoothManager: BluetoothManager
 
     let addOBJObjectCommand = "ADD_OBJ_OBJECT"
     let addFBXObjectCommand = "ADD_FBX_OBJECT"
@@ -1563,6 +1626,38 @@ struct ContentView3: View {
         }
 
 
+struct BluetoothConnectionView: View {
+    @EnvironmentObject var bluetoothManager: BluetoothManager
+    
+    var body: some View {
+        VStack {
+            Image("ESP32-S3")
+            Text(bluetoothManager.connectionStatus)
+                .font(.title2)
+                .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
+                .padding()
+            
+            List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
+                HStack {
+                    Text(peripheral.name ?? "Unknown Device")
+                    Spacer()
+                    Button(action: {
+                        bluetoothManager.connect(peripheral)
+                    }) {
+                        Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
+                            .foregroundStyle(.blue)
+                    }
+                    .disabled(bluetoothManager.isConnected)
+                }
+            }
+            
+            Spacer()
+        }
+        .background(Color(UIColor.systemBackground))
+    }
+}
+
 #Preview {
     ContentView()
+        .environmentObject(BluetoothManager.shared)
 }
