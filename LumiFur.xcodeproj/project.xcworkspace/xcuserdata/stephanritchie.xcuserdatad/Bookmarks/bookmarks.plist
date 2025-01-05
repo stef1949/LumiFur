@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>826</string>
+					<string>689</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>825</string>
+					<string>688</string>
 					<key>Timestamp</key>
-					<string>753144433.303695</string>
+					<string>757785462.231268</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>826</string>
+					<string>689</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>825</string>
+					<string>688</string>
 					<key>Timestamp</key>
-					<string>753144433.3036849</string>
+					<string>757785462.231249</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>826</string>
+					<string>689</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>825</string>
+					<string>688</string>
 					<key>Timestamp</key>
-					<string>753144433.303674</string>
+					<string>757785462.231259</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>492</string>
+					<string>464</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>491</string>
+					<string>463</string>
 					<key>Timestamp</key>
-					<string>753144433.303661</string>
+					<string>757785462.231284</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -196,8 +196,8 @@
 </string>
 				<key>trailing</key>
 				<string>                                .pickerStyle(.segmented)
-                                .onChange(of: selectedConnection) { oldValue, newValue in
-                                    performAction(for: newValue)
+                              //  .foregroundStyle(Color.clear)
+                                .listRowBackground(Color.clear)
 </string>
 			</dict>
 			<key>type</key>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>453</string>
+					<string>426</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>452</string>
+					<string>425</string>
 					<key>Timestamp</key>
-					<string>753144433.3037159</string>
+					<string>757785462.231228</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -258,13 +258,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>227</string>
+					<string>223</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>226</string>
+					<string>222</string>
 					<key>Timestamp</key>
-					<string>753144433.303705</string>
+					<string>757785462.231276</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -287,7 +287,7 @@
                     }
 </string>
 				<key>trailing</key>
-				<string>                    VStack {
+				<string>                   VStack {
                         HStack {
                             Spacer()
 </string>

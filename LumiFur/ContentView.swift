@@ -141,16 +141,16 @@ struct ContentView: View {
     @State private var selectedMatrix: SettingsView.Matrixstyle = .array
     
     private let twoColumnGrid = [
-        GridItem(.flexible(minimum: 40)),
-        GridItem(.flexible(minimum: 40)),
-        //GridItem(.flexible(minimum: 40)),
+        GridItem(.flexible(minimum: 100), spacing: 5),
+        GridItem(.flexible(minimum: 100), spacing: 5)
+        //GridItem(.flexible(minimum: 40))
     ]
     
     // Array of SF Symbol names
-    private var protoAction: [String] = ["mic.and.signal.meter.fill", "headlight.low.beam.fill", "sensor.fill", "bell"]
+    private var protoAction: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", ""]
    
     //dotMatrix variable
-    @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 8)
+    @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
     
     @State private var errorMessage: String? = nil
     
@@ -196,223 +196,196 @@ struct ContentView: View {
                     VStack {
                         // Status Indicators and Signal Strength
                         HStack {
-                            
                             Spacer()
-                            
                             HStack {
                                 // Signal Strength Indicator
-                                                SignalStrengthView(rssi: bluetoothManager.signalStrength)
-                                                
-                                                // Connection Status
-                                                Image(systemName: "antenna.radiowaves.left.and.right",
-                                                      variableValue: signalLevel)
-                                                    .symbolRenderingMode(.multicolor)
-                                                    .symbolEffect(.variableColor)
-                                                    .opacity(bluetoothManager.isConnected ? 1 : 0.3)
-                                                
-                                                // Bluetooth Status
-                                                Image(systemName: "bluetooth.fill",
-                                                      variableValue: bluetoothManager.isConnected ? 1.0 : 0.0)
-                                                    .symbolRenderingMode(.multicolor)
-                                                    .symbolEffect(.variableColor)
-                                                    .opacity(bluetoothManager.isConnected ? 1 : 0.3)
-                                        }
+                               SignalStrengthView(rssi: bluetoothManager.signalStrength)
+                                
+                                // Connection Status
+                                //Image(systemName: bluetoothManager.isConnected ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                                //.symbolRenderingMode(.multicolor)
+                                //.symbolEffect(.variableColor)
+                                    //.foregroundColor (bluetoothManager.isConnected ? .green : .gray)
+                                
+                                // Bluetooth Status
+                                Image(systemName: "logo.bluetooth.capsule.portrait.fill")
+                                    .symbolRenderingMode(.multicolor)
+                                    .symbolEffect(.variableColor)
+                                    .opacity(bluetoothManager.isConnected ? 1 : 0.3)
+                            }
                             .padding(.all, 10.0)
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
                         }
-                        .border(.purple)
+                        //.border(Color.purple)
                         .offset(CGSize(width: -20.0, height: -40.0))
                     }
                     //LED ARRAY MAIN VIEW
-                    VStack {
+                   VStack {
                         HStack {
                             Spacer()
-                            
-                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                VideoDotMatrixView(videoURL: videoURL)
-                            } else {
-                                Text("Error: Video file not found.")
-                                    .foregroundColor(.red)
-                            }
-                            
-                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                VideoDotMatrixView(videoURL: videoURL)
-                            } else {
-                                Text("Error: Video file not found.")
-                                    .foregroundColor(.red)
-                            }
+                           //  MatrixTestView5()
+                           // LEDMatrix()
+                            LEDGridView()
+                                .background(.ultraThinMaterial)
                             Spacer()
-                        }
-                        
-                        HStack {
-                            Spacer()
-                            
-                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                VideoDotMatrixView(videoURL: videoURL)
-                            } else {
-                                Text("Error: Video file not found.")
-                                    .foregroundColor(.red)
-                            }
-                            
-                            if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                VideoDotMatrixView(videoURL: videoURL)
-                            } else {
-                                Text("Error: Video file not found.")
-                                    .foregroundColor(.red)
-                            }
+                            LEDGridView()
+                                .background(.ultraThinMaterial)
                             Spacer()
                         }
                     }
-                    .padding()
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 25.0))
-                    .frame(width: .infinity, height: .infinity)
+                    //.frame(width: .infinity, height: .infinity)
                     .border(Color.red)
+                    //.padding(.horizontal)
                     
                     Spacer()
                     
                     // Grid of squares
-                    LazyVGrid(columns: twoColumnGrid, alignment: .center) {
-                        ForEach(protoAction , id: \.self) { item in
-                            GeometryReader { gr in
-                                Button(action: {
-                                    // Define the action for the button here
-                                    print("\(item) button pressed")
-                                }) {
-                                    Image(systemName: item)
-                                        .imageScale(.large)
-                                        .font(.system(size: 20))
-                                        .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity) // Makes the image fill the available space
-                                        .aspectRatio(1, contentMode: .fill)
-                                        .border(Color.green)
-                                        .symbolRenderingMode(.multicolor)
-                                        .background(.clear)
-                                }
-                            }
-                            .aspectRatio(1, contentMode: .fit)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(10)
-                            .padding()
-                            .frame(width: 175, height:175)
-                        }
-                    }
-                    .border(Color.yellow)
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    
-                    
-                    // Settings Button
-                    HStack {
-                        Spacer()
-                        HStack {
-                            VStack {
-                                Chart(bluetoothManager.cpuUsageData) {
-                                    LineMark(
-                                        x: .value("Time", $0.timestamp),
-                                        y: .value("CPU Usage", $0.cpuUsage)
-                                    )
-                                    .foregroundStyle(Color.blue)
-                                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                                    .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage=
-                                }
-                                .chartYScale(domain: 0...100)
-                                .chartXAxis {
-                                    AxisMarks(values: .stride(by: 1)) { value in
-                                        
-                                        
-                                        AxisValueLabel {
-                                            if let dateValue = value.as(Date.self) {
-                                                Text(dateValue, format: .dateTime.hour().minute().second())
-                                            }
-                                        }
+                    ScrollView(.horizontal) {
+                        LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
+                            ForEach(protoAction , id: \.self) { item in
+                                //GeometryReader { gr in
+                                    Button(action: {
+                                        // Define the action for the button here
+                                        print("\(item) button pressed")
+                                    }) {
+                                        Text(item)
+                                            //.imageScale(.large)
+                                            .font(.system(size: 120))
+                                            //.resizable()
+                                            //.frame(maxHeight: .infinity, maxWidth: .infinity) // Makes the image fill the available space
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .border(Color.green)
+                                            .symbolRenderingMode(.multicolor)
+                                            .background(.clear)
                                     }
-                                }
-                                .chartYAxis {
-                                    AxisMarks(values: .stride(by: 50)) { value in
-                                        AxisValueLabel {
-                                            if let intValue = value.as(Int.self) {
-                                                Text("\(intValue)%")
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding()
+                               // }
+                                .aspectRatio(1, contentMode: .fit)
                                 .background(.ultraThinMaterial)
                                 .cornerRadius(10)
-                                .frame(height: 50)
-                                
-                                Text("CPU")
-                                    .fontDesign(.rounded)
-                                    .bold()
-                            }
-                            //.frame(width: 30, height: 50)
-                            VStack {
-                                Chart(bluetoothManager.cpuUsageData) {
-                                    LineMark(
-                                        x: .value("Time", $0.timestamp),
-                                        y: .value("CPU Usage", $0.cpuUsage)
-                                    )
-                                    .foregroundStyle(Color.blue)
-                                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                                    .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
-                                }
-                                .chartYScale(domain: 0...100)
-                                .chartXAxis {
-                                    AxisMarks(values: .stride(by: 1)) { value in
-                                        
-                                        
-                                        AxisValueLabel {
-                                            if let dateValue = value.as(Date.self) {
-                                                Text(dateValue, format: .dateTime.hour().minute().second())
-                                            }
-                                        }
-                                    }
-                                }
-                                .chartYAxis {
-                                    AxisMarks(values: .stride(by: 50)) { value in
-                                        AxisValueLabel {
-                                            if let intValue = value.as(Int.self) {
-                                                Text("\(intValue)%")
-                                                    .font(.caption2)
-                                            }
-                                        }
-                                    }
-                                }
                                 .padding()
-                                .background(.ultraThinMaterial)
-                                .cornerRadius(10)
-                                .frame(height: 50)
-                                
-                                Text("Temperature")
-                                    .fontDesign(.rounded)
-                                    .bold()
-                                
+                                .frame(width: 175, height:175)
+                                .border(Color.red)
                             }
-                            //.frame(maxWidth: 30, maxHeight: 50)
                         }
-                        .padding(.bottom,40)
-                        
-                        NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
-                        NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
-                            Image(systemName: "gear")
-                                .imageScale(.large)
-                                .symbolRenderingMode(.multicolor)
-                            NavigationLink(destination: BluetoothConnectionView())
-                            {Image(systemName: "1.circle.fill")}
-                        }
+                        .border(Color.yellow)
+                        //.aspectRatio(1, contentMode: .fit)
+                        .frame(maxHeight: .infinity)
                         .padding()
                     }
+                        
+                        // Settings Button
+                        HStack {
+                            Spacer()
+                            HStack {
+                                VStack {
+                                    Chart(bluetoothManager.cpuUsageData) {
+                                        LineMark(
+                                            x: .value("Time", $0.timestamp),
+                                            y: .value("CPU Usage", $0.cpuUsage)
+                                        )
+                                        .foregroundStyle(Color.blue)
+                                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                                        .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage=
+                                    }
+                                    .chartYScale(domain: 0...100)
+                                    .chartXAxis {
+                                        AxisMarks(values: .stride(by: 1)) { value in
+                                            
+                                            
+                                            AxisValueLabel {
+                                                if let dateValue = value.as(Date.self) {
+                                                    Text(dateValue, format: .dateTime.hour().minute().second())
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .chartYAxis {
+                                        AxisMarks(values: .stride(by: 50)) { value in
+                                            AxisValueLabel {
+                                                if let intValue = value.as(Int.self) {
+                                                    Text("\(intValue)%")
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding()
+                                    .background(.ultraThinMaterial)
+                                    .cornerRadius(10)
+                                    .frame(height: 50)
+                                    
+                                    Text("CPU")
+                                        .fontDesign(.rounded)
+                                        .bold()
+                                }
+                                //.frame(width: 30, height: 50)
+                                VStack {
+                                    Chart(bluetoothManager.cpuUsageData) {
+                                        LineMark(
+                                            x: .value("Time", $0.timestamp),
+                                            y: .value("CPU Usage", $0.cpuUsage)
+                                        )
+                                        .foregroundStyle(Color.blue)
+                                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                                        .symbol(Circle().strokeBorder(lineWidth: 2)) // Corrected symbol usage
+                                    }
+                                    .chartYScale(domain: 0...100)
+                                    .chartXAxis {
+                                        AxisMarks(values: .stride(by: 1)) { value in
+                                            
+                                            
+                                            AxisValueLabel {
+                                                if let dateValue = value.as(Date.self) {
+                                                    Text(dateValue, format: .dateTime.hour().minute().second())
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .chartYAxis {
+                                        AxisMarks(values: .stride(by: 50)) { value in
+                                            AxisValueLabel {
+                                                if let intValue = value.as(Int.self) {
+                                                    Text("\(intValue)%")
+                                                        .font(.caption2)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding()
+                                    .background(.ultraThinMaterial)
+                                    .cornerRadius(10)
+                                    .frame(height: 50)
+                                    
+                                    Text("Temperature")
+                                        .fontDesign(.rounded)
+                                        .bold()
+                                    
+                                }
+                                //.frame(maxWidth: 30, maxHeight: 50)
+                            }
+                            .padding(.bottom,40)
+                            
+                            NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
+                            NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
+                                Image(systemName: "gear")
+                                    .imageScale(.large)
+                                    .symbolRenderingMode(.multicolor)
+                                NavigationLink(destination: BluetoothConnectionView())
+                                {Image(systemName: "1.circle.fill")}
+                            }
+                            .padding()
+                        }
+                    }
+                    .background(Color.clear)
                 }
-                .background(Color.clear)
-            }
             .scrollContentBackground(.hidden)
             .navigationTitle("LumiFur")
         }
     }
 }
-    
+    /*
     struct LedGridView: View {
         // Computed property to generate an array of random colors
             private var squares: [Color] {
@@ -447,7 +420,7 @@ struct ContentView: View {
         let colors: [Color] = [.red, .green, .blue, .white]
         return colors.randomElement() ?? .clear
     }
-
+*/
 // MARK: SettingsView
 
 struct SettingsView: View {
@@ -473,11 +446,10 @@ struct SettingsView: View {
     @Binding var selectedMatrix: Matrixstyle
     
     var body: some View {
-        NavigationStack {
             ZStack {
-                Color.primary
-                    .opacity(0.3)
-                    .ignoresSafeArea()
+                //Color(UIColor.systemGroupedBackground)
+                    //.ignoresSafeArea()
+                NavigationStack {
                 HStack(spacing: 0.25) {
                     VStack {
                         // Connectivity List
@@ -491,10 +463,42 @@ struct SettingsView: View {
                                     }
                                 }
                                 .pickerStyle(.segmented)
+                              //  .foregroundStyle(Color.clear)
+                                .listRowBackground(Color.clear)
+                                .frame(height: 25)
                                 .onChange(of: selectedConnection) { oldValue, newValue in
                                     performAction(for: newValue)
                                 }
                             }
+                            VStack {
+                                Image("ESP32-S3")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .imageScale(.large)
+                                    
+                                Text(bluetoothManager.connectionStatus)
+                                    //.font(.title2)
+                                    .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
+                                    .padding()
+                                
+                                List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
+                                    HStack {
+                                        Text(peripheral.name ?? "Unknown Device")
+                                        Spacer()
+                                        Button(action: {
+                                            bluetoothManager.connect(peripheral)
+                                        }) {
+                                            Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
+                                                .foregroundStyle(.blue)
+                                        }
+                                        .disabled(bluetoothManager.isConnected)
+                                    }
+                                }
+                                .border(Color.red)
+                                
+                                Spacer()
+                            }
+                            .border(Color.purple)
                             
                             // Matrix Style Picker
                             Section(header: Text("Matrix Style")) {
@@ -504,12 +508,7 @@ struct SettingsView: View {
                                     
                                     HStack {
                                         Spacer()
-                                        if let videoURL = Bundle.main.url(forResource: "blinking", withExtension: "mp4") {
-                                            VideoDotMatrixView(videoURL: videoURL)
-                                        } else {
-                                            Text("Error: Video file not found.")
-                                                .foregroundColor(.red)
-                                        }
+                                        Text("Selected: \(selectedMatrix.rawValue.capitalized)")
                                         Spacer()
                                     }
                                     Picker("Matrix Style", selection: $selectedMatrix) {
@@ -529,7 +528,9 @@ struct SettingsView: View {
                         
                     }
                     .navigationTitle("Settings")
+#if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
+#endif
                 }
             }
         }
@@ -579,145 +580,7 @@ struct SignalStrengthView: View {
         .padding(.vertical, 2)
     }
 }
-
-struct VideoDotMatrixView: View {
-    let videoURL: URL
-    @State private var dotMatrix: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 8)
-    @State private var errorMessage: String? = nil
-
-    var body: some View {
-        VStack {
-            if let errorMessage = errorMessage {
-                Text("Error: \(errorMessage)")
-                    .foregroundColor(.red)
-            } else {
-                DotMatrixView(matrix: dotMatrix)
-            }
-        }
-        .onAppear {
-            Task {
-                do {
-                    // Check if the file exists
-                    guard FileManager.default.fileExists(atPath: videoURL.path) else {
-                        throw VideoProcessingError.fileNotFound
-                    }
-                    
-                    // Extract frames
-                    let frames = try await extractFrames(from: videoURL)
-                    
-                    // Process the first frame only
-                    if let firstFrame = frames.first {
-                        guard let downscaled = downscaleImageTo8x8(firstFrame) else {
-                            throw VideoProcessingError.imageDownscaleFailed
-                        }
-                        guard let matrix = convertImageToDotMatrix(downscaled) else {
-                            throw VideoProcessingError.imageConversionFailed
-                        }
-                        // Assign the first matrix to the state
-                        self.dotMatrix = matrix
-                    }
-                } catch {
-                    // Handle errors
-                    self.errorMessage = (error as? VideoProcessingError)?.localizedDescription ?? "An unknown error occurred."
-                    print("Error processing video: \(error)")
-                }
-            }
-        }
-    }
-}
-
-enum VideoProcessingError: LocalizedError {
-    case fileNotFound
-    case frameExtractionFailed
-    case imageDownscaleFailed
-    case imageConversionFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .fileNotFound:
-            return "The video file was not found."
-        case .frameExtractionFailed:
-            return "Failed to extract frames from the video."
-        case .imageDownscaleFailed:
-            return "Failed to downscale the image."
-        case .imageConversionFailed:
-            return "Failed to convert the image to a dot matrix."
-        }
-    }
-}
-
-func extractFrames(from url: URL) async throws -> [CIImage] {
-    let asset = AVAsset(url: url)
-    let assetGenerator = AVAssetImageGenerator(asset: asset)
-    assetGenerator.appliesPreferredTrackTransform = true
-
-    let duration = try await asset.load(.duration)
-    let totalSeconds = CMTimeGetSeconds(duration)
-    let times = stride(from: 0.0, to: totalSeconds, by: 0.1).map { CMTime(seconds: $0, preferredTimescale: 600) }
-
-    var frames: [CIImage] = []
-
-    for time in times {
-        do {
-            let cgImage = try assetGenerator.copyCGImage(at: time, actualTime: nil)
-            let ciImage = CIImage(cgImage: cgImage)
-            frames.append(ciImage)
-        } catch {
-            throw VideoProcessingError.frameExtractionFailed
-        }
-    }
-
-    return frames
-}
-
-func downscaleImageTo8x8(_ ciImage: CIImage) -> CIImage? {
-    let size = CGSize(width: 8, height: 8)  // Adjusted size for 8x8 matrix
-    let scaleFilter = CIFilter(name: "CILanczosScaleTransform")!
-    scaleFilter.setValue(ciImage, forKey: kCIInputImageKey)
-    scaleFilter.setValue(size.width / ciImage.extent.width, forKey: kCIInputScaleKey)
-    scaleFilter.setValue(1.0, forKey: kCIInputAspectRatioKey)
-
-    return scaleFilter.outputImage
-}
-
-func convertImageToDotMatrix(_ ciImage: CIImage) -> [[Bool]]? {
-    var matrix: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 8)
-    let context = CIContext()
-    
-    // Get CGImage from CIImage
-    guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
-        return nil
-    }
-    
-    // Access pixel data
-    guard let cgImageData = cgImage.dataProvider?.data else { return nil }
-    let data = CFDataGetBytePtr(cgImageData)
-    
-    // Assuming each pixel is represented by 4 bytes (RGBA)
-    let bytesPerPixel = 4
-    let bytesPerRow = cgImage.bytesPerRow
-    
-    // Compute width and height
-    let width = 8
-    let height = 8
-    
-    // Loop through each pixel in the 8x8 grid
-    for y in 0..<height {
-        for x in 0..<width {
-            let pixelIndex = (y * bytesPerRow) + (x * bytesPerPixel)
-            let r = CGFloat(data![pixelIndex]) / 255.0
-            let g = CGFloat(data![pixelIndex + 1]) / 255.0
-            let b = CGFloat(data![pixelIndex + 2]) / 255.0
-            let gray = 0.299 * r + 0.587 * g + 0.114 * b
-            
-            // Set pixel value based on threshold
-            matrix[y][x] = gray > 0.9 ? false : true
-        }
-    }
-    
-    return matrix
-}
-
+/*
 struct DotMatrixView: View {
     @Environment(\.colorScheme) var colorScheme
     
@@ -741,7 +604,7 @@ struct DotMatrixView: View {
             
             VStack(spacing: 1) {
                 ForEach(0..<8, id: \.self) { y in
-                    HStack(spacing: 1) {
+                    HStack(spacing: 0.5) {
                         ForEach(0..<8, id: \.self) { x in
                             Rectangle()
                                 .fill(self.matrix[y][x] ? overlayColor : invertoverlayColor)
@@ -786,7 +649,7 @@ struct CircleMatrixView: View {
                }
            }
        }
-
+*/
 struct InfoView: View {
     var body: some View {
         ScrollView {
@@ -998,10 +861,10 @@ struct ConnectTestView: View {
         }
     }
 // MARK: -WORKING- Testing matrix arducode code
-
+/*
 struct MatrixTestView4_4: View {
-    static let X_SEGMENTS = 4
-    static let Y_SEGMENTS = 4
+    static let X_SEGMENTS = 2
+    static let Y_SEGMENTS = 1
     static let NUM_SEGMENTS = X_SEGMENTS * Y_SEGMENTS
     
     @State private var framebuffer = [UInt8](repeating: 0, count: 8 * NUM_SEGMENTS)
@@ -1142,6 +1005,184 @@ struct MatrixTestView4_4: View {
         framebuffer = [UInt8](repeating: 0, count: 8 * Self.NUM_SEGMENTS)
     }
 }
+
+struct MatrixTestView5: View {
+    static let X_SEGMENTS = 2
+    static let Y_SEGMENTS = 1
+    static let NUM_SEGMENTS = X_SEGMENTS * Y_SEGMENTS
+    
+    @State private var framebuffer = [UInt8](repeating: 0, count: 8 * NUM_SEGMENTS)
+    @State private var isAnimating = false
+    @State private var timer: Timer?
+    @State private var sx1: Int32 = 15 << 8
+    @State private var sx2: Int32 = 15 << 8
+    @State private var sy1: Int32 = 0
+    @State private var sy2: Int32 = 0
+    @State private var travel: UInt8 = 0
+    
+    var body: some View {
+        LazyVStack {
+           VStack {
+                // Display the LED matrix
+                ForEach((0...8), id: \.self){ y in
+                    HStack {
+                        ForEach(0..<Self.X_SEGMENTS, id: \.self) { x in
+                            LEDMatrix(framebuffer: $framebuffer, xOffset: x * 8, yOffset: y * 8)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 25.0))
+           
+            Text("4x4_Test")
+                .font(.title)
+            
+            // Button to start/stop the animation
+            Button(action: toggleAnimation) {
+                Text(isAnimating ? "Stop" : "Start")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .padding(.top, 20)
+        }
+        .onAppear(perform: setup)
+    }
+    
+    func setup() {
+        clear()
+    }
+    
+    func toggleAnimation() {
+        isAnimating.toggle()
+        if isAnimating {
+            // Start the animation
+            timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                loop()
+            }
+        } else {
+            // Stop the animation
+            timer?.invalidate()
+            timer = nil
+        }
+    }
+    
+    func loop() {
+        sx1 = sx1 - (sy1 >> 6)
+        sy1 = sy1 + (sx1 >> 6)
+        sx2 = sx2 - (sy2 >> 5)
+        sy2 = sy2 + (sx2 >> 5)
+        
+        travel = travel &- 1
+        
+        let x_offset = Int32(sx1 >> 8) - Int32(Self.X_SEGMENTS * 4)
+        let y_offset = Int32(sx2 >> 8) - Int32(Self.Y_SEGMENTS * 4)
+        
+        clear()
+        drawCircles(x_offset: x_offset, y_offset: y_offset, travel: travel)
+    }
+    
+    func drawCircles(x_offset: Int32, y_offset: Int32, travel: UInt8) {
+        var x = x_offset
+        var y = y_offset
+        var ysumsquares = x_offset * x_offset + y * y
+        var yroot = Int32(sqrtf(Float(ysumsquares)))
+        var ynextsquare = yroot * yroot
+        
+        for screeny in 0..<(Self.Y_SEGMENTS * 8) {
+            x = x_offset
+            var xsumsquares = ysumsquares
+            var xroot = yroot
+            var xnextsquare = xroot * xroot
+            
+            for screenx in 0..<(Self.X_SEGMENTS * 8) {
+                let output = UInt8(((xroot + Int32(travel)) & 8) >> 3)
+                setPixel(x: UInt8(screenx), y: UInt8(screeny), mode: output)
+                
+                xsumsquares += 2 * x + 1
+                x += 1
+                
+                if x <= 0 {
+                    if xsumsquares < xnextsquare {
+                        xnextsquare -= 2 * xroot - 1
+                        xroot -= 1
+                    }
+                } else {
+                    if xsumsquares >= xnextsquare {
+                        xroot += 1
+                        xnextsquare = (xroot + 1) * (xroot + 1)
+                    }
+                }
+            }
+            
+            ysumsquares += 2 * y + 1
+            y += 1
+            
+            if y <= 0 {
+                if ysumsquares < ynextsquare {
+                    ynextsquare -= 2 * yroot - 1
+                    yroot -= 1
+                }
+            } else {
+                if ysumsquares >= ynextsquare {
+                    yroot += 1
+                    ynextsquare = (yroot + 1) * (yroot + 1)
+                }
+            }
+        }
+    }
+    
+    func setPixel(x: UInt8, y: UInt8, mode: UInt8) {
+        let addr = Int(x / 8 + y * UInt8(Self.X_SEGMENTS))
+        let mask: UInt8 = 128 >> (x % 8)
+        switch mode {
+        case 0: framebuffer[addr] &= ~mask // clear pixel
+        case 1: framebuffer[addr] |= mask  // plot pixel
+        default: break
+        }
+    }
+    
+    func clear() {
+        framebuffer = [UInt8](repeating: 0, count: 8 * Self.NUM_SEGMENTS)
+    }
+}
+*/
+
+struct LEDGridView: View {
+    // The state of the grid, with 64 rows and 32 columns
+    @State private var ledStates: [[Color]] = Array(
+        repeating: Array(repeating: .black, count: 32), count: 64
+    )
+    
+    var body: some View {
+        HStack(spacing: 1) { // Vertical spacing between rows
+            ForEach(0..<64, id: \.self) { row in
+                VStack(spacing: 0.5) { // Horizontal spacing between LEDs
+                    ForEach(0..<32, id: \.self) { col in
+                        Rectangle()
+                            .fill(ledStates[row][col])
+                            .frame(width: 1, height: 1) // Adjust size as needed
+                            .onTapGesture {
+                                toggleLED(row: row, col: col)
+                            }
+                    }
+                }
+            }
+        }
+        .padding(10) // Padding around the grid
+        //.background(Color.gray) // Optional: Background color
+    }
+    
+    private func toggleLED(row: Int, col: Int) {
+        // Toggle between red and black for the tapped LED
+        ledStates[row][col] = ledStates[row][col] == .black ? .red : .black
+    }
+}
+
+/*
     // Individual LED arrays
 struct LEDMatrix: View {
     @Binding var framebuffer: [UInt8]
@@ -1150,11 +1191,11 @@ struct LEDMatrix: View {
     
     var body: some View {
         VStack(spacing: 1) {
-            ForEach(0..<8, id: \.self) { row in
+            ForEach(0..<64, id: \.self) { row in
                 HStack(spacing: 1) {
-                    ForEach(0..<8, id: \.self) { col in
+                    ForEach(0..<32, id: \.self) { col in
                         Rectangle()
-                            .fill(ledColor(row: row, col: col))
+                            //.fill(ledColor(row: row, col: col))
                             .frame(width: 5, height: 5)
                     }
                 }
@@ -1163,14 +1204,16 @@ struct LEDMatrix: View {
         .background(.gray)
         .clipShape(RoundedRectangle(cornerRadius: 2.0))
     }
-    
+    /*
     private func ledColor(row: Int, col: Int) -> Color {
-        let index = (yOffset + row) * MatrixTestView4_4.X_SEGMENTS + (xOffset / 8)
+        let index = (yOffset + row) * MatrixTestView5.X_SEGMENTS + (xOffset / 8)
         let bit = 7 - col
         return framebuffer[index] & (1 << bit) != 0 ? .green : .black
     }
-}
-
+*/
+     }
+ */
+/*
 struct MatrixTestView_FileImporter: View {
     static let X_SEGMENTS = 4
     static let Y_SEGMENTS = 4
@@ -1320,7 +1363,8 @@ struct MatrixTestView_FileImporter: View {
         }
     }
 }
-
+*/
+/*
 struct LED_Matrix: View {
     @Binding var framebuffer: [UInt8]
     let xOffset: Int
@@ -1348,6 +1392,8 @@ struct LED_Matrix: View {
         return framebuffer[index] & (1 << bit) != 0 ? .green : .black
     }
 }
+*/
+
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
 
 struct DetailedParsingError: LocalizedError {
@@ -1611,7 +1657,8 @@ struct ContentView3: View {
                     )
                 }
             }
-            
+    
+    
     func showNextGrid() {
         let sortedKeys = config.grids.keys.sorted()
         logger.info("Sorted keys: \(sortedKeys)")
@@ -1624,7 +1671,6 @@ struct ContentView3: View {
         }
     }
         }
-
 
 struct BluetoothConnectionView: View {
     @EnvironmentObject var bluetoothManager: BluetoothManager
@@ -1653,7 +1699,7 @@ struct BluetoothConnectionView: View {
             
             Spacer()
         }
-        .background(Color(UIColor.systemBackground))
+        //.background(Color(UIColor.systemBackground))
     }
 }
 
