@@ -147,7 +147,7 @@ struct ContentView: View {
     ]
     
     // Array of SF Symbol names
-    private var protoAction: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", ""]
+    private var protoActionOptions: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", ""]
    
     //dotMatrix variable
     @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
@@ -181,7 +181,7 @@ struct ContentView: View {
                         //.border(Color.red)
                             .scaledToFill()
                             .frame(height: 100)
-                            .offset(CGSize(width: 0.0, height: 68.0))
+                            .offset(CGSize(width: 0.0, height: 20.0))
                         
                         Text("LumiFur")
                             .font(.title)
@@ -216,6 +216,7 @@ struct ContentView: View {
                             .padding(.all, 10.0)
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
+                            .border(Color.green)
                         }
                         //.border(Color.purple)
                         .offset(CGSize(width: -20.0, height: -40.0))
@@ -233,19 +234,20 @@ struct ContentView: View {
                                 .background(.ultraThinMaterial)
                             Spacer()
                         }
+                        .padding()
                     }
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 25.0))
-                    //.frame(width: .infinity, height: .infinity)
-                    .border(Color.red)
-                    //.padding(.horizontal)
-                    
-                    Spacer()
+                    .frame(width: .infinity, height: 100)
+                    .offset(CGSize(width: 0, height: -40))
+                    .padding()
+                    .border(Color.purple)
+                    //Spacer()
                     
                     // Grid of squares
                     ScrollView(.horizontal) {
                         LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
-                            ForEach(protoAction , id: \.self) { item in
+                            ForEach(protoActionOptions , id: \.self) { item in
                                 //GeometryReader { gr in
                                     Button(action: {
                                         // Define the action for the button here
@@ -258,10 +260,9 @@ struct ContentView: View {
                                             //.frame(maxHeight: .infinity, maxWidth: .infinity) // Makes the image fill the available space
                                             .aspectRatio(1, contentMode: .fit)
                                             .border(Color.green)
-                                            .symbolRenderingMode(.multicolor)
+                                            .symbolRenderingMode(.monochrome)
                                             .background(.clear)
                                     }
-                               // }
                                 .aspectRatio(1, contentMode: .fit)
                                 .background(.ultraThinMaterial)
                                 .cornerRadius(10)
@@ -367,7 +368,7 @@ struct ContentView: View {
                             }
                             .padding(.bottom,40)
                             
-                            NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
+                            //NavigationLink(destination: ContentView3()) {Image(systemName: "info")}
                             NavigationLink(destination: SettingsView(selectedMatrix: $selectedMatrix)) {
                                 Image(systemName: "gear")
                                     .imageScale(.large)
@@ -428,10 +429,10 @@ struct SettingsView: View {
     @State private var showLineNumbers = false
     @State private var showPreview = true
     @EnvironmentObject var bluetoothManager: BluetoothManager
-    
+    @StateObject private var accessoryViewModel = AccessoryViewModel()
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
-        case bluetooth, wifi, matter, z_wave
+        case bluetooth, wifi, matter
         var id: Self { self }
     }
     
@@ -465,47 +466,54 @@ struct SettingsView: View {
                                 .pickerStyle(.segmented)
                               //  .foregroundStyle(Color.clear)
                                 .listRowBackground(Color.clear)
-                                .frame(height: 25)
+                                //.frame(height: 25)
                                 .onChange(of: selectedConnection) { oldValue, newValue in
                                     performAction(for: newValue)
                                 }
                             }
-                            VStack {
-                                Image("ESP32-S3")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .imageScale(.large)
+                            //ZStack {
+                                //RoundedRectangle(cornerRadius: 5)
+                                //.fill(Color(uiColor: .systemGray6))
+                                    //.frame(width: . infinity, height: .infinity)
+                                VStack {
+                                    Image("LumiFur_Controller_AK")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .imageScale(.large)
                                     
-                                Text(bluetoothManager.connectionStatus)
+                                    Text(bluetoothManager.connectionStatus)
                                     //.font(.title2)
-                                    .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
-                                    .padding()
-                                
-                                List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
-                                    HStack {
-                                        Text(peripheral.name ?? "Unknown Device")
-                                        Spacer()
-                                        Button(action: {
-                                            bluetoothManager.connect(peripheral)
-                                        }) {
-                                            Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
-                                                .foregroundStyle(.blue)
+                                        .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
+                                    //.padding()
+                                    
+                                    List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
+                                        HStack {
+                                            Text(peripheral.name ?? "Unknown Device")
+                                            Spacer()
+                                            Button(action: {
+                                                bluetoothManager.connect(peripheral)
+                                            }) {
+                                                Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
+                                                    .foregroundStyle(.blue)
+                                            }
+                                            .disabled(bluetoothManager.isConnected)
                                         }
-                                        .disabled(bluetoothManager.isConnected)
                                     }
+                                    .border(Color.red)
+                                    
+                                    //Spacer()
                                 }
-                                .border(Color.red)
-                                
-                                Spacer()
-                            }
-                            .border(Color.purple)
-                            
+                                .border(Color.purple)
+                            //}
                             // Matrix Style Picker
                             Section(header: Text("Matrix Style")) {
                                 VStack {
-                                    Text("Matrix style")
-                                        .font(.title)
-                                    
+                                    ZStack {
+                                        LEDGridView()
+                                    }
+                                    .padding()
+                                    .background(.ultraThinMaterial)
+                                    .cornerRadius(10)
                                     HStack {
                                         Spacer()
                                         Text("Selected: \(selectedMatrix.rawValue.capitalized)")
@@ -518,6 +526,7 @@ struct SettingsView: View {
                                     }                     .pickerStyle(.menu)
                                 }
                             }
+                            
                         }
                         .scrollContentBackground(.hidden)
 #if os(macOS)
@@ -1164,7 +1173,7 @@ struct LEDGridView: View {
                     ForEach(0..<32, id: \.self) { col in
                         Rectangle()
                             .fill(ledStates[row][col])
-                            .frame(width: 1, height: 1) // Adjust size as needed
+                            .frame(width: 1.5, height: 1.5) // Adjust size as needed
                             .onTapGesture {
                                 toggleLED(row: row, col: col)
                             }
@@ -1465,7 +1474,7 @@ struct LEDMatrix3: View {
         .padding()
     }
 }
-
+/*
 struct ContentView3: View {
     @StateObject private var config = MatrixConfig()
     @State private var isImporting: Bool = false
@@ -1533,7 +1542,8 @@ struct ContentView3: View {
             handleFileImport(result: result)
         }
     }
-    
+ */
+    /*
     func handleFileImport(result: Result<[URL], Error>) {
         do {
             guard let selectedFile: URL = try result.get().first else {
@@ -1671,7 +1681,7 @@ struct ContentView3: View {
         }
     }
         }
-
+*/
 struct BluetoothConnectionView: View {
     @EnvironmentObject var bluetoothManager: BluetoothManager
     
