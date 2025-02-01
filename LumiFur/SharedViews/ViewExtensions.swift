@@ -7,7 +7,7 @@
 import SwiftUI
 
 extension View {
-    // Define a reusable function to display and animate the "Protogen" image
+    // Reusable function to display and animate the "Protogen" image
     func animatedProtogenImage(yOffset: Binding<CGFloat>, animationDirection: Bool, animationDuration: Double) -> some View {
         Image("Protogen")
             .resizable()

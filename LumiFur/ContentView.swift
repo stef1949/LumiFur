@@ -120,24 +120,25 @@ struct SplashView: View {
 
 // MARK: ContentView
 struct ContentView: View {
-    @EnvironmentObject var bluetoothManager: BluetoothManager
+    @StateObject var accessoryViewModel = AccessoryViewModel()
+    //@EnvironmentObject var bluetoothManager: BluetoothManager
     //Environment Variables
         //@Environment(\.colorScheme) var colorScheme
     //@EnvironmentObject var sharedViewModel: SharedViewModel
-    
+    /*
     //Connectivity Variables
     @State private var connectionBluetooth: Bool = true
     @State private var connectionWIFI: Bool = false
     @State private var connectionMatter: Bool = false
     @State private var connectionZ_Wave: Bool = false
     @State private var signalStrength: Int = 0
-    
+    */
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter, z_wave
         var id: Self { self }
     }
-    @State private var selectedConnection: Connection = .bluetooth
+    //@State private var selectedConnection: Connection = .bluetooth
     @State private var selectedMatrix: SettingsView.Matrixstyle = .array
     
     private let twoColumnGrid = [
@@ -147,7 +148,7 @@ struct ContentView: View {
     ]
     
     // Array of SF Symbol names
-    private var protoActionOptions: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", ""]
+    private var protoActionOptions: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", "🌌"]
    
     //dotMatrix variable
     @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
@@ -156,15 +157,15 @@ struct ContentView: View {
     
     //Protogen image variables
     @State private var yOffset: CGFloat = 0
-        private let animationDuration: Double = 1.0
-    
+    @State private var animationDuration: Double = 1.0
+    /*
     private var signalLevel: Double {
             // Convert RSSI to 0-1 range
             let signalStrength = Double(bluetoothManager.signalStrength)
             let normalizedSignal = (signalStrength - (-100)) / ((-30) - (-100))
             return min(max(normalizedSignal, 0.0), 1.0)
         }
-    
+    */
     var body: some View {
         ZStack {
             Color.primary
@@ -172,10 +173,15 @@ struct ContentView: View {
                 .ignoresSafeArea()
             
             NavigationStack {
-                //Title
-                VStack {
+                VStack(spacing: 20) {
+                    headerSection
+                    statusSection
+                    ledArraySection
+                    gridSection
+                    settingsAndChartsSection
+                    /*
                     HStack {
-                        // Use the common utility function to display and animate the image
+                        // animated image
                         animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
                         
                         //.border(Color.red)
@@ -227,10 +233,10 @@ struct ContentView: View {
                             Spacer()
                            //  MatrixTestView5()
                            // LEDMatrix()
-                            LEDGridView()
+                            LEDPreview()
                                 .background(.ultraThinMaterial)
                             Spacer()
-                            LEDGridView()
+                            LEDPreview()
                                 .background(.ultraThinMaterial)
                             Spacer()
                         }
@@ -378,6 +384,7 @@ struct ContentView: View {
                             }
                             .padding()
                         }
+                    */
                     }
                     .background(Color.clear)
                 }
@@ -385,7 +392,193 @@ struct ContentView: View {
             .navigationTitle("LumiFur")
         }
     }
-}
+    private var headerSection: some View {
+            HStack {
+                // Call the extension function on Color.clear (or any other placeholder view)
+                Color.clear
+                    .animatedProtogenImage(
+                        yOffset: $yOffset,
+                        animationDirection: true,
+                        animationDuration: animationDuration
+                    )
+                    .scaledToFill()
+                    .frame(height: 100)
+                    .offset(y: 20)
+                
+                Text("LumiFur")
+                    .font(.title)
+                    .multilineTextAlignment(.trailing)
+                    .fontDesign(.monospaced)
+                    .padding(.horizontal)
+                
+                Spacer()
+            }
+        }
+    private var statusSection: some View {
+            HStack {
+                Spacer()
+                HStack {
+                    SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+                    
+                    Image(systemName: "logo.bluetooth.capsule.portrait.fill")
+                        .symbolRenderingMode(.multicolor)
+                        .symbolEffect(.variableColor)
+                        .opacity(accessoryViewModel.isConnected ? 1 : 0.3)
+                }
+                .padding(10)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
+                .border(Color.green)
+            }
+            .offset(x: -20, y: -40)
+        }
+    private var ledArraySection: some View {
+            VStack {
+                HStack {
+                    Spacer()
+                    LEDPreview()
+                        .background(.ultraThinMaterial)
+                    Spacer()
+                    LEDPreview()
+                        .background(.ultraThinMaterial)
+                    Spacer()
+                }
+                .padding()
+            }
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 25))
+            .frame(maxWidth: .infinity, maxHeight: 100)
+            .offset(y: -40)
+            .padding()
+            .border(Color.purple)
+        }
+    private var gridSection: some View {
+            ScrollView(.horizontal) {
+                LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
+                    ForEach(protoActionOptions, id: \.self) { item in
+                        Button(action: {
+                            print("\(item) button pressed")
+                        }) {
+                            Text(item)
+                                .font(.system(size: 120))
+                                .aspectRatio(1, contentMode: .fit)
+                                .border(Color.green)
+                                .symbolRenderingMode(.monochrome)
+                                .background(.clear)
+                        }
+                        .aspectRatio(1, contentMode: .fit)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                        .padding()
+                        .frame(width: 175, height: 175)
+                        .border(Color.red)
+                    }
+                }
+                .border(Color.yellow)
+                .frame(maxHeight: .infinity)
+                .padding()
+            }
+        }
+    private var settingsAndChartsSection: some View {
+            HStack {
+                Spacer()
+                
+                // CPU Usage Chart
+                VStack {
+                    Chart(accessoryViewModel.cpuUsageData) { element in
+                        LineMark(
+                            x: .value("Time", element.timestamp),
+                            y: .value("CPU Usage", element.cpuUsage)
+                        )
+                        .foregroundStyle(Color.blue)
+                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                        .symbol(Circle().strokeBorder(lineWidth: 2))
+                    }
+                    .chartYScale(domain: 0...100)
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: 1)) { value in
+                            AxisValueLabel {
+                                if let dateValue = value.as(Date.self) {
+                                    Text(dateValue, format: .dateTime.hour().minute().second())
+                                }
+                            }
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(values: .stride(by: 50)) { value in
+                            AxisValueLabel {
+                                if let intValue = value.as(Int.self) {
+                                    Text("\(intValue)%")
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(10)
+                    .frame(height: 50)
+                    
+                    Text("CPU")
+                        .fontDesign(.rounded)
+                        .bold()
+                }
+                
+                // Temperature Chart (using the same dummy data)
+                VStack {
+                    Chart(accessoryViewModel.cpuUsageData) { element in
+                        LineMark(
+                            x: .value("Time", element.timestamp),
+                            y: .value("CPU Usage", element.cpuUsage)
+                        )
+                        .foregroundStyle(Color.blue)
+                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                        .symbol(Circle().strokeBorder(lineWidth: 2))
+                    }
+                    .chartYScale(domain: 0...100)
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: 1)) { value in
+                            AxisValueLabel {
+                                if let dateValue = value.as(Date.self) {
+                                    Text(dateValue, format: .dateTime.hour().minute().second())
+                                }
+                            }
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(values: .stride(by: 50)) { value in
+                            AxisValueLabel {
+                                if let intValue = value.as(Int.self) {
+                                    Text("\(intValue)%")
+                                        .font(.caption2)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(10)
+                    .frame(height: 50)
+                    
+                    Text("Temperature")
+                        .fontDesign(.rounded)
+                        .bold()
+                }
+                .padding(.bottom, 40)
+                
+                // Isolated NavigationLinks
+                NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
+                    Image(systemName: "gear")
+                        .imageScale(.large)
+                        .symbolRenderingMode(.multicolor)
+                }
+                .padding()
+                
+                NavigationLink(destination: BluetoothConnectionView()) {
+                    Image(systemName: "1.circle.fill")
+                }
+            }
+        }
+    }
     /*
     struct LedGridView: View {
         // Computed property to generate an array of random colors
@@ -428,8 +621,9 @@ struct SettingsView: View {
     @State private var fontSize: CGFloat = 15
     @State private var showLineNumbers = false
     @State private var showPreview = true
-    @EnvironmentObject var bluetoothManager: BluetoothManager
-    @StateObject private var accessoryViewModel = AccessoryViewModel()
+    @ObservedObject var bleModel: AccessoryViewModel
+    @State private var showAdvanced = false
+    
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter
@@ -442,116 +636,220 @@ struct SettingsView: View {
         var id: Self { self }
     }
     
-    //@AppStorage("selectedConnection") var selectedConnection = .bluetooth
-    @State private var selectedConnection: Connection = .bluetooth
     @Binding var selectedMatrix: Matrixstyle
     
     var body: some View {
-            ZStack {
-                //Color(UIColor.systemGroupedBackground)
-                    //.ignoresSafeArea()
-                NavigationStack {
-                HStack(spacing: 0.25) {
-                    VStack {
-                        // Connectivity List
-                        List {
-                            // Connection Picker
-                            Section(header: Text("Connection")) {
-                                Picker("Connection", selection: $selectedConnection) {
-                                    ForEach(Connection.allCases) { connection in
-                                        Text(connection.rawValue.capitalized)
-                                            .tag(connection)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
-                              //  .foregroundStyle(Color.clear)
-                                .listRowBackground(Color.clear)
-                                //.frame(height: 25)
-                                .onChange(of: selectedConnection) { oldValue, newValue in
-                                    performAction(for: newValue)
-                                }
-                            }
-                            //ZStack {
-                                //RoundedRectangle(cornerRadius: 5)
-                                //.fill(Color(uiColor: .systemGray6))
-                                    //.frame(width: . infinity, height: .infinity)
-                                VStack {
-                                    Image("LumiFur_Controller_AK")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .imageScale(.large)
-                                    
-                                    Text(bluetoothManager.connectionStatus)
-                                    //.font(.title2)
-                                        .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
-                                    //.padding()
-                                    
-                                    List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
-                                        HStack {
-                                            Text(peripheral.name ?? "Unknown Device")
-                                            Spacer()
-                                            Button(action: {
-                                                bluetoothManager.connect(peripheral)
-                                            }) {
-                                                Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
-                                                    .foregroundStyle(.blue)
-                                            }
-                                            .disabled(bluetoothManager.isConnected)
-                                        }
-                                    }
-                                    .border(Color.red)
-                                    
-                                    //Spacer()
-                                }
-                                .border(Color.purple)
-                            //}
-                            // Matrix Style Picker
-                            Section(header: Text("Matrix Style")) {
-                                VStack {
-                                    ZStack {
-                                        LEDGridView()
-                                    }
-                                    .padding()
-                                    .background(.ultraThinMaterial)
-                                    .cornerRadius(10)
-                                    HStack {
-                                        Spacer()
-                                        Text("Selected: \(selectedMatrix.rawValue.capitalized)")
-                                        Spacer()
-                                    }
-                                    Picker("Matrix Style", selection: $selectedMatrix) {
-                                        ForEach(Matrixstyle.allCases) { style in
-                                            Text(style.rawValue.capitalized).tag(style)
-                                        }
-                                    }                     .pickerStyle(.menu)
-                                }
-                            }
-                            
-                        }
-                        .scrollContentBackground(.hidden)
-#if os(macOS)
-                        .listStyle(SidebarListStyle()) // Use a macOS-compatible list style
-#else
-                        .listStyle(InsetGroupedListStyle()) // Use InsetGroupedListStyle for iOS
-#endif
-                        
-                    }
-                    .navigationTitle("Settings")
-#if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-#endif
-                }
+        NavigationStack {
+            List {
+                connectionSection
+                matrixSection
+                advancedSettings
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .alert("Connection Error",
+                   isPresented: $bleModel.showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(bleModel.errorMessage)
             }
         }
     }
     
-    // Function to perform an action based on the selected connection
-    private func performAction(for selection: Connection) {
-        print("Selected connection: \(selection.rawValue)")
-        // Add your custom logic here
+    private var connectionSection: some View {
+            Section {
+                VStack(alignment: .leading, spacing: 15) {
+                    HStack {
+                        SignalStrengthView(rssi: bleModel.signalStrength)
+                        Text(bleModel.connectionStatus)
+                            .foregroundColor(bleModel.isConnected ? .green : .red)
+                    }
+                    
+                    if !bleModel.isConnected {
+                        Button(action: bleModel.connect) {
+                            Label("Scan for Devices", systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    
+                    deviceList
+                }
+                .padding(.vertical, 8)
+            } header: {
+                Text("Device Connection")
+            }
+        }
+    
+    private var deviceList: some View {
+            Group {
+                if bleModel.isConnected, let peripheral = bleModel.connectedPeripheral {
+                    ConnectedDeviceView(peripheral: peripheral)
+                } else {
+                    ForEach(bleModel.discoveredDevices, id: \.identifier) { peripheral in
+                        Button(action: { bleModel.connect(to: peripheral) }) {
+                            HStack {
+                                Text(peripheral.name ?? "Unknown Device")
+                                Spacer()
+                                if bleModel.connectingPeripheral?.identifier == peripheral.identifier {
+                                    ProgressView()
+                                }
+                            }
+                        }
+                        .disabled(bleModel.isConnecting)
+                    }
+                }
+            }
+        }
+    
+    private var matrixSection: some View {
+            Section {
+                MatrixStylePicker(selectedMatrix: $selectedMatrix)
+                LEDPreview()
+            } header: {
+                Text("Matrix Configuration")
+            }
+        }
+        
+        private var advancedSettings: some View {
+            Section {
+                Toggle("Show Advanced Settings", isOn: $showAdvanced)
+                
+                if showAdvanced {
+                    NavigationLink("Connection Parameters") {
+                        AdvancedSettingsView(bleModel: bleModel) // AdvancedSettingsView is assumed to be defined elsewhere
+                    }
+                    Button("Reset to Defaults") {
+                        // Handle reset logic here
+                    }
+                }
+            }
+        }
+    }
+
+    struct MatrixStylePicker: View {
+        @Binding var selectedMatrix: SettingsView.Matrixstyle
+        
+        var body: some View {
+            Picker("Visual Style", selection: $selectedMatrix) {
+                ForEach(SettingsView.Matrixstyle.allCases) { style in
+                    Text(style.rawValue.capitalized)
+                        .tag(style)
+                }
+            }
+            .pickerStyle(.segmented)
+            
+            Text("Current style: \(selectedMatrix.rawValue.capitalized)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+struct ConnectedDeviceView: View {
+    let peripheral: CBPeripheral?
+    
+    var body: some View {
+        HStack {
+            if let peripheral = peripheral {
+                VStack(alignment: .leading) {
+                    Text(peripheral.name ?? "Unnamed Device")
+                        .font(.headline)
+                    Text(peripheral.identifier.uuidString)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+        }
     }
 }
 
+struct SignalStrengthView: View {
+    let rssi: Int
+    
+    private var signalLevel: Double {
+        let normalized = Double(rssi + 100) / 70.0 // Normalize between -100dBm and -30dBm
+        return min(max(normalized, 0.0), 1.0)
+    }
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<4) { bar in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(bar < Int(signalLevel * 4) ? .blue : Color.gray.opacity(0.3))
+                    .frame(width: 4, height: CGFloat(bar + 2) * 4)
+            }
+            Text("\(rssi)dBm")
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+struct AdvancedSettingsView: View {
+    @ObservedObject var bleModel: AccessoryViewModel
+
+    // Example advanced settings state variables.
+    @State private var autoReconnect: Bool = false
+    @State private var rssiMonitoringEnabled: Bool = false
+    @State private var rssiUpdateInterval: Double = 1.0
+
+    var body: some View {
+        Form {
+            // Connection Options Section
+            Section(header: Text("Connection Options")) {
+                Toggle("Auto Reconnect", isOn: $autoReconnect)
+                    .onChange(of: autoReconnect) { oldValue, newValue in
+                        // Implement auto-reconnect logic here if desired.
+                        // For example, you might store this setting in your model or user defaults.
+                        print("Auto Reconnect changed from \(oldValue) to \(newValue)")
+                    }
+                
+                Button("Disconnect Device") {
+                    bleModel.disconnect()
+                }
+                
+                Button("Reconnect Device") {
+                    bleModel.connect()
+                }
+            }
+            
+            // RSSI Monitoring Section
+            Section(header: Text("RSSI Monitoring")) {
+                Toggle("Enable RSSI Monitoring", isOn: $rssiMonitoringEnabled)
+                    .onChange(of: rssiMonitoringEnabled) { oldValue, newValue in
+                        if newValue {
+                            bleModel.startRSSIMonitoring()
+                        } else {
+                            // If you have a method to stop monitoring, you can call it here.
+                            print("RSSI monitoring disabled")
+                        }
+                    }
+                
+                if rssiMonitoringEnabled {
+                    Stepper("Update Interval: \(rssiUpdateInterval, specifier: "%.1f") sec", value: $rssiUpdateInterval, in: 0.5...5.0, step: 0.5)
+                        .onChange(of: rssiUpdateInterval) { oldValue, newValue in
+                            // If your model supports adjustable intervals for reading RSSI, update it here.
+                            print("RSSI update interval changed from \(oldValue) to \(newValue)")
+                        }
+                }
+            }
+            
+            // Debug / Status Information Section
+            Section(header: Text("Debug Info")) {
+                Text("Connection Status: \(bleModel.connectionStatus)")
+                Text("Selected View: \(bleModel.selectedView)")
+                Text("Temperature: \(bleModel.temperature)")
+                Text("Signal Strength: \(bleModel.signalStrength)dBm")
+            }
+        }
+        .navigationTitle("Advanced Settings")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/*
 struct SignalStrengthView: View {
     let rssi: Int
     
@@ -589,6 +887,7 @@ struct SignalStrengthView: View {
         .padding(.vertical, 2)
     }
 }
+ */
 /*
 struct DotMatrixView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -1160,23 +1459,24 @@ struct MatrixTestView5: View {
 }
 */
 
-struct LEDGridView: View {
+struct LEDPreview: View {
     // The state of the grid, with 64 rows and 32 columns
     @State private var ledStates: [[Color]] = Array(
-        repeating: Array(repeating: .black, count: 32), count: 64
-    )
+            repeating: Array(repeating: .black, count: 64),
+            count: 32
+        )
     
     var body: some View {
         HStack(spacing: 1) { // Vertical spacing between rows
-            ForEach(0..<64, id: \.self) { row in
-                VStack(spacing: 0.5) { // Horizontal spacing between LEDs
-                    ForEach(0..<32, id: \.self) { col in
-                        Rectangle()
-                            .fill(ledStates[row][col])
-                            .frame(width: 1.5, height: 1.5) // Adjust size as needed
-                            .onTapGesture {
-                                toggleLED(row: row, col: col)
-                            }
+            ForEach(0..<ledStates.count, id: \.self) { row in
+                            HStack(spacing: 0.5) { // Horizontal spacing between LEDs
+                                ForEach(0..<ledStates[row].count, id: \.self) { col in
+                                    Rectangle()
+                                        .fill(ledStates[row][col])
+                                        .frame(width: 1.5, height: 1.5) // Adjust size as needed
+                                        .onTapGesture {
+                                            toggleLED(row: row, col: col)
+                                        }
                     }
                 }
             }

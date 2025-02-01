@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>700</string>
+					<string>999</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>699</string>
+					<string>998</string>
 					<key>Timestamp</key>
-					<string>760064648.383348</string>
+					<string>760075590.585513</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>700</string>
+					<string>999</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>699</string>
+					<string>998</string>
 					<key>Timestamp</key>
-					<string>760064648.38336</string>
+					<string>760075590.5855269</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>700</string>
+					<string>999</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>699</string>
+					<string>998</string>
 					<key>Timestamp</key>
-					<string>760064648.383335</string>
+					<string>760075590.585485</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>467</string>
+					<string>768</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>466</string>
+					<string>767</string>
 					<key>Timestamp</key>
-					<string>760064648.383386</string>
+					<string>760075590.5855449</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,16 +188,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                              //  .foregroundStyle(Color.clear)
+				<string>struct SignalStrengthView: View {
 </string>
 				<key>leading</key>
-				<string>                                }
-                                .pickerStyle(.segmented)
+				<string>}
+
 </string>
 				<key>trailing</key>
-				<string>                                .listRowBackground(Color.clear)
-                                //.frame(height: 25)
-                                .onChange(of: selectedConnection) { oldValue, newValue in
+				<string>    let rssi: Int
+    
+    private var signalLevel: Double {
 </string>
 			</dict>
 			<key>type</key>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>430</string>
+					<string>623</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>429</string>
+					<string>622</string>
 					<key>Timestamp</key>
-					<string>760064648.383226</string>
+					<string>760075590.585557</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -240,13 +240,11 @@
     @State private var showLineNumbers = false
 </string>
 				<key>trailing</key>
-				<string>    @EnvironmentObject var bluetoothManager: BluetoothManager
-    @StateObject private var accessoryViewModel = AccessoryViewModel()
-    //Connectivity Options
+				<string>    @ObservedObject var bleModel: AccessoryViewModel
+    @State private var showAdvanced = false
+    
 </string>
 			</dict>
-			<key>title</key>
-			<string>Settings View</string>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>
@@ -258,13 +256,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>227</string>
+					<string>201</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>226</string>
+					<string>200</string>
 					<key>Timestamp</key>
-					<string>760064648.383373</string>
+					<string>760075550.905174</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -280,16 +278,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                            Spacer()
+				<string>                    
 </string>
 				<key>leading</key>
-				<string>                   VStack {
-                        HStack {
+				<string>                        
+                    }
 </string>
 				<key>trailing</key>
-				<string>                           //  MatrixTestView5()
-                           // LEDMatrix()
-                            LEDGridView()
+				<string>                    VStack {
+                        // Status Indicators and Signal Strength
+                        HStack {
 </string>
 			</dict>
 			<key>type</key>
