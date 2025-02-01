@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>698</string>
+					<string>700</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>697</string>
+					<string>699</string>
 					<key>Timestamp</key>
-					<string>758137105.577176</string>
+					<string>760064648.383348</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,16 +53,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    )
+				<string>                Rectangle()
 </string>
 				<key>leading</key>
-				<string>                        }
-                            .padding()
+				<string>                    )
+                    .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .padding()
-                Rectangle()
-                    .foregroundStyle(.clear)
+				<string>                    .foregroundStyle(.clear)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
 </string>
 			</dict>
 			<key>type</key>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>698</string>
+					<string>700</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>697</string>
+					<string>699</string>
 					<key>Timestamp</key>
-					<string>758137105.5771689</string>
+					<string>760064648.38336</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -98,16 +98,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    )
+				<string>                Rectangle()
 </string>
 				<key>leading</key>
-				<string>                        }
-                            .padding()
+				<string>                    )
+                    .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .padding()
-                Rectangle()
-                    .foregroundStyle(.clear)
+				<string>                    .foregroundStyle(.clear)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
 </string>
 			</dict>
 			<key>type</key>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>698</string>
+					<string>700</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>697</string>
+					<string>699</string>
 					<key>Timestamp</key>
-					<string>758137105.577148</string>
+					<string>760064648.383335</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -143,16 +143,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    )
+				<string>                Rectangle()
 </string>
 				<key>leading</key>
-				<string>                        }
-                            .padding()
+				<string>                    )
+                    .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .padding()
-                Rectangle()
-                    .foregroundStyle(.clear)
+				<string>                    .foregroundStyle(.clear)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
 </string>
 			</dict>
 			<key>type</key>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>465</string>
+					<string>467</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>464</string>
+					<string>466</string>
 					<key>Timestamp</key>
-					<string>758135999.1835459</string>
+					<string>760064648.383386</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,16 +188,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
+				<string>                              //  .foregroundStyle(Color.clear)
+</string>
+				<key>leading</key>
 				<string>                                }
-</string>
-				<key>leading</key>
-				<string>                                            .tag(connection)
-                                    }
+                                .pickerStyle(.segmented)
 </string>
 				<key>trailing</key>
-				<string>                                .pickerStyle(.segmented)
-                              //  .foregroundStyle(Color.clear)
-                                .listRowBackground(Color.clear)
+				<string>                                .listRowBackground(Color.clear)
+                                //.frame(height: 25)
+                                .onChange(of: selectedConnection) { oldValue, newValue in
 </string>
 			</dict>
 			<key>type</key>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>427</string>
+					<string>430</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>426</string>
+					<string>429</string>
 					<key>Timestamp</key>
-					<string>758134972.148921</string>
+					<string>760064648.383226</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,16 +233,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>struct SettingsView: View {
+				<string>    @State private var showPreview = true
 </string>
 				<key>leading</key>
-				<string>// MARK: SettingsView
-
-</string>
-				<key>trailing</key>
 				<string>    @State private var fontSize: CGFloat = 15
     @State private var showLineNumbers = false
-    @State private var showPreview = true
+</string>
+				<key>trailing</key>
+				<string>    @EnvironmentObject var bluetoothManager: BluetoothManager
+    @StateObject private var accessoryViewModel = AccessoryViewModel()
+    //Connectivity Options
 </string>
 			</dict>
 			<key>title</key>
@@ -258,13 +258,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>224</string>
+					<string>227</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>223</string>
+					<string>226</string>
 					<key>Timestamp</key>
-					<string>758134972.1489331</string>
+					<string>760064648.383373</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -280,16 +280,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    //LED ARRAY MAIN VIEW
+				<string>                            Spacer()
 </string>
 				<key>leading</key>
-				<string>                        .offset(CGSize(width: -20.0, height: -40.0))
-                    }
-</string>
-				<key>trailing</key>
 				<string>                   VStack {
                         HStack {
-                            Spacer()
+</string>
+				<key>trailing</key>
+				<string>                           //  MatrixTestView5()
+                           // LEDMatrix()
+                            LEDGridView()
 </string>
 			</dict>
 			<key>type</key>
