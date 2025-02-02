@@ -433,50 +433,53 @@ struct ContentView: View {
             .offset(x: -20, y: -40)
         }
     private var ledArraySection: some View {
-            VStack {
                 HStack {
                     Spacer()
                     LEDPreview()
                         .background(.ultraThinMaterial)
                     Spacer()
                     LEDPreview()
+                    
                         .background(.ultraThinMaterial)
                     Spacer()
                 }
-                .padding()
-            }
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 25))
-            .frame(maxWidth: .infinity, maxHeight: 100)
-            .offset(y: -40)
-            .padding()
+                .border(Color.red)
+                //.padding()
+            
+            //.background(.ultraThinMaterial)
+            //.clipShape(RoundedRectangle(cornerRadius: 25))
+            //.frame(maxWidth: .infinity, maxHeight: 100)
+            //.offset(y: -40)
+            //.padding()
             .border(Color.purple)
         }
     private var gridSection: some View {
             ScrollView(.horizontal) {
                 LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
-                    ForEach(protoActionOptions, id: \.self) { item in
-                        Button(action: {
-                            print("\(item) button pressed")
-                        }) {
-                            Text(item)
+                    ForEach(protoActionOptions.indices, id: \.self) { index in
+                                    Button(action: {
+                                        print("\(protoActionOptions[index]) button pressed – setting view \(index + 1)")
+                                        accessoryViewModel.setView(index + 1)
+                                    }) {
+                            Text(protoActionOptions[index])
                                 .font(.system(size: 120))
                                 .aspectRatio(1, contentMode: .fit)
                                 .border(Color.green)
                                 .symbolRenderingMode(.monochrome)
                                 .background(.clear)
+                                //.padding()
                         }
                         .aspectRatio(1, contentMode: .fit)
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
-                        .padding()
-                        .frame(width: 175, height: 175)
+                        .frame(width: 150, height: 150)
                         .border(Color.red)
+                        .padding()
                     }
                 }
                 .border(Color.yellow)
                 .frame(maxHeight: .infinity)
-                .padding()
+                //.padding()
             }
         }
     private var settingsAndChartsSection: some View {
@@ -563,7 +566,7 @@ struct ContentView: View {
                         .fontDesign(.rounded)
                         .bold()
                 }
-                .padding(.bottom, 40)
+                .padding()
                 
                 // Isolated NavigationLinks
                 NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
@@ -703,8 +706,11 @@ struct SettingsView: View {
     
     private var matrixSection: some View {
             Section {
+                HStack {
+                    LEDPreview()
+                    LEDPreview()
+                }
                 MatrixStylePicker(selectedMatrix: $selectedMatrix)
-                LEDPreview()
             } header: {
                 Text("Matrix Configuration")
             }
@@ -1462,27 +1468,23 @@ struct MatrixTestView5: View {
 struct LEDPreview: View {
     // The state of the grid, with 64 rows and 32 columns
     @State private var ledStates: [[Color]] = Array(
-            repeating: Array(repeating: .black, count: 64),
-            count: 32
+            repeating: Array(repeating: .black, count: 32),
+            count: 64
         )
     
     var body: some View {
         HStack(spacing: 1) { // Vertical spacing between rows
-            ForEach(0..<ledStates.count, id: \.self) { row in
-                            HStack(spacing: 0.5) { // Horizontal spacing between LEDs
-                                ForEach(0..<ledStates[row].count, id: \.self) { col in
+            ForEach(0..<64, id: \.self) { row in
+                            VStack(spacing: 1) { // Horizontal spacing between LEDs
+                                ForEach(0..<32, id: \.self) { col in
                                     Rectangle()
-                                        .fill(ledStates[row][col])
+                                        //.fill(Color(uiColor: .secondarySystemBackground))
                                         .frame(width: 1.5, height: 1.5) // Adjust size as needed
-                                        .onTapGesture {
-                                            toggleLED(row: row, col: col)
-                                        }
                     }
                 }
             }
         }
         .padding(10) // Padding around the grid
-        //.background(Color.gray) // Optional: Background color
     }
     
     private func toggleLED(row: Int, col: Int) {

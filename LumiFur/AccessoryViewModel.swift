@@ -18,16 +18,15 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var errorMessage = ""
     @Published var showError = false
     @Published var signalStrength = -100
-    
-    @Published var cpuUsageData: [CPUUsageElement] = [
-            CPUUsageElement(timestamp: Date(), cpuUsage: 50)
-        ]
-        
-    
     // BLE Manager
     @Published var connectingPeripheral: CBPeripheral?
     @Published var isConnecting = false
         
+    // Stored CPU usage data for demonstration
+    @Published var cpuUsageData: [CPUUsageElement] = [
+        CPUUsageElement(timestamp: Date(), cpuUsage: 50)
+    ]
+    
     // Computed property to expose the connected peripheral
     var connectedPeripheral: CBPeripheral? {
         return isConnected ? peripheral : nil
@@ -41,6 +40,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     // Service UUIDs
     private let serviceUUID = CBUUID(string: "01931c44-3867-7740-9867-c822cb7df308")
     private let viewCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09fe")
+    // Config characteristic UUID not yet configured
+    private let configCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ff")
     private let tempCharUUID = CBUUID(string: "01931c44-3867-7b5d-9774-18350e3e27db")
     
     override init() {
@@ -73,6 +74,12 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 writeViewToCharacteristic()
             }
         }
+    func setView(_ view: Int) {
+        guard view >= 1 && view <= 12, view != selectedView else { return }
+        selectedView = view
+        writeViewToCharacteristic()
+    }
+    
     func startRSSIMonitoring() {
         rssiUpdateTimer?.invalidate()
         rssiUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
