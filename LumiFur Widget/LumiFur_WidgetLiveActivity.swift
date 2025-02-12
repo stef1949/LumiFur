@@ -37,10 +37,19 @@ struct LumiFur_WidgetLiveActivity: Widget {
                 // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
                     Text("LumiFur")
-                    Image(systemName:"aqi.medium")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 40, height: 40)
+                    VStack {
+                        Text("Connected")
+                            .font(.headline)
+                            .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.center)
+                                .padding(2)
+                                .background(Color(hue: 0.297, saturation: 0.982, brightness: 0.532))
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                        Image(systemName:"aqi.medium")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40)
+                    }
                     
                     //Image cannot exceed 4kb
                     //Image("Protogen")
