@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,6 +11,9 @@
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
 		358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 3584279F2C8CF5590096B1D0 /* blinking.mp4 */; };
 		35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
+		35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */; };
+		35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */; };
+		35AE1A602D5D24C700FDD29E /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */; };
 		35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A612C8739FB0039D19D /* ContentView.swift */; };
 		35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35DA3A632C8739FD0039D19D /* Assets.xcassets */; };
@@ -21,6 +24,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		35AE1A5E2D5D24C700FDD29E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 35AE1A492D5D24C600FDD29E;
+			remoteInfo = "LumiFur WidgetExtension";
+		};
 		35DA3A6E2C8739FD0039D19D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
@@ -37,11 +47,29 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				35AE1A602D5D24C700FDD29E /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
 		3584279F2C8CF5590096B1D0 /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
+		35AE1A442D5D207F00FDD29E /* liveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = liveActivity.swift; sourceTree = "<group>"; };
+		35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "LumiFur WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		35DA3A5C2C8739FB0039D19D /* LumiFur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LumiFur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumiFurApp.swift; sourceTree = "<group>"; };
 		35DA3A612C8739FB0039D19D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -55,7 +83,37 @@
 		35DA3A7D2C8739FD0039D19D /* LumiFurUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumiFurUITestsLaunchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		35AE1A612D5D24C700FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */;
+		};
+		35AE1A672D5D2B9A00FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LumiFur_WidgetLiveActivity.swift,
+			);
+			target = 35DA3A5B2C8739FB0039D19D /* LumiFur */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		35AE1A502D5D24C600FDD29E /* LumiFur Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (35AE1A672D5D2B9A00FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 35AE1A612D5D24C700FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "LumiFur Widget"; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		35AE1A472D5D24C600FDD29E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */,
+				35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35DA3A592C8739FB0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -92,6 +150,7 @@
 		358427A32C8CF57F0096B1D0 /* Connectivity */ = {
 			isa = PBXGroup;
 			children = (
+				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
 				3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */,
 			);
 			path = Connectivity;
@@ -105,12 +164,23 @@
 			path = SharedViews;
 			sourceTree = "<group>";
 		};
+		35AE1A4B2D5D24C600FDD29E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */,
+				35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		35DA3A532C8739FB0039D19D = {
 			isa = PBXGroup;
 			children = (
 				35DA3A5E2C8739FB0039D19D /* LumiFur */,
 				35DA3A702C8739FD0039D19D /* LumiFurTests */,
 				35DA3A7A2C8739FD0039D19D /* LumiFurUITests */,
+				35AE1A502D5D24C600FDD29E /* LumiFur Widget */,
+				35AE1A4B2D5D24C600FDD29E /* Frameworks */,
 				35DA3A5D2C8739FB0039D19D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -121,6 +191,7 @@
 				35DA3A5C2C8739FB0039D19D /* LumiFur.app */,
 				35DA3A6D2C8739FD0039D19D /* LumiFurTests.xctest */,
 				35DA3A772C8739FD0039D19D /* LumiFurUITests.xctest */,
+				35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,7 +199,7 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
-				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
+				35AE1A442D5D207F00FDD29E /* liveActivity.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				358427A32C8CF57F0096B1D0 /* Connectivity */,
@@ -168,6 +239,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */;
+			buildPhases = (
+				35AE1A462D5D24C600FDD29E /* Sources */,
+				35AE1A472D5D24C600FDD29E /* Frameworks */,
+				35AE1A482D5D24C600FDD29E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				35AE1A502D5D24C600FDD29E /* LumiFur Widget */,
+			);
+			name = "LumiFur WidgetExtension";
+			packageProductDependencies = (
+			);
+			productName = "LumiFur WidgetExtension";
+			productReference = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		35DA3A5B2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 35DA3A812C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFur" */;
@@ -175,10 +268,12 @@
 				35DA3A582C8739FB0039D19D /* Sources */,
 				35DA3A592C8739FB0039D19D /* Frameworks */,
 				35DA3A5A2C8739FB0039D19D /* Resources */,
+				35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				35AE1A5F2D5D24C700FDD29E /* PBXTargetDependency */,
 			);
 			name = LumiFur;
 			productName = LumiFur;
@@ -228,9 +323,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1540;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					35AE1A492D5D24C600FDD29E = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					35DA3A5B2C8739FB0039D19D = {
 						CreatedOnToolsVersion = 15.4;
 					};
@@ -260,11 +358,19 @@
 				35DA3A5B2C8739FB0039D19D /* LumiFur */,
 				35DA3A6C2C8739FD0039D19D /* LumiFurTests */,
 				35DA3A762C8739FD0039D19D /* LumiFurUITests */,
+				35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		35AE1A482D5D24C600FDD29E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35DA3A5A2C8739FB0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -292,6 +398,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		35AE1A462D5D24C600FDD29E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35DA3A582C8739FB0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -324,6 +437,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		35AE1A5F2D5D24C700FDD29E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */;
+			targetProxy = 35AE1A5E2D5D24C700FDD29E /* PBXContainerItemProxy */;
+		};
 		35DA3A6F2C8739FD0039D19D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 35DA3A5B2C8739FB0039D19D /* LumiFur */;
@@ -337,6 +455,65 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		35AE1A632D5D24C700FDD29E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LumiFur Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "LumiFur Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFur.LumiFur-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		35AE1A642D5D24C700FDD29E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LumiFur Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "LumiFur Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFur.LumiFur-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		35DA3A7F2C8739FD0039D19D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -480,7 +657,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -525,7 +705,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -644,6 +827,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				35AE1A632D5D24C700FDD29E /* Debug */,
+				35AE1A642D5D24C700FDD29E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		35DA3A572C8739FB0039D19D /* Build configuration list for PBXProject "LumiFur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

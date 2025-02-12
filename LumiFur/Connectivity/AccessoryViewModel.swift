@@ -1,6 +1,14 @@
+//
+//  AccessoryViewModel.swift
+//  LumiFur
+//
+//  Created by Stephan Ritchie on 2/12/25.
+//
+
 import SwiftUI
 import CoreBluetooth
 import Combine
+import ActivityKit
 
 // MARK: - Data Structures
 
@@ -197,6 +205,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             peripheral.delegate = self
             peripheral.discoverServices([self.serviceUUID])
             self.startRSSIMonitoring()
+            
+            self.startLumiFur_WidgetLiveActivity()
         }
     }
     
@@ -287,6 +297,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     error: Error?) {
         DispatchQueue.main.async {
             self.signalStrength = RSSI.intValue
+            self.updateLumiFur_WidgetLiveActivity()  // Update the live activity with the new signal strength.
         }
     }
     
@@ -326,4 +337,37 @@ extension AccessoryViewModel {
         guard isConnected, let target = targetPeripheral else { return nil }
         return discoveredDevices.first { $0.id == target.identifier }
     }
+    
+    func startLumiFur_WidgetLiveActivity() {
+            // Use the connected device name if available; otherwise, a placeholder.
+            let deviceName = connectedDevice?.name ?? "Unknown Device"
+            let attributes = LumiFur_WidgetAttributes(name: deviceName)
+            let initialState = LumiFur_WidgetAttributes.ContentState(
+                connectionStatus: connectionStatus,
+                signalStrength: signalStrength
+            )
+            
+            do {
+                let activity = try Activity<LumiFur_WidgetAttributes>.request(
+                    attributes: attributes,
+                    contentState: initialState,
+                    pushType: nil
+                )
+                print("Started Live Activity: \(activity.id)")
+            } catch {
+                print("Failed to start Live Activity: \(error.localizedDescription)")
+            }
+        }
+        
+        /// Updates all active BLE Live Activities with the latest state.
+        func updateLumiFur_WidgetLiveActivity() {
+            for activity in Activity<LumiFur_WidgetAttributes>.activities {
+                Task {
+                    await activity.update(using: LumiFur_WidgetAttributes.ContentState(
+                        connectionStatus: connectionStatus,
+                        signalStrength: signalStrength
+                    ))
+                }
+            }
+        }
 }
