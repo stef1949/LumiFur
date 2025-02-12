@@ -8,10 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
-		35239A252CCFE06D00DD483B /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
-		3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358427992C8CDCB00096B1D0 /* BluetoothManager.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
 		358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 3584279F2C8CF5590096B1D0 /* blinking.mp4 */; };
+		35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
 		35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */; };
 		35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A612C8739FB0039D19D /* ContentView.swift */; };
 		35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35DA3A632C8739FD0039D19D /* Assets.xcassets */; };
@@ -41,8 +40,6 @@
 /* Begin PBXFileReference section */
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
-		3528534A2D2AEAB5001A0539 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		358427992C8CDCB00096B1D0 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
 		3584279F2C8CF5590096B1D0 /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
 		35DA3A5C2C8739FB0039D19D /* LumiFur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LumiFur.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,7 +93,6 @@
 			isa = PBXGroup;
 			children = (
 				3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */,
-				358427992C8CDCB00096B1D0 /* BluetoothManager.swift */,
 			);
 			path = Connectivity;
 			sourceTree = "<group>";
@@ -132,7 +128,6 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
-				3528534A2D2AEAB5001A0539 /* Info.plist */,
 				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
@@ -302,11 +297,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
+				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
 				3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */,
 				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
-				35239A252CCFE06D00DD483B /* AccessoryViewModel.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
-				3584279A2C8CDCB00096B1D0 /* BluetoothManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -482,11 +476,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumiFur/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = com.richies3d.LumiFur;
+				INFOPLIST_KEY_CFBundleDisplayName = LumiFur;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -528,11 +521,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumiFur/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = com.richies3d.LumiFur;
+				INFOPLIST_KEY_CFBundleDisplayName = LumiFur;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

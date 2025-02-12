@@ -9,12 +9,12 @@ import SwiftUI
 
 @main
 struct LumiFurApp: App {
-    @StateObject private var bluetoothManager = BluetoothManager.shared
+    //@StateObject private var AccessoryViewModel = AccessoryViewModel.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(bluetoothManager)
+                //.environmentObject(AccessoryViewModel)
         }
     }
 }

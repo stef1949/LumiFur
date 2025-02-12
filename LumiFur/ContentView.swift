@@ -575,10 +575,11 @@ struct ContentView: View {
                         .symbolRenderingMode(.multicolor)
                 }
                 .padding()
-                
+                /*
                 NavigationLink(destination: BluetoothConnectionView()) {
                     Image(systemName: "1.circle.fill")
                 }
+                 */
             }
         }
     }
@@ -658,7 +659,7 @@ struct SettingsView: View {
             }
         }
     }
-    
+// MARK: - Connection Section
     private var connectionSection: some View {
             Section {
                 VStack(alignment: .leading, spacing: 15) {
@@ -669,10 +670,11 @@ struct SettingsView: View {
                     }
                     
                     if !bleModel.isConnected {
-                        Button(action: bleModel.connect) {
+                        Button(action: bleModel.scanForDevices) {
                             Label("Scan for Devices", systemImage: "arrow.clockwise")
                         }
                         .buttonStyle(.bordered)
+                        .disabled(!bleModel.isBluetoothReady)
                     }
                     
                     deviceList
@@ -685,20 +687,20 @@ struct SettingsView: View {
     
     private var deviceList: some View {
             Group {
-                if bleModel.isConnected, let peripheral = bleModel.connectedPeripheral {
-                    ConnectedDeviceView(peripheral: peripheral)
+                if bleModel.isConnected, let device = bleModel.connectedDevice {
+                                ConnectedDeviceView(peripheral: device)
                 } else {
-                    ForEach(bleModel.discoveredDevices, id: \.identifier) { peripheral in
-                        Button(action: { bleModel.connect(to: peripheral) }) {
-                            HStack {
-                                Text(peripheral.name ?? "Unknown Device")
-                                Spacer()
-                                if bleModel.connectingPeripheral?.identifier == peripheral.identifier {
-                                    ProgressView()
-                                }
-                            }
-                        }
-                        .disabled(bleModel.isConnecting)
+                    ForEach(bleModel.discoveredDevices) { device in
+                                        Button(action: { bleModel.connect(to: device) }) {
+                                            HStack {
+                                                Text(device.name)
+                                                Spacer()
+                                                if bleModel.connectingPeripheral?.id == device.id {
+                                                    ProgressView()
+                                                }
+                                            }
+                                        }
+                                        .disabled(bleModel.isConnecting)
                     }
                 }
             }
@@ -751,22 +753,20 @@ struct SettingsView: View {
     }
 
 struct ConnectedDeviceView: View {
-    let peripheral: CBPeripheral?
+    let peripheral: PeripheralDevice
     
     var body: some View {
-        HStack {
-            if let peripheral = peripheral {
+            HStack {
                 VStack(alignment: .leading) {
-                    Text(peripheral.name ?? "Unnamed Device")
+                    Text(peripheral.name)
                         .font(.headline)
-                    Text(peripheral.identifier.uuidString)
+                    Text(peripheral.id.uuidString)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-            }
-            Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                Spacer()
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
         }
     }
 }
@@ -817,7 +817,7 @@ struct AdvancedSettingsView: View {
                 }
                 
                 Button("Reconnect Device") {
-                    bleModel.connect()
+                    bleModel.scanForDevices()
                 }
             }
             
@@ -1061,7 +1061,7 @@ struct InfoView: View {
         .padding()
     }
 }
-
+/*
 struct ConnectTestView: View {
     @EnvironmentObject var bluetoothManager: BluetoothManager
 
@@ -1174,6 +1174,7 @@ struct ConnectTestView: View {
             .border(Color.black)
         }
     }
+*/
 // MARK: -WORKING- Testing matrix arducode code
 /*
 struct MatrixTestView4_4: View {
@@ -1473,19 +1474,33 @@ struct LEDPreview: View {
         )
     
     var body: some View {
-        HStack(spacing: 1) { // Vertical spacing between rows
-            ForEach(0..<64, id: \.self) { row in
-                            VStack(spacing: 1) { // Horizontal spacing between LEDs
-                                ForEach(0..<32, id: \.self) { col in
-                                    Rectangle()
-                                        //.fill(Color(uiColor: .secondarySystemBackground))
-                                        .frame(width: 1.5, height: 1.5) // Adjust size as needed
+        GeometryReader { geometry in
+                    Canvas { context, size in
+                        let ledWidth = size.width / 64
+                        let ledHeight = size.height / 32
+                        
+                        for row in 0..<64 {
+                            for col in 0..<32 {
+                                let rect = CGRect(
+                                    x: CGFloat(row) * ledWidth,
+                                    y: CGFloat(col) * ledHeight,
+                                    width: ledWidth - 1,
+                                    height: ledHeight - 1
+                                )
+                                
+                                context.fill(
+                                    Path(rect),
+                                    with: .color(ledStates[row][col])
+                                )
+                            }
+                        }
                     }
                 }
+                .aspectRatio(64/32, contentMode: .fit)
+                .drawingGroup() // Metal-accelerated rendering
+                .padding(10)
             }
-        }
-        .padding(10) // Padding around the grid
-    }
+        
     
     private func toggleLED(row: Int, col: Int) {
         // Toggle between red and black for the tapped LED
@@ -1984,38 +1999,48 @@ struct ContentView3: View {
     }
         }
 */
+/*
 struct BluetoothConnectionView: View {
-    @EnvironmentObject var bluetoothManager: BluetoothManager
+    @EnvironmentObject var bluetoothManager: AccessoryViewModel
     
     var body: some View {
         VStack {
             Image("ESP32-S3")
+            
             Text(bluetoothManager.connectionStatus)
                 .font(.title2)
                 .foregroundStyle(bluetoothManager.isConnected ? .green : .red)
                 .padding()
             
-            List(Array(bluetoothManager.discoveredDevices), id: \.identifier) { peripheral in
-                HStack {
-                    Text(peripheral.name ?? "Unknown Device")
-                    Spacer()
-                    Button(action: {
-                        bluetoothManager.connect(peripheral)
-                    }) {
-                        Text(bluetoothManager.isConnected && bluetoothManager.targetPeripheral == peripheral ? "Connected" : "Connect")
-                            .foregroundStyle(.blue)
-                    }
-                    .disabled(bluetoothManager.isConnected)
-                }
-            }
-            
-            Spacer()
+            // Since PeripheralDevice is Identifiable (using its 'id' property), we can use the array directly in the List.
+            List(bluetoothManager.discoveredDevices) { device in
+                            HStack {
+                                Text(device.name)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    bluetoothManager.connect(to: device)
+                                }) {
+                                    // If connected and the connected device's id matches the device in this row,
+                                    // show "Connected"; otherwise, show "Connect".
+                                    Text((bluetoothManager.isConnected &&
+                                          bluetoothManager.connectedPeripheralID == device.id)
+                                         ? "Connected" : "Connect")
+                                        .foregroundColor(.blue)
+                                }
+                                // Optionally disable the button if a connection is active.
+                                .disabled(bluetoothManager.isConnected)
+                            }
+                        }
+                        
+                        Spacer()
         }
         //.background(Color(UIColor.systemBackground))
     }
 }
-
+*/
 #Preview {
     ContentView()
-        .environmentObject(BluetoothManager.shared)
+        //.environmentObject(AccessoryViewModel.shared)
 }

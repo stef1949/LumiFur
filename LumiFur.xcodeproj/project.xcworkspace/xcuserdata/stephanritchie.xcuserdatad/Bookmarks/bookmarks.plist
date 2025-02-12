@@ -37,7 +37,7 @@
 					<key>StartingLineNumber</key>
 					<string>1004</string>
 					<key>Timestamp</key>
-					<string>760161508.91752</string>
+					<string>761076640.4971499</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -82,7 +82,7 @@
 					<key>StartingLineNumber</key>
 					<string>1004</string>
 					<key>Timestamp</key>
-					<string>760161508.917563</string>
+					<string>761076640.497159</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -127,7 +127,7 @@
 					<key>StartingLineNumber</key>
 					<string>1004</string>
 					<key>Timestamp</key>
-					<string>760161508.9174761</string>
+					<string>761076640.497129</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -172,7 +172,7 @@
 					<key>StartingLineNumber</key>
 					<string>773</string>
 					<key>Timestamp</key>
-					<string>760161508.917153</string>
+					<string>761076640.497169</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>626</string>
+					<string>624</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>625</string>
+					<string>623</string>
 					<key>Timestamp</key>
-					<string>760161508.917433</string>
+					<string>761075967.889842</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,16 +233,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    @State private var showPreview = true
+				<string>struct SettingsView: View {
 </string>
 				<key>leading</key>
-				<string>    @State private var fontSize: CGFloat = 15
-    @State private var showLineNumbers = false
+				<string>// MARK: SettingsView
+
 </string>
 				<key>trailing</key>
-				<string>    @ObservedObject var bleModel: AccessoryViewModel
-    @State private var showAdvanced = false
-    
+				<string>    @State private var fontSize: CGFloat = 15
+    @State private var showLineNumbers = false
+    @State private var showPreview = true
 </string>
 			</dict>
 			<key>type</key>
