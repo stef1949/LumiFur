@@ -9,10 +9,6 @@
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/d4203580-d577-48f8-a7d8-ce8223b2b173">
 
 
-
-
-# <span style="color : red"> THIS IS VERY EARLY IN DEVELOPMENT AND HAS NO USABILITY YET </span>
-
 # LumiFur
 
 LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.
