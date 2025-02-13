@@ -1,9 +1,9 @@
 <p>
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_07BCB093E1C2-1.jpeg">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-2.png">
 
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-1.jpeg">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-3.png">
 
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-2.jpeg">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-4.png">
 </p>
 
 # TEST VIEW - Demonstrating Ability to Preview Views!!!!
