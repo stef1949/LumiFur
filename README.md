@@ -1,9 +1,10 @@
+<p>
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_07BCB093E1C2-1.jpeg">
 
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-1.jpeg">
 
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-2.jpeg">
-
+</p>
 
 # TEST VIEW - Demonstrating Ability to Preview Views!!!!
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/d4203580-d577-48f8-a7d8-ce8223b2b173">
