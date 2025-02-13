@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
-		358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 3584279F2C8CF5590096B1D0 /* blinking.mp4 */; };
 		35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
 		35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */; };
 		35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */; };
@@ -65,7 +64,6 @@
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
-		3584279F2C8CF5590096B1D0 /* blinking.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = blinking.mp4; sourceTree = "<group>"; };
 		35AE1A442D5D207F00FDD29E /* liveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = liveActivity.swift; sourceTree = "<group>"; };
 		35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "LumiFur WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -142,7 +140,6 @@
 			isa = PBXGroup;
 			children = (
 				35DA3A632C8739FD0039D19D /* Assets.xcassets */,
-				3584279F2C8CF5590096B1D0 /* blinking.mp4 */,
 			);
 			path = Assets;
 			sourceTree = "<group>";
@@ -377,7 +374,6 @@
 			files = (
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
 				35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */,
-				358427A22C8CF55A0096B1D0 /* blinking.mp4 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -26,9 +26,9 @@ struct LumiFur_WidgetLiveActivity: Widget {
         ActivityConfiguration(for: LumiFur_WidgetAttributes.self) { context in
             // Lock screen/banner UI goes here
             VStack {
-                Text("Hello")
+                Text("LumiFur")
             }
-            .activityBackgroundTint(Color.cyan)
+            .activityBackgroundTint(Color(uiColor: .systemGray6))
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
@@ -36,8 +36,9 @@ struct LumiFur_WidgetLiveActivity: Widget {
                 // Expanded UI goes here.  Compose the expanded UI through
                 // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("LumiFur")
+                    //Text("LumiFur")
                     VStack {
+                        Spacer()
                         Text("Connected")
                             .font(.headline)
                             .fixedSize(horizontal: false, vertical: true)
@@ -52,23 +53,35 @@ struct LumiFur_WidgetLiveActivity: Widget {
                     }
                     
                     //Image cannot exceed 4kb
-                    //Image("Protogen")
+                    
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    VStack{
+                        Spacer()
+                        Text("Current View")
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom")
+                    Text("LumiFur")
                     // more content
                 }
             } compactLeading: {
-                Text("LumiFur")
+                //Text("LumiFur")
+                Image("LumiFurFrontSymbol")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    
                 //Image("Protogen")
             } compactTrailing: {
                 //Text("T")
                 Image("bluetooth.fill")
             } minimal: {
-                Text("m")
+                //Text("m")
+                Image("LumiFurFrontSymbol")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
             }
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.white)

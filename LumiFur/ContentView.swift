@@ -117,6 +117,31 @@ struct SplashView: View {
         }
     }
 }
+struct BouncingButton<Label: View>: View {
+    let action: () -> Void
+    let label: () -> Label
+    @State private var animate = false
+
+    var body: some View {
+        Button(action: {
+            // Trigger the bounce animation on tap
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                animate = true
+            }
+            // Return to normal scale after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    animate = false
+                }
+            }
+            // Perform the button action
+            action()
+        }) {
+            label()
+                .scaleEffect(animate ? 0.8 : 1.0)
+        }
+    }
+}
 
 // MARK: ContentView
 struct ContentView: View {
@@ -148,7 +173,7 @@ struct ContentView: View {
     ]
     
     // Array of SF Symbol names
-    private var protoActionOptions: [String] = ["🙂", "😄", "😡", "😝", "🤪", "🥵", "🌌"]
+    private var protoActionOptions: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
    
     //dotMatrix variable
     @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
@@ -403,7 +428,7 @@ struct ContentView: View {
                     )
                     .scaledToFill()
                     .frame(height: 100)
-                    .offset(y: 20)
+                    .offset(y: 40)
                 
                 Text("LumiFur")
                     .font(.title)
@@ -428,7 +453,7 @@ struct ContentView: View {
                 .padding(10)
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
-                .border(Color.green)
+                //.border(Color.green)
             }
             .offset(x: -20, y: -40)
         }
@@ -437,13 +462,14 @@ struct ContentView: View {
                     Spacer()
                     LEDPreview()
                         .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     Spacer()
                     LEDPreview()
-                    
                         .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     Spacer()
                 }
-                .border(Color.red)
+                //.border(Color.red)
                 //.padding()
             
             //.background(.ultraThinMaterial)
@@ -451,36 +477,48 @@ struct ContentView: View {
             //.frame(maxWidth: .infinity, maxHeight: 100)
             //.offset(y: -40)
             //.padding()
-            .border(Color.purple)
+            //.border(Color.purple)
         }
+    static let gradientStart = Color(red: 0 / 255, green: 0 / 255, blue: 0 / 255)
+    static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
+    
     private var gridSection: some View {
+        ZStack {
+            
             ScrollView(.horizontal) {
                 LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
                     ForEach(protoActionOptions.indices, id: \.self) { index in
-                                    Button(action: {
-                                        print("\(protoActionOptions[index]) button pressed – setting view \(index + 1)")
-                                        accessoryViewModel.setView(index + 1)
-                                    }) {
+                        BouncingButton(action: {
+                            print("\(protoActionOptions[index]) button pressed – setting view \(index + 1)")
+                            accessoryViewModel.setView(index + 1)
+                        }) {
                             Text(protoActionOptions[index])
-                                .font(.system(size: 120))
                                 .aspectRatio(1, contentMode: .fit)
-                                .border(Color.green)
+                                .font(.system(size: 75))
+                                .frame(width: 175, height: 175)
+                            
+                            //.border(Color.green)
                                 .symbolRenderingMode(.monochrome)
                                 .background(.clear)
-                                //.padding()
+                            
+                            //.padding()
                         }
-                        .aspectRatio(1, contentMode: .fit)
+                        //.buttonStyle(BounceButtonStyle())
+                        //.aspectRatio(1, contentMode: .fit)
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
+                        //.padding()
                         .frame(width: 150, height: 150)
-                        .border(Color.red)
+                        //.border(Color.red)
                         .padding()
                     }
                 }
-                .border(Color.yellow)
+                //.border(Color.yellow)
                 .frame(maxHeight: .infinity)
-                //.padding()
+                .padding()
             }
+        }
+        .mask(LinearGradient(gradient: Gradient(colors: [.clear, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .leading, endPoint: .trailing))
         }
     private var settingsAndChartsSection: some View {
             HStack {
@@ -780,7 +818,7 @@ struct SignalStrengthView: View {
     }
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(alignment: .bottom, spacing: 4) {
             ForEach(0..<4) { bar in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(bar < Int(signalLevel * 4) ? .blue : Color.gray.opacity(0.3))
@@ -797,9 +835,10 @@ struct AdvancedSettingsView: View {
     @ObservedObject var bleModel: AccessoryViewModel
 
     // Example advanced settings state variables.
-    @State private var autoReconnect: Bool = false
-    @State private var rssiMonitoringEnabled: Bool = false
-    @State private var rssiUpdateInterval: Double = 1.0
+   // @State private var autoReconnect: Bool = true
+    @AppStorage("autoReconnect") private var autoReconnect: Bool = true
+    @AppStorage("rssiMonitoringEnabled") private var rssiMonitoringEnabled: Bool = false
+    @AppStorage("rssiUpdateInterval") private var rssiUpdateInterval: Double = 1.0
 
     var body: some View {
         Form {

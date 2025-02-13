@@ -339,35 +339,42 @@ extension AccessoryViewModel {
     }
     
     func startLumiFur_WidgetLiveActivity() {
-            // Use the connected device name if available; otherwise, a placeholder.
-            let deviceName = connectedDevice?.name ?? "Unknown Device"
-            let attributes = LumiFur_WidgetAttributes(name: deviceName)
-            let initialState = LumiFur_WidgetAttributes.ContentState(
-                connectionStatus: connectionStatus,
-                signalStrength: signalStrength
-            )
-            
-            do {
-                let activity = try Activity<LumiFur_WidgetAttributes>.request(
-                    attributes: attributes,
-                    contentState: initialState,
-                    pushType: nil
-                )
-                print("Started Live Activity: \(activity.id)")
-            } catch {
-                print("Failed to start Live Activity: \(error.localizedDescription)")
-            }
-        }
+        // Use the connected device name if available; otherwise, a placeholder.
+        let deviceName = connectedDevice?.name ?? "Unknown Device"
+        let attributes = LumiFur_WidgetAttributes(name: deviceName)
+        let initialState = LumiFur_WidgetAttributes.ContentState(
+            connectionStatus: connectionStatus,
+            signalStrength: signalStrength
+        )
+        // Wrap the initial state in ActivityContent.
+        let initialContent = ActivityContent(state: initialState, staleDate: nil)
         
-        /// Updates all active BLE Live Activities with the latest state.
-        func updateLumiFur_WidgetLiveActivity() {
-            for activity in Activity<LumiFur_WidgetAttributes>.activities {
-                Task {
-                    await activity.update(using: LumiFur_WidgetAttributes.ContentState(
-                        connectionStatus: connectionStatus,
-                        signalStrength: signalStrength
-                    ))
+        do {
+            let activity = try Activity<LumiFur_WidgetAttributes>.request(
+                attributes: attributes,
+                content: initialContent,
+                pushType: nil
+            )
+            print("Started Live Activity: \(activity.id)")
+        } catch {
+            print("Failed to start Live Activity: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Updates all active BLE Live Activities with the latest state.
+    func updateLumiFur_WidgetLiveActivity() {
+        let updatedState = LumiFur_WidgetAttributes.ContentState(
+            connectionStatus: connectionStatus,
+            signalStrength: signalStrength
+        )
+        // Wrap the updated state in ActivityContent.
+        let updatedContent = ActivityContent(state: updatedState, staleDate: nil)
+        
+        for activity in Activity<LumiFur_WidgetAttributes>.activities {
+            Task {
+                do {
+                     await activity.update(updatedContent)
                 }
             }
         }
-}
+    }}
