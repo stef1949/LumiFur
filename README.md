@@ -1,8 +1,8 @@
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/49c6a750-0189-4038-8d7d-1f2ab73ca94c">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_07BCB093E1C2-1.jpeg">
 
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/3902855b-1eb1-4635-be88-e17ab7339880">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-1.jpeg">
 
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/48177878-a5a0-4c86-ac8b-935482825636">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/IMG_F0BC783E7CE8-2.jpeg">
 
 
 # TEST VIEW - Demonstrating Ability to Preview Views!!!!
