@@ -66,6 +66,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private var temperatureCharacteristic: CBCharacteristic?
     private var rssiUpdateTimer: Timer?
     
+    // New properties for automatic reconnectivity:
+    private var autoReconnectPeripheral: CBPeripheral?
+    private var isManualDisconnect: Bool = false
+    private var didAttemptAutoReconnect: Bool = false  // Ensure we only try auto-reconnect once per launch.
+    
     // Service and characteristic UUIDs.
     private let serviceUUID = CBUUID(string: "01931c44-3867-7740-9867-c822cb7df308")
     private let viewCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09fe")
@@ -102,6 +107,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             connectionStatus = "Bluetooth not powered on"
             return
         }
+        
+        // When connecting, we consider this a user-initiated connection.
+        isManualDisconnect = false
+        
         connectingPeripheral = device
         isConnecting = true
         connectionStatus = "Connecting..."
@@ -113,9 +122,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     /// Disconnects from the currently connected peripheral.
     func disconnect() {
+        // Mark as a manual disconnect so that auto-reconnection is skipped.
+        isManualDisconnect = true
         if let peripheral = targetPeripheral {
             centralManager.cancelPeripheralConnection(peripheral)
         }
+        // Clear the stored peripheral and last device info.
+        autoReconnectPeripheral = nil
+        UserDefaults.standard.removeObject(forKey: "LastConnectedPeripheral")
     }
     
     /// Change the view (for example, for an LED matrix configuration) and update the BLE characteristic.
@@ -169,6 +183,26 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 print("Central state: poweredOn")
                 // Optionally, you can start scanning automatically:
                 // self.scanForDevices()
+                if !self.didAttemptAutoReconnect {
+                    self.didAttemptAutoReconnect = true
+                    if let uuidString = UserDefaults.standard.string(forKey: "LastConnectedPeripheral"),
+                       let uuid = UUID(uuidString: uuidString) {
+                        let peripherals = self.centralManager.retrievePeripherals(withIdentifiers: [uuid])
+                        if let peripheral = peripherals.first {
+                            print("Auto-reconnecting to last device: \(peripheral.name ?? "Unknown")")
+                            self.autoReconnectPeripheral = peripheral
+                            // Create a temporary PeripheralDevice wrapper (RSSI & advertisement data unavailable)
+                            let device = PeripheralDevice(
+                                id: peripheral.identifier,
+                                name: peripheral.name ?? "Unknown",
+                                rssi: -100,
+                                advertisementServiceUUIDs: nil,
+                                peripheral: peripheral
+                            )
+                            self.connect(to: device)
+                        }
+                    }
+                }
             @unknown default:
                 fatalError("Unknown central manager state")
             }
@@ -202,6 +236,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.connectingPeripheral = nil
             self.connectionStatus = "Connected to \(peripheral.name ?? "Unknown")"
             self.targetPeripheral = peripheral
+            // Save the peripheral so we can auto-reconnect if needed.
+            self.autoReconnectPeripheral = peripheral
+            // Persist the last connected device's UUID.
+            UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: "LastConnectedPeripheral")
+            
             peripheral.delegate = self
             peripheral.discoverServices([self.serviceUUID])
             self.startRSSIMonitoring()
@@ -231,8 +270,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.isConnecting = false
             self.connectingPeripheral = nil
             self.stopRSSIMonitoring()
-            // Optionally, restart scanning after disconnection.
-            self.scanForDevices()
+            
+            // If the disconnect was not manual, attempt automatic reconnection.
+                        if !self.isManualDisconnect, let autoPeripheral = self.autoReconnectPeripheral {
+                            self.connectionStatus = "Reconnecting..."
+                            print("Attempting automatic reconnection to \(autoPeripheral.name ?? "Unknown")")
+                            central.connect(autoPeripheral, options: nil)
+                        } else {
+                            // Otherwise, restart scanning.
+                            self.scanForDevices()
+                        }
         }
     }
     

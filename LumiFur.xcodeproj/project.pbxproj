@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
+		3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */; };
 		35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
 		35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */; };
 		35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */; };
@@ -23,6 +25,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3591DD612D5FB697009A3A94 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3591DD502D5FB695009A3A94;
+			remoteInfo = "LumiFurWatchOS Watch App";
+		};
+		3591DD6B2D5FB697009A3A94 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3591DD502D5FB695009A3A94;
+			remoteInfo = "LumiFurWatchOS Watch App";
+		};
+		3591DD722D5FB697009A3A94 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3591DD502D5FB695009A3A94;
+			remoteInfo = "LumiFurWatchOS Watch App";
+		};
 		35AE1A5E2D5D24C700FDD29E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 35DA3A542C8739FB0039D19D /* Project object */;
@@ -47,6 +70,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		3591DD752D5FB697009A3A94 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -64,6 +98,10 @@
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
+		3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LumiFurWatchOS Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LumiFurWatchOS Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LumiFurWatchOS Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOSConnectivity.swift; sourceTree = "<group>"; };
 		35AE1A442D5D207F00FDD29E /* liveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = liveActivity.swift; sourceTree = "<group>"; };
 		35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "LumiFur WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -99,10 +137,34 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "LumiFurWatchOS Watch App"; sourceTree = "<group>"; };
+		3591DD632D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "LumiFurWatchOS Watch AppTests"; sourceTree = "<group>"; };
+		3591DD6D2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "LumiFurWatchOS Watch AppUITests"; sourceTree = "<group>"; };
 		35AE1A502D5D24C600FDD29E /* LumiFur Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (35AE1A672D5D2B9A00FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 35AE1A612D5D24C700FDD29E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "LumiFur Widget"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3591DD4E2D5FB695009A3A94 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD5D2D5FB697009A3A94 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD672D5FB697009A3A94 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35AE1A472D5D24C600FDD29E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -147,6 +209,7 @@
 		358427A32C8CF57F0096B1D0 /* Connectivity */ = {
 			isa = PBXGroup;
 			children = (
+				3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */,
 				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
 				3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */,
 			);
@@ -177,6 +240,9 @@
 				35DA3A702C8739FD0039D19D /* LumiFurTests */,
 				35DA3A7A2C8739FD0039D19D /* LumiFurUITests */,
 				35AE1A502D5D24C600FDD29E /* LumiFur Widget */,
+				3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */,
+				3591DD632D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */,
+				3591DD6D2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */,
 				35AE1A4B2D5D24C600FDD29E /* Frameworks */,
 				35DA3A5D2C8739FB0039D19D /* Products */,
 			);
@@ -189,6 +255,9 @@
 				35DA3A6D2C8739FD0039D19D /* LumiFurTests.xctest */,
 				35DA3A772C8739FD0039D19D /* LumiFurUITests.xctest */,
 				35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */,
+				3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */,
+				3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */,
+				3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -236,6 +305,74 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3591DD7C2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch App" */;
+			buildPhases = (
+				3591DD4D2D5FB695009A3A94 /* Sources */,
+				3591DD4E2D5FB695009A3A94 /* Frameworks */,
+				3591DD4F2D5FB695009A3A94 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */,
+			);
+			name = "LumiFurWatchOS Watch App";
+			packageProductDependencies = (
+			);
+			productName = "LumiFurWatchOS Watch App";
+			productReference = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3591DD5F2D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3591DD7D2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */;
+			buildPhases = (
+				3591DD5C2D5FB697009A3A94 /* Sources */,
+				3591DD5D2D5FB697009A3A94 /* Frameworks */,
+				3591DD5E2D5FB697009A3A94 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3591DD622D5FB697009A3A94 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3591DD632D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */,
+			);
+			name = "LumiFurWatchOS Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "LumiFurWatchOS Watch AppTests";
+			productReference = 3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3591DD692D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3591DD7E2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */;
+			buildPhases = (
+				3591DD662D5FB697009A3A94 /* Sources */,
+				3591DD672D5FB697009A3A94 /* Frameworks */,
+				3591DD682D5FB697009A3A94 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3591DD6C2D5FB697009A3A94 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3591DD6D2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */,
+			);
+			name = "LumiFurWatchOS Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "LumiFurWatchOS Watch AppUITests";
+			productReference = 3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */;
@@ -266,11 +403,13 @@
 				35DA3A592C8739FB0039D19D /* Frameworks */,
 				35DA3A5A2C8739FB0039D19D /* Resources */,
 				35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */,
+				3591DD752D5FB697009A3A94 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				35AE1A5F2D5D24C700FDD29E /* PBXTargetDependency */,
+				3591DD732D5FB697009A3A94 /* PBXTargetDependency */,
 			);
 			name = LumiFur;
 			productName = LumiFur;
@@ -323,6 +462,17 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					3591DD502D5FB695009A3A94 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					3591DD5F2D5FB697009A3A94 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 3591DD502D5FB695009A3A94;
+					};
+					3591DD692D5FB697009A3A94 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 3591DD502D5FB695009A3A94;
+					};
 					35AE1A492D5D24C600FDD29E = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -356,11 +506,35 @@
 				35DA3A6C2C8739FD0039D19D /* LumiFurTests */,
 				35DA3A762C8739FD0039D19D /* LumiFurUITests */,
 				35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */,
+				3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */,
+				3591DD5F2D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */,
+				3591DD692D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3591DD4F2D5FB695009A3A94 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD5E2D5FB697009A3A94 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD682D5FB697009A3A94 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35AE1A482D5D24C600FDD29E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -394,6 +568,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3591DD4D2D5FB695009A3A94 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD5C2D5FB697009A3A94 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3591DD662D5FB697009A3A94 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35AE1A462D5D24C600FDD29E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -405,6 +600,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
 				3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */,
@@ -433,6 +629,21 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3591DD622D5FB697009A3A94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */;
+			targetProxy = 3591DD612D5FB697009A3A94 /* PBXContainerItemProxy */;
+		};
+		3591DD6C2D5FB697009A3A94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */;
+			targetProxy = 3591DD6B2D5FB697009A3A94 /* PBXContainerItemProxy */;
+		};
+		3591DD732D5FB697009A3A94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */;
+			targetProxy = 3591DD722D5FB697009A3A94 /* PBXContainerItemProxy */;
+		};
 		35AE1A5F2D5D24C700FDD29E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */;
@@ -451,6 +662,147 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3591DD762D5FB697009A3A94 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LumiFurWatchOS;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		3591DD772D5FB697009A3A94 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LumiFurWatchOS;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
+		3591DD782D5FB697009A3A94 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LumiFurWatchOS Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LumiFurWatchOS Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		3591DD792D5FB697009A3A94 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LumiFurWatchOS Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LumiFurWatchOS Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
+		3591DD7A2D5FB697009A3A94 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "LumiFurWatchOS Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Debug;
+		};
+		3591DD7B2D5FB697009A3A94 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z64L7GR687;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "LumiFurWatchOS Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.2;
+			};
+			name = Release;
+		};
 		35AE1A632D5D24C700FDD29E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -823,6 +1175,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3591DD7C2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3591DD762D5FB697009A3A94 /* Debug */,
+				3591DD772D5FB697009A3A94 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3591DD7D2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3591DD782D5FB697009A3A94 /* Debug */,
+				3591DD792D5FB697009A3A94 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3591DD7E2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3591DD7A2D5FB697009A3A94 /* Debug */,
+				3591DD7B2D5FB697009A3A94 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
