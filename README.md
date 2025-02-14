@@ -1,17 +1,14 @@
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/49c6a750-0189-4038-8d7d-1f2ab73ca94c">
+<p>
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-2.png">
 
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/3902855b-1eb1-4635-be88-e17ab7339880">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-3.png">
 
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/48177878-a5a0-4c86-ac8b-935482825636">
+<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-4.png">
+</p>
 
-
-# TEST VIEW - Demonstrating Ability to upload views for preview, along with sharing!!!!
+# TEST VIEW - Demonstrating Ability to Preview Views!!!!
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/d4203580-d577-48f8-a7d8-ce8223b2b173">
 
-
-
-
-# <span style="color : red"> THIS IS VERY EARLY IN DEVELOPMENT AND HAS NO USABILITY YET </span>
 
 # LumiFur
 
