@@ -557,54 +557,60 @@ struct ContentView: View {
                     .padding()
                     .background(.ultraThinMaterial)
                     .cornerRadius(10)
-                    .frame(height: 50)
+                    .frame(height: 70)
                     
                     Text("CPU")
                         .fontDesign(.rounded)
                         .bold()
                 }
-                
-                // Temperature Chart (using the same dummy data)
+                //.padding()
+                // Temperature Chart
                 VStack {
-                    Chart(accessoryViewModel.cpuUsageData) { element in
-                        LineMark(
-                            x: .value("Time", element.timestamp),
-                            y: .value("CPU Usage", element.cpuUsage)
-                        )
-                        .foregroundStyle(Color.blue)
-                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 2]))
-                        .symbol(Circle().strokeBorder(lineWidth: 2))
-                    }
-                    .chartYScale(domain: 0...100)
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: 1)) { value in
-                            AxisValueLabel {
-                                if let dateValue = value.as(Date.self) {
-                                    Text(dateValue, format: .dateTime.hour().minute().second())
+                    Chart {
+                                    ForEach(accessoryViewModel.temperatureData) { element in
+                                        LineMark(
+                                            x: .value("Time", element.timestamp),
+                                            y: .value("Temperature", element.temperature)
+                                        )
+                                        //.foregroundStyle(.red) // Change to blue if preferred.
+                                        .lineStyle(StrokeStyle(lineWidth: 2))
+                                     
+                                    }
                                 }
-                            }
-                        }
-                    }
-                    .chartYAxis {
-                        AxisMarks(values: .stride(by: 50)) { value in
-                            AxisValueLabel {
-                                if let intValue = value.as(Int.self) {
-                                    Text("\(intValue)%")
-                                        .font(.caption2)
+                                //.id(accessoryViewModel.temperatureData.count)
+                                .animation(.easeInOut(duration: 0.5), value: accessoryViewModel.temperatureData.count)
+                                .chartYScale(domain: 15...85) // Adjust the domain to your expected temperature range.
+                                .chartXAxis {
+                                    AxisMarks(values: .automatic) { axisValue in
+                                        AxisValueLabel() {
+                                                        if let tempValue = axisValue.as(Double.self) {
+                                                            Text(String(format: "%.1f°C", tempValue))
+                                                                .font(.caption2)
+                                            }
+                                        }
+                                    }
                                 }
+                                .chartYAxis {
+                                    AxisMarks(position: .leading, values: .automatic) { axisValue in
+                                        AxisValueLabel() {
+                                            if let tempValue = axisValue.as(Double.self) {
+                                                Text(String(tempValue))
+                                                    .font(.caption2)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(10)
+                                .frame(height: 70)
+                                
+                                Text("Temperature (°C)")
+                                    .fontDesign( .rounded)
+                                    .bold()
                             }
-                        }
-                    }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(10)
-                    .frame(height: 50)
-                    
-                    Text("Temperature")
-                        .fontDesign(.rounded)
-                        .bold()
-                }
-                .padding()
+                //.padding()
+                //.border(Color.gray, width: 1)
                 
                 // Isolated NavigationLinks
                 NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
@@ -702,9 +708,18 @@ struct SettingsView: View {
             Section {
                 VStack(alignment: .leading, spacing: 15) {
                     HStack {
+                        Spacer()
+                        Image("bluetooth.fill")
+                            .font(.system(size: 75))
+                            .opacity(0.2)
+                        Spacer()
+                    }
+                    HStack {
                         SignalStrengthView(rssi: bleModel.signalStrength)
+                        Spacer()
                         Text(bleModel.connectionStatus)
                             .foregroundColor(bleModel.isConnected ? .green : .red)
+                            .animation(.easeInOut(duration: 0.3), value: bleModel.isConnected)
                     }
                     
                     if !bleModel.isConnected {
@@ -733,6 +748,7 @@ struct SettingsView: View {
                                             HStack {
                                                 Text(device.name)
                                                 Spacer()
+                                                SignalStrengthView(rssi: bleModel.signalStrength)
                                                 if bleModel.connectingPeripheral?.id == device.id {
                                                     ProgressView()
                                                 }
@@ -795,6 +811,10 @@ struct ConnectedDeviceView: View {
     
     var body: some View {
             HStack {
+                Image("LumiFur_Controller_AK")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                
                 VStack(alignment: .leading) {
                     Text(peripheral.name)
                         .font(.headline)
@@ -805,11 +825,16 @@ struct ConnectedDeviceView: View {
                 Spacer()
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
-        }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding()
     }
 }
 
 struct SignalStrengthView: View {
+    @AppStorage("rssiMonitoringEnabled") private var rssiMonitoringEnabled: Bool = false
     let rssi: Int
     
     private var signalLevel: Double {
@@ -824,9 +849,13 @@ struct SignalStrengthView: View {
                     .fill(bar < Int(signalLevel * 4) ? .blue : Color.gray.opacity(0.3))
                     .frame(width: 4, height: CGFloat(bar + 2) * 4)
             }
-            Text("\(rssi)dBm")
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundColor(.secondary)
+            if rssiMonitoringEnabled {
+                Text("\(rssi)dBm")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: rssiMonitoringEnabled)
+            }
         }
     }
 }

@@ -19,6 +19,13 @@ struct CPUUsageData: Identifiable {
     let cpuUsage: Int
 }
 
+/// Data structure for temperature readings.
+struct TemperatureData: Identifiable {
+    let id = UUID()
+    let timestamp: Date
+    let temperature: Double
+}
+
 /// A wrapper for a discovered peripheral. Conforms to Identifiable and Hashable for use in SwiftUI lists.
 struct PeripheralDevice: Identifiable, Hashable {
     let id: UUID
@@ -49,6 +56,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var discoveredDevices: [PeripheralDevice] = []   // Using our custom wrapper.
     @Published var connectionStatus: String = "Disconnected"
     @Published var temperature: String = "N/A"
+    @Published var temperatureData: [TemperatureData] = []
     @Published var selectedView: Int = 1
     @Published var errorMessage: String = ""
     @Published var showError: Bool = false
@@ -234,12 +242,24 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.isConnected = true
             self.isConnecting = false
             self.connectingPeripheral = nil
-            self.connectionStatus = "Connected to \(peripheral.name ?? "Unknown")"
+            self.connectionStatus = "Connected" /* to \(peripheral.name ?? "Unknown")*/
             self.targetPeripheral = peripheral
             // Save the peripheral so we can auto-reconnect if needed.
             self.autoReconnectPeripheral = peripheral
             // Persist the last connected device's UUID.
             UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: "LastConnectedPeripheral")
+            
+            // Optionally, add the auto-connected device to the discoveredDevices list.
+                    if !self.discoveredDevices.contains(where: { $0.id == peripheral.identifier }) {
+                        let device = PeripheralDevice(
+                            id: peripheral.identifier,
+                            name: peripheral.name ?? "Unknown",
+                            rssi: -100,
+                            advertisementServiceUUIDs: nil,
+                            peripheral: peripheral
+                        )
+                        self.discoveredDevices.append(device)
+                    }
             
             peripheral.delegate = self
             peripheral.discoverServices([self.serviceUUID])
@@ -332,10 +352,24 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 self.selectedView = viewValue
             }
         } else if characteristic.uuid == tempCharUUID {
-            let tempString = String(data: data, encoding: .utf8) ?? "N/A"
-            DispatchQueue.main.async {
-                self.temperature = tempString
-            }
+            // Decode the string (e.g., "47.7°C") sent by your C++ code
+            if let tempString = String(data: data, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    // Store the raw string for display
+                    self.temperature = tempString
+                    
+                    // Remove the "°C" suffix (and any extra whitespace) so we can convert to a number
+                    let cleanedString = tempString.replacingOccurrences(of: "°C", with: "").trimmingCharacters(in: .whitespaces)
+                    if let tempValue = Double(cleanedString) {
+                        // Append a new data point for your chart
+                        self.temperatureData.append(TemperatureData(timestamp: Date(), temperature: tempValue))
+                    }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.temperature = "N/A"
+                }
+                }
         }
     }
     
@@ -391,7 +425,9 @@ extension AccessoryViewModel {
         let attributes = LumiFur_WidgetAttributes(name: deviceName)
         let initialState = LumiFur_WidgetAttributes.ContentState(
             connectionStatus: connectionStatus,
-            signalStrength: signalStrength
+            signalStrength: signalStrength,
+            temperature: temperature,
+            selectedView: selectedView
         )
         // Wrap the initial state in ActivityContent.
         let initialContent = ActivityContent(state: initialState, staleDate: nil)
@@ -412,7 +448,9 @@ extension AccessoryViewModel {
     func updateLumiFur_WidgetLiveActivity() {
         let updatedState = LumiFur_WidgetAttributes.ContentState(
             connectionStatus: connectionStatus,
-            signalStrength: signalStrength
+            signalStrength: signalStrength,
+            temperature: temperature,
+            selectedView: selectedView
         )
         // Wrap the updated state in ActivityContent.
         let updatedContent = ActivityContent(state: updatedState, staleDate: nil)

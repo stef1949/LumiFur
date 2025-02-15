@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1044</string>
+					<string>1073</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1043</string>
+					<string>1072</string>
 					<key>Timestamp</key>
-					<string>761173461.015214</string>
+					<string>761275295.512742</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1044</string>
+					<string>1073</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1043</string>
+					<string>1072</string>
 					<key>Timestamp</key>
-					<string>761173461.015237</string>
+					<string>761275295.512765</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1044</string>
+					<string>1073</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1043</string>
+					<string>1072</string>
 					<key>Timestamp</key>
-					<string>761173461.0152251</string>
+					<string>761275295.512758</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>812</string>
+					<string>836</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>811</string>
+					<string>835</string>
 					<key>Timestamp</key>
-					<string>761173461.0152479</string>
+					<string>761275295.5127161</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -195,9 +195,9 @@
 
 </string>
 				<key>trailing</key>
-				<string>    let rssi: Int
+				<string>    @AppStorage("rssiMonitoringEnabled") private var rssiMonitoringEnabled: Bool = false
+    let rssi: Int
     
-    private var signalLevel: Double {
 </string>
 			</dict>
 			<key>type</key>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>662</string>
+					<string>668</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>661</string>
+					<string>667</string>
 					<key>Timestamp</key>
-					<string>761173461.015102</string>
+					<string>761275295.512771</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
