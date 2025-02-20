@@ -1,18 +1,16 @@
-<p>
+<h1 align="center">
+LumiFur
+</h1>
+
+LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.
+
+<p align="center">
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-2.png">
 
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-3.png">
 
 <img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-4.png">
 </p>
-
-# TEST VIEW - Demonstrating Ability to Preview Views!!!!
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/d4203580-d577-48f8-a7d8-ce8223b2b173">
-
-
-# LumiFur
-
-LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.
 
 ## Planned Features
 - **3rd Party controller Support**: PLanned interoperability with ProtoTracer for controlling fursuit LEDs.
