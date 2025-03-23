@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import CoreBluetooth
 import Combine
 import ActivityKit
@@ -345,6 +346,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             return
         }
         guard let data = characteristic.value else { return }
+        
         if characteristic.uuid == viewCharUUID {
             // Assume the first byte represents the view value.
             let viewValue = data.first.map { Int($0) } ?? 1
@@ -364,12 +366,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                         // Append a new data point for your chart
                         self.temperatureData.append(TemperatureData(timestamp: Date(), temperature: tempValue))
                     }
+                    // Optionally update your Live Activity if needed
+                    self.updateLumiFur_WidgetLiveActivity()
                 }
             } else {
                 DispatchQueue.main.async {
                     self.temperature = "N/A"
                 }
-                }
+            }
         }
     }
     
@@ -446,6 +450,12 @@ extension AccessoryViewModel {
     
     /// Updates all active BLE Live Activities with the latest state.
     func updateLumiFur_WidgetLiveActivity() {
+        // Only update live activity when the app is in the background
+            guard UIApplication.shared.applicationState == .background else {
+                print("App is in the foreground, skipping live activity update")
+                return
+            }
+        
         let updatedState = LumiFur_WidgetAttributes.ContentState(
             connectionStatus: connectionStatus,
             signalStrength: signalStrength,

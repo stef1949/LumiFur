@@ -3,6 +3,8 @@
 //  LumiFur
 //
 //  Created by Stephan Ritchie on 03/09/2024.
+//  Copyright © (Richies3D Ltd). All rights reserved.
+//
 //
 
 import SwiftUI
@@ -16,6 +18,110 @@ import os
 // IOS 18.0 features
 //import AccessorySetupKit
 
+
+
+struct WhatsNew: View {
+    // Persist the last shown version in user defaults
+    @AppStorage("lastAppVersion") private var lastAppVersion: String = ""
+    // Get the current version from the bundle (default to "1.0" if not found)
+    private let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
+    // Controls whether the splash screen is visible
+    @State private var shouldShow: Bool = false
+    @Environment(\.dismiss) var dismiss
+    var body: some View {
+        Group {
+            if shouldShow {
+                ZStack {
+                    Color(.clear)
+                        .ignoresSafeArea()
+                        .background(.ultraThinMaterial)
+                    VStack {
+                        Spacer()
+                        Text("What's New in LumiFur")
+                            .font(.system(.largeTitle, weight: .bold))
+                            .frame(width: 240)
+                            .clipped()
+                            .multilineTextAlignment(.center)
+                        .padding(.top, 82)
+                        .padding(.bottom, 52)
+                        VStack(spacing: 28) {
+                            ForEach(0..<5) { _ in // Replace with your data model here
+                                HStack {
+                                    Image(systemName: "widget.extralarge.badge.plus")
+                                        .symbolRenderingMode(.monochrome)
+                                        .foregroundStyle(.blue)
+                                        .font(.system(.title, weight: .regular))
+                                        .frame(width: 60, height: 50)
+                                        .clipped()
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        // Title
+                                        Text("Collaborate in Messages")
+                                            .font(.system(.footnote, weight: .semibold))
+                                        // Description
+                                        Text("Easily share, discuss, and see updates about your presentation.")
+                                            .font(.footnote)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    Spacer()
+                                }
+                            }
+                        }
+                        Spacer()
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Complete feature list")
+                            Image(systemName: "chevron.forward")
+                                .imageScale(.small)
+                        }
+                        .padding(.top, 32)
+                        .foregroundStyle(.blue)
+                        .font(.subheadline)
+                        //Spacer()
+                        BouncingButton(action: {
+                            // Update the stored version and dismiss the splash screen
+                            lastAppVersion = currentVersion
+                            dismiss()
+                            withAnimation { shouldShow = false }
+                        }) {
+                            Text("Continue")
+                                .font(.headline)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding(.horizontal)
+                        }
+                        
+                        Spacer()
+                    }
+                    //.background(.ultraThinMaterial)
+                    .transition(.opacity)
+                    .animation(.easeInOut, value: shouldShow)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .padding(.top, 53)
+                    .padding(.bottom, 0)
+                    .padding(.horizontal, 29)
+                }
+                //.padding()
+                .ignoresSafeArea()
+            }
+        }
+        .onAppear {
+            // Show the "What's New" screen if the current version differs from the last stored version
+            if lastAppVersion != currentVersion {
+                shouldShow = true
+            }
+        }
+        .ignoresSafeArea(.all)
+        .frame(maxWidth: .infinity)
+        //.clipped()
+        //.padding(.top, 53)
+        //.padding(.bottom, 0)
+        //.padding(.horizontal, 29)
+    }
+}
 
 struct SplashView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -145,19 +251,9 @@ struct BouncingButton<Label: View>: View {
 
 // MARK: ContentView
 struct ContentView: View {
+    @State private var isLedArrayExpanded: Bool = false
+    
     @StateObject var accessoryViewModel = AccessoryViewModel()
-    //@EnvironmentObject var bluetoothManager: BluetoothManager
-    //Environment Variables
-        //@Environment(\.colorScheme) var colorScheme
-    //@EnvironmentObject var sharedViewModel: SharedViewModel
-    /*
-    //Connectivity Variables
-    @State private var connectionBluetooth: Bool = true
-    @State private var connectionWIFI: Bool = false
-    @State private var connectionMatter: Bool = false
-    @State private var connectionZ_Wave: Bool = false
-    @State private var signalStrength: Int = 0
-    */
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter, z_wave
@@ -167,14 +263,14 @@ struct ContentView: View {
     @State private var selectedMatrix: SettingsView.Matrixstyle = .array
     
     private let twoColumnGrid = [
-        GridItem(.flexible(minimum: 100), spacing: 5),
-        GridItem(.flexible(minimum: 100), spacing: 5)
+        GridItem(.adaptive(minimum: 200, maximum: 300)),
+        //GridItem(.flexible(minimum: 50), spacing: 5),
+        GridItem(.adaptive(minimum: 200, maximum: 300))
         //GridItem(.flexible(minimum: 40))
     ]
     
     // Array of SF Symbol names
     private var protoActionOptions: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
-   
     //dotMatrix variable
     @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
     
@@ -183,14 +279,8 @@ struct ContentView: View {
     //Protogen image variables
     @State private var yOffset: CGFloat = 0
     @State private var animationDuration: Double = 1.0
-    /*
-    private var signalLevel: Double {
-            // Convert RSSI to 0-1 range
-            let signalStrength = Double(bluetoothManager.signalStrength)
-            let normalizedSignal = (signalStrength - (-100)) / ((-30) - (-100))
-            return min(max(normalizedSignal, 0.0), 1.0)
-        }
-    */
+
+    @State private var showSplash = true
     var body: some View {
         ZStack {
             Color.primary
@@ -202,7 +292,9 @@ struct ContentView: View {
                     headerSection
                     statusSection
                     ledArraySection
+                    Spacer()
                     gridSection
+                    Spacer()
                     settingsAndChartsSection
                     /*
                     HStack {
@@ -419,25 +511,25 @@ struct ContentView: View {
     }
     private var headerSection: some View {
             HStack {
-                // Call the extension function on Color.clear (or any other placeholder view)
-                Color.clear
-                    .animatedProtogenImage(
-                        yOffset: $yOffset,
-                        animationDirection: true,
-                        animationDuration: animationDuration
-                    )
-                    .scaledToFill()
-                    .frame(height: 100)
-                    .offset(y: 40)
-                
-                Text("LumiFur")
-                    .font(.title)
-                    .multilineTextAlignment(.trailing)
-                    .fontDesign(.monospaced)
-                    .padding(.horizontal)
-                
+                Image("Image")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth:150,maxHeight: 150)
+                    //.offset(x:10,y: 40)
+                    .padding()
                 Spacer()
+                VStack(alignment: .trailing, spacing: 2.0) {
+                    Text("LumiFur")
+                        .font(.title)
+                        .frame(width: 150)
+                        //.multilineTextAlignment(.trailing)
+                        .fontDesign(.monospaced)
+                        
+                }
+                .border(.green)
             }
+            .frame(width: .infinity, height: 100)
+            .border(.red)
         }
     private var statusSection: some View {
             HStack {
@@ -445,7 +537,7 @@ struct ContentView: View {
                 HStack {
                     SignalStrengthView(rssi: accessoryViewModel.signalStrength)
                     
-                    Image(systemName: "logo.bluetooth.capsule.portrait.fill")
+                    Image(systemName: "bluetooth.fill")
                         .symbolRenderingMode(.multicolor)
                         .symbolEffect(.variableColor)
                         .opacity(accessoryViewModel.isConnected ? 1 : 0.3)
@@ -458,64 +550,47 @@ struct ContentView: View {
             .offset(x: -20, y: -40)
         }
     private var ledArraySection: some View {
-                HStack {
-                    Spacer()
-                    LEDPreview()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    Spacer()
-                    LEDPreview()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    Spacer()
-                }
-                //.border(Color.red)
-                //.padding()
-            
-            //.background(.ultraThinMaterial)
-            //.clipShape(RoundedRectangle(cornerRadius: 25))
-            //.frame(maxWidth: .infinity, maxHeight: 100)
-            //.offset(y: -40)
-            //.padding()
-            //.border(Color.purple)
+        
+        DisclosureGroup("LED Array", isExpanded: $isLedArrayExpanded) {
+            HStack {
+                Spacer()
+                LEDPreview()
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                Spacer()
+                LEDPreview()
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                Spacer()
+            }
+        }
+        .padding(.horizontal)
+        .accentColor(.gray)
         }
     static let gradientStart = Color(red: 0 / 255, green: 0 / 255, blue: 0 / 255)
     static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
     
     private var gridSection: some View {
         ZStack {
-            
             ScrollView(.horizontal) {
-                LazyHGrid(rows: twoColumnGrid, alignment: .center, spacing: 0) {
+                LazyHGrid(rows: twoColumnGrid) {
                     ForEach(protoActionOptions.indices, id: \.self) { index in
                         BouncingButton(action: {
                             print("\(protoActionOptions[index]) button pressed – setting view \(index + 1)")
                             accessoryViewModel.setView(index + 1)
                         }) {
                             Text(protoActionOptions[index])
-                                .aspectRatio(1, contentMode: .fit)
                                 .font(.system(size: 75))
-                                .frame(width: 175, height: 175)
-                            
-                            //.border(Color.green)
+                                .frame(maxWidth: 150, maxHeight: 150)
+                                .background(.ultraThinMaterial)
                                 .symbolRenderingMode(.monochrome)
-                                .background(.clear)
-                            
-                            //.padding()
+                                .aspectRatio(1, contentMode: .fit)
                         }
-                        //.buttonStyle(BounceButtonStyle())
-                        //.aspectRatio(1, contentMode: .fit)
-                        .background(.ultraThinMaterial)
                         .cornerRadius(10)
-                        //.padding()
-                        .frame(width: 150, height: 150)
-                        //.border(Color.red)
-                        .padding()
                     }
+                    //.padding(.horizontal)
                 }
-                //.border(Color.yellow)
-                .frame(maxHeight: .infinity)
-                .padding()
+                .frame(maxWidth:.infinity,maxHeight: 300)
             }
         }
         .mask(LinearGradient(gradient: Gradient(colors: [.clear, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .leading, endPoint: .trailing))
@@ -523,7 +598,6 @@ struct ContentView: View {
     private var settingsAndChartsSection: some View {
             HStack {
                 Spacer()
-                
                 // CPU Usage Chart
                 VStack {
                     Chart(accessoryViewModel.cpuUsageData) { element in
@@ -557,11 +631,10 @@ struct ContentView: View {
                     .padding()
                     .background(.ultraThinMaterial)
                     .cornerRadius(10)
-                    .frame(height: 70)
+                    .frame(maxWidth:500,maxHeight: 70)
                     
                     Text("CPU")
-                        .fontDesign(.rounded)
-                        .bold()
+                        .font(.footnote)
                 }
                 //.padding()
                 // Temperature Chart
@@ -591,9 +664,9 @@ struct ContentView: View {
                                     }
                                 }
                                 .chartYAxis {
-                                    AxisMarks(position: .leading, values: .automatic) { axisValue in
+                                    AxisMarks(position: .leading, values: .stride(by: 25)) { axisValue in
                                         AxisValueLabel() {
-                                            if let tempValue = axisValue.as(Double.self) {
+                                            if let tempValue = axisValue.as(Int.self) {
                                                 Text(String(tempValue))
                                                     .font(.caption2)
                                             }
@@ -603,11 +676,12 @@ struct ContentView: View {
                                 .padding()
                                 .background(.ultraThinMaterial)
                                 .cornerRadius(10)
-                                .frame(height: 70)
+                                .frame(maxWidth:500,maxHeight: 70)
                                 
                                 Text("Temperature (°C)")
-                                    .fontDesign( .rounded)
-                                    .bold()
+                                    //.fontDesign( .default)
+                                    .font(.footnote)
+                                    //.bold()
                             }
                 //.padding()
                 //.border(Color.gray, width: 1)
@@ -618,13 +692,14 @@ struct ContentView: View {
                         .imageScale(.large)
                         .symbolRenderingMode(.multicolor)
                 }
-                .padding()
+                //.padding()
                 /*
                 NavigationLink(destination: BluetoothConnectionView()) {
                     Image(systemName: "1.circle.fill")
                 }
                  */
             }
+            .padding(.horizontal)
         }
     }
     /*
@@ -690,7 +765,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 connectionSection
-                matrixSection
+                // matrixSection
                 advancedSettings
             }
             .navigationTitle("Settings")
@@ -706,33 +781,35 @@ struct SettingsView: View {
 // MARK: - Connection Section
     private var connectionSection: some View {
             Section {
-                VStack(alignment: .leading, spacing: 15) {
-                    HStack {
-                        Spacer()
-                        Image("bluetooth.fill")
-                            .font(.system(size: 75))
-                            .opacity(0.2)
-                        Spacer()
-                    }
-                    HStack {
-                        SignalStrengthView(rssi: bleModel.signalStrength)
-                        Spacer()
-                        Text(bleModel.connectionStatus)
-                            .foregroundColor(bleModel.isConnected ? .green : .red)
-                            .animation(.easeInOut(duration: 0.3), value: bleModel.isConnected)
-                    }
-                    
-                    if !bleModel.isConnected {
-                        Button(action: bleModel.scanForDevices) {
-                            Label("Scan for Devices", systemImage: "arrow.clockwise")
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack {
+                            Spacer()
+                            Image("bluetooth.fill")
+                                .font(.system(size: 75))
+                                .opacity(0.2)
+                            Spacer()
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(!bleModel.isBluetoothReady)
+                        HStack {
+                            SignalStrengthView(rssi: bleModel.signalStrength)
+                            Spacer()
+                            Text(bleModel.connectionStatus)
+                                .foregroundColor(bleModel.isConnected ? .green : .red)
+                                .animation(.easeInOut(duration: 0.3), value: bleModel.isConnected)
+                        }
+                        
+                        if !bleModel.isConnected {
+                            Button(action: bleModel.scanForDevices) {
+                                Label("Scan for Devices", systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!bleModel.isBluetoothReady)
+                        }
+                        
+                        deviceList
                     }
-                    
-                    deviceList
-                }
-                .padding(.vertical, 8)
+                    //.padding(50)
+                
+                
             } header: {
                 Text("Device Connection")
             }
@@ -1539,35 +1616,38 @@ struct LEDPreview: View {
     @State private var ledStates: [[Color]] = Array(
             repeating: Array(repeating: .black, count: 32),
             count: 64
-        )
-    
+    )
     var body: some View {
         GeometryReader { geometry in
                     Canvas { context, size in
-                        let ledWidth = size.width / 64
-                        let ledHeight = size.height / 32
-                        
-                        for row in 0..<64 {
-                            for col in 0..<32 {
+                        let xCount = 64
+                        let yCount = 32
+                        let ledWidth = size.width / CGFloat(xCount)
+                        let ledHeight = size.height / CGFloat(yCount)
+                        let rectWidth = ledWidth - 1
+                        let rectHeight = ledHeight - 1
+                        for x in 0..<xCount {
+                            let xOffset = CGFloat(x) * ledWidth
+                            for y in 0..<yCount {
+                                let yOffset = CGFloat(y) * ledHeight
                                 let rect = CGRect(
-                                    x: CGFloat(row) * ledWidth,
-                                    y: CGFloat(col) * ledHeight,
-                                    width: ledWidth - 1,
-                                    height: ledHeight - 1
+                                    x: xOffset,
+                                    y: yOffset,
+                                    width: rectWidth,
+                                    height: rectHeight
                                 )
-                                
                                 context.fill(
                                     Path(rect),
-                                    with: .color(ledStates[row][col])
+                                    with: .color(ledStates[x][y])
                                 )
                             }
                         }
                     }
                 }
-                .aspectRatio(64/32, contentMode: .fit)
-                .drawingGroup() // Metal-accelerated rendering
-                .padding(10)
-            }
+    .aspectRatio(64/32, contentMode: .fit)
+    //.drawingGroup() // Metal-accelerated rendering
+    .padding(10)
+}
         
     
     private func toggleLED(row: Int, col: Int) {
@@ -1787,7 +1867,7 @@ struct LED_Matrix: View {
     }
 }
 */
-
+/*
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "FileImport")
 
 struct DetailedParsingError: LocalizedError {
@@ -1838,7 +1918,8 @@ class MatrixConfig: ObservableObject {
     @Published var grids: [String: Grid] = [:]
     @Published var currentGridKey: String = ""
 }
-
+*/
+/*
 struct LEDMatrix3: View {
     let grid: Grid
     
@@ -1859,6 +1940,7 @@ struct LEDMatrix3: View {
         .padding()
     }
 }
+ */
 /*
 struct ContentView3: View {
     @StateObject private var config = MatrixConfig()

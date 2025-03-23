@@ -1,7 +1,8 @@
 {
   "images" : [
     {
-      "filename" : "Page 2.png",
+      "compression-type" : "gpu-optimized-smallest",
+      "filename" : "Page23.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },
@@ -22,7 +23,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "Page 2 Inverted.png",
+      "filename" : "Page23inverted.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },

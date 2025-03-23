@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1073</string>
+					<string>1150</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1072</string>
+					<string>1149</string>
 					<key>Timestamp</key>
-					<string>761275295.512742</string>
+					<string>764368201.407644</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1073</string>
+					<string>1150</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1072</string>
+					<string>1149</string>
 					<key>Timestamp</key>
-					<string>761275295.512765</string>
+					<string>764368201.407624</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1073</string>
+					<string>1150</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1072</string>
+					<string>1149</string>
 					<key>Timestamp</key>
-					<string>761275295.512758</string>
+					<string>764368201.407634</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>836</string>
+					<string>913</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>835</string>
+					<string>912</string>
 					<key>Timestamp</key>
-					<string>761275295.5127161</string>
+					<string>764368201.407586</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>668</string>
+					<string>743</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>667</string>
+					<string>742</string>
 					<key>Timestamp</key>
-					<string>761275295.512771</string>
+					<string>764368201.407654</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -256,13 +256,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>226</string>
+					<string>298</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>225</string>
+					<string>297</string>
 					<key>Timestamp</key>
-					<string>761172151.965894</string>
+					<string>764366165.888008</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -278,18 +278,65 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    
+				<string>                    settingsAndChartsSection
 </string>
 				<key>leading</key>
-				<string>                        
-                    }
+				<string>                    gridSection
+                    Spacer()
 </string>
 				<key>trailing</key>
-				<string>                    VStack {
-                        // Status Indicators and Signal Strength
-                        HStack {
+				<string>                    /*
+                    HStack {
+                        // animated image
 </string>
 			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>1614</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>1613</string>
+					<key>Timestamp</key>
+					<string>764368201.4076101</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>struct LEDPreview: View {
+</string>
+				<key>leading</key>
+				<string>*/
+
+</string>
+				<key>trailing</key>
+				<string>    // The state of the grid, with 64 rows and 32 columns
+    @State private var ledStates: [[Color]] = Array(
+            repeating: Array(repeating: .black, count: 32),
+</string>
+			</dict>
+			<key>title</key>
+			<string>LED Preview grid</string>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>

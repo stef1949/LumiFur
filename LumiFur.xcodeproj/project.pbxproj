@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
+		354C64EE2D8F40B7000EE4CA /* AppDelegate.swift in Resources */ = {isa = PBXBuildFile; fileRef = 354C64ED2D8F40B7000EE4CA /* AppDelegate.swift */; };
+		354C64EF2D8F40B7000EE4CA /* AppDelegate.swift in Resources */ = {isa = PBXBuildFile; fileRef = 354C64ED2D8F40B7000EE4CA /* AppDelegate.swift */; };
+		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
 		3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */; };
@@ -97,6 +100,8 @@
 /* Begin PBXFileReference section */
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
+		354C64ED2D8F40B7000EE4CA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
 		3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LumiFurWatchOS Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LumiFurWatchOS Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -220,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
+				354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */,
 			);
 			path = SharedViews;
 			sourceTree = "<group>";
@@ -236,6 +242,7 @@
 		35DA3A532C8739FB0039D19D = {
 			isa = PBXGroup;
 			children = (
+				354C64ED2D8F40B7000EE4CA /* AppDelegate.swift */,
 				35DA3A5E2C8739FB0039D19D /* LumiFur */,
 				35DA3A702C8739FD0039D19D /* LumiFurTests */,
 				35DA3A7A2C8739FD0039D19D /* LumiFurUITests */,
@@ -539,6 +546,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				354C64EE2D8F40B7000EE4CA /* AppDelegate.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -546,7 +554,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */,
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
+				354C64EF2D8F40B7000EE4CA /* AppDelegate.swift in Resources */,
 				35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1023,7 +1033,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1071,7 +1081,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;

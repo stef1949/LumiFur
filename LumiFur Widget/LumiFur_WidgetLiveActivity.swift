@@ -154,6 +154,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack{
                         Spacer()
+                        currentViewGauge(selectedView: context.state.selectedView)
                         Text("Current View")
                         Text("Temp: \(context.state.temperature)")
                                                     .font(.caption2)
