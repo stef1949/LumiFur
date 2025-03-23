@@ -431,7 +431,8 @@ extension AccessoryViewModel {
             connectionStatus: connectionStatus,
             signalStrength: signalStrength,
             temperature: temperature,
-            selectedView: selectedView
+            selectedView: selectedView,
+            isConnected: isConnected
         )
         // Wrap the initial state in ActivityContent.
         let initialContent = ActivityContent(state: initialState, staleDate: nil)
@@ -460,7 +461,8 @@ extension AccessoryViewModel {
             connectionStatus: connectionStatus,
             signalStrength: signalStrength,
             temperature: temperature,
-            selectedView: selectedView
+            selectedView: selectedView,
+            isConnected: isConnected
         )
         // Wrap the updated state in ActivityContent.
         let updatedContent = ActivityContent(state: updatedState, staleDate: nil)
