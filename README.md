@@ -1,3 +1,6 @@
+<p align="center">
+<img width="200" alt="Stencil Image" src="https://github.com/stef1949/LumiFur/blob/ab25593c41cac15a84b33315575f0e78f2f03eee/.github/Assets/Page23.svg">
+</p>
 <h1 align="center">
 LumiFur
 </h1>
