@@ -1,15 +1,16 @@
+<p align="center">
+<img width="200" alt="Stencil Image" src="https://github.com/stef1949/LumiFur/blob/ab25593c41cac15a84b33315575f0e78f2f03eee/.github/Assets/Page23.svg">
+</p>
 <h1 align="center">
 LumiFur
 </h1>
 
 LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.
 
-<p align="center">
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-2.png">
-
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-3.png">
-
-<img width="200" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-4.png">
+<p align="center" style="display: flex; justify-content: center; flex-wrap: nowrap;">
+  <img width="100" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-2.png" style="margin: 10px;">
+  <img width="100" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-3.png" style="margin: 10px;">
+  <img width="100" alt="image" src="https://github.com/stef1949/LumiFur/blob/main/docs/Devices-4.png" style="margin: 10px;">
 </p>
 
 ## Planned Features
