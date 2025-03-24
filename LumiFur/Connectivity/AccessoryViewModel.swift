@@ -67,6 +67,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var cpuUsageData: [CPUUsageData] = [CPUUsageData(timestamp: Date(), cpuUsage: 50)]
     @Published var bootButtonState: Bool = false   // Optional additional state.
     
+    private var widgetLiveActivity: Activity<LumiFur_WidgetAttributes>? = nil
+    private var liveActivityTerminationWorkItem: DispatchWorkItem? = nil
+    
     // MARK: Private Properties
     
     private var centralManager: CBCentralManager!
@@ -138,6 +141,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
         // Clear the stored peripheral and last device info.
         autoReconnectPeripheral = nil
+        connectionStatus = "Disconnected"
         UserDefaults.standard.removeObject(forKey: "LastConnectedPeripheral")
     }
     
@@ -241,6 +245,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         DispatchQueue.main.async {
             self.isConnected = true
+            self.liveActivityTerminationWorkItem?.cancel()
+            self.liveActivityTerminationWorkItem = nil
             self.isConnecting = false
             self.connectingPeripheral = nil
             self.connectionStatus = "Connected" /* to \(peripheral.name ?? "Unknown")*/
@@ -291,6 +297,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.isConnecting = false
             self.connectingPeripheral = nil
             self.stopRSSIMonitoring()
+            
+            // Update the live activity immediately upon disconnection
+                   self.updateLumiFur_WidgetLiveActivity()
+            
+            self.liveActivityTerminationWorkItem = DispatchWorkItem {
+                Task {
+                    await self.widgetLiveActivity?.end(nil as ActivityContent<LumiFur_WidgetAttributes.ContentState>?, dismissalPolicy: .immediate)
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + (20 * 60), execute: self.liveActivityTerminationWorkItem!) //Stops Live Activity after 20 minutes of inactivity
             
             // If the disconnect was not manual, attempt automatic reconnection.
                         if !self.isManualDisconnect, let autoPeripheral = self.autoReconnectPeripheral {
@@ -424,6 +440,7 @@ extension AccessoryViewModel {
     }
     
     func startLumiFur_WidgetLiveActivity() {
+        let recentTemperatures = temperatureData.suffix(10).map { $0.temperature }
         // Use the connected device name if available; otherwise, a placeholder.
         let deviceName = connectedDevice?.name ?? "Unknown Device"
         let attributes = LumiFur_WidgetAttributes(name: deviceName)
@@ -432,20 +449,23 @@ extension AccessoryViewModel {
             signalStrength: signalStrength,
             temperature: temperature,
             selectedView: selectedView,
-            isConnected: isConnected
+            isConnected: isConnected,
+            temperatureChartData: Array(recentTemperatures)
         )
         // Wrap the initial state in ActivityContent.
         let initialContent = ActivityContent(state: initialState, staleDate: nil)
         
         do {
-            let activity = try Activity<LumiFur_WidgetAttributes>.request(
+            widgetLiveActivity = try Activity<LumiFur_WidgetAttributes>.request(
                 attributes: attributes,
                 content: initialContent,
                 pushType: nil
             )
-            print("Started Live Activity: \(activity.id)")
+            if let id = widgetLiveActivity?.id {
+                print("Started Live Activity: \(id)")
+            }
         } catch {
-            print("Failed to start Live Activity: \(error.localizedDescription)")
+            print("Error starting live activity: \(error): \(error.localizedDescription)")
         }
     }
     
@@ -456,13 +476,15 @@ extension AccessoryViewModel {
                 print("App is in the foreground, skipping live activity update")
                 return
             }
+        let recentTemperatures = temperatureData.suffix(50).map { $0.temperature }
         
         let updatedState = LumiFur_WidgetAttributes.ContentState(
             connectionStatus: connectionStatus,
             signalStrength: signalStrength,
             temperature: temperature,
             selectedView: selectedView,
-            isConnected: isConnected
+            isConnected: isConnected,
+            temperatureChartData: Array(recentTemperatures)
         )
         // Wrap the updated state in ActivityContent.
         let updatedContent = ActivityContent(state: updatedState, staleDate: nil)

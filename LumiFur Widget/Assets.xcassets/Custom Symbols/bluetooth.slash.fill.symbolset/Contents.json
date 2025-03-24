@@ -4,11 +4,11 @@
     "version" : 1
   },
   "properties" : {
-    "symbol-rendering-intent" : "multicolor"
+    "symbol-rendering-intent" : "hierarchical"
   },
   "symbols" : [
     {
-      "filename" : "logo.bluetooth.capsule.portrait.fill.svg",
+      "filename" : "logo.bluetooth.capsule.portrait.slash.fill.svg",
       "idiom" : "universal"
     }
   ]

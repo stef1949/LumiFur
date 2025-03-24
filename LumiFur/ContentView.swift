@@ -528,7 +528,7 @@ struct ContentView: View {
                 }
                 .border(.green)
             }
-            .frame(width: .infinity, height: 100)
+            .frame( height: 100)
             .border(.red)
         }
     private var statusSection: some View {
@@ -537,10 +537,22 @@ struct ContentView: View {
                 HStack {
                     SignalStrengthView(rssi: accessoryViewModel.signalStrength)
                     
-                    Image(systemName: "bluetooth.fill")
-                        .symbolRenderingMode(.multicolor)
-                        .symbolEffect(.variableColor)
-                        .opacity(accessoryViewModel.isConnected ? 1 : 0.3)
+                        
+                    if accessoryViewModel.isConnected {
+                                                Image("bluetooth.fill")
+                                                    .symbolRenderingMode(.multicolor)
+                                                    .saturation(1)
+                                            } else {
+                                                Image("bluetooth.fill")
+                                                    .symbolRenderingMode(.multicolor)
+                                                    .symbolEffect(.variableColor)
+                                                    .saturation(0)
+                                            }
+                        
+                        // Only animate when not connected
+                        //.animation(accessoryViewModel.isConnected ? nil : .easeInOut(duration: 0.3), value: accessoryViewModel.isConnected)
+                    
+                    
                 }
                 .padding(10)
                 .background(.ultraThinMaterial)
