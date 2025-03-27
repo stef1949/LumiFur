@@ -10,8 +10,12 @@ jobs:
   build:
     name: Build and Test default scheme using any available iPhone simulator
     runs-on: macos-latest
-
+     
     steps:
+      - name: Set up Xcode
+        uses: actions/setup-xcode@v2
+        with:
+          xcode-version: '16.0'  # Replace with the correct version
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set Default Scheme
