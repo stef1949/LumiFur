@@ -13,7 +13,7 @@ jobs:
      
     steps:
       - name: Set up Xcode
-        uses: actions/setup-xcode@v2
+        uses: actions/setup-xcode@v1
         with:
           xcode-version: '16.0'  # Replace with the correct version
       - name: Checkout
