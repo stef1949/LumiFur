@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1162</string>
+					<string>1334</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1161</string>
+					<string>1333</string>
 					<key>Timestamp</key>
-					<string>764526731.775456</string>
+					<string>764908066.910237</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,16 +53,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                Rectangle()
+				<string>            
 </string>
 				<key>leading</key>
-				<string>                    )
-                    .padding()
+				<string>            .multilineTextAlignment(.leading)
+            .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .foregroundStyle(.clear)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+				<string>            HStack {
+                
+                Spacer()
 </string>
 			</dict>
 			<key>type</key>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1162</string>
+					<string>1334</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1161</string>
+					<string>1333</string>
 					<key>Timestamp</key>
-					<string>764526731.775476</string>
+					<string>764908066.910192</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -98,16 +98,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                Rectangle()
+				<string>            
 </string>
 				<key>leading</key>
-				<string>                    )
-                    .padding()
+				<string>            .multilineTextAlignment(.leading)
+            .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .foregroundStyle(.clear)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+				<string>            HStack {
+                
+                Spacer()
 </string>
 			</dict>
 			<key>type</key>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1162</string>
+					<string>1334</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1161</string>
+					<string>1333</string>
 					<key>Timestamp</key>
-					<string>764526731.7754329</string>
+					<string>764908066.910267</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -143,16 +143,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                Rectangle()
+				<string>            
 </string>
 				<key>leading</key>
-				<string>                    )
-                    .padding()
+				<string>            .multilineTextAlignment(.leading)
+            .padding()
 </string>
 				<key>trailing</key>
-				<string>                    .foregroundStyle(.clear)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+				<string>            HStack {
+                
+                Spacer()
 </string>
 			</dict>
 			<key>type</key>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>925</string>
+					<string>1108</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>924</string>
+					<string>1107</string>
 					<key>Timestamp</key>
-					<string>764526731.775363</string>
+					<string>764908066.9102989</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>755</string>
+					<string>860</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>754</string>
+					<string>859</string>
 					<key>Timestamp</key>
-					<string>764526731.775408</string>
+					<string>764897605.3015569</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -256,13 +256,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>298</string>
+					<string>370</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>297</string>
+					<string>369</string>
 					<key>Timestamp</key>
-					<string>764366165.888008</string>
+					<string>764897294.180928</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -286,8 +286,8 @@
 </string>
 				<key>trailing</key>
 				<string>                    /*
-                    HStack {
-                        // animated image
+                     HStack {
+                     // animated image
 </string>
 			</dict>
 			<key>type</key>
@@ -301,13 +301,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1626</string>
+					<string>1672</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1625</string>
+					<string>1671</string>
 					<key>Timestamp</key>
-					<string>764526731.775086</string>
+					<string>764908066.909924</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -326,13 +326,13 @@
 				<string>struct LEDPreview: View {
 </string>
 				<key>leading</key>
-				<string>*/
+				<string> */
 
 </string>
 				<key>trailing</key>
 				<string>    // The state of the grid, with 64 rows and 32 columns
     @State private var ledStates: [[Color]] = Array(
-            repeating: Array(repeating: .black, count: 32),
+        repeating: Array(repeating: .black, count: 32),
 </string>
 			</dict>
 			<key>title</key>

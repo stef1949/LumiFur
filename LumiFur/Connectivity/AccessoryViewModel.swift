@@ -44,6 +44,12 @@ struct PeripheralDevice: Identifiable, Hashable {
     }
 }
 
+/// New structure to persist previously connected devices.
+struct StoredPeripheral: Identifiable, Codable {
+    let id: String
+    let name: String
+}
+
 // MARK: - AccessoryViewModel
 
 /// A unified BLE manager that scans, connects, and communicates with peripherals.
@@ -67,13 +73,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var cpuUsageData: [CPUUsageData] = [CPUUsageData(timestamp: Date(), cpuUsage: 50)]
     @Published var bootButtonState: Bool = false   // Optional additional state.
     
+    // NEW: Published property for previously connected devices.
+    @Published var previouslyConnectedDevices: [StoredPeripheral] = []
+    
     private var widgetLiveActivity: Activity<LumiFur_WidgetAttributes>? = nil
     private var liveActivityTerminationWorkItem: DispatchWorkItem? = nil
     
     // MARK: Private Properties
     
     private var centralManager: CBCentralManager!
-    private var targetPeripheral: CBPeripheral?
+    @Published var targetPeripheral: CBPeripheral?
     private var targetCharacteristic: CBCharacteristic?
     private var temperatureCharacteristic: CBCharacteristic?
     private var rssiUpdateTimer: Timer?
@@ -90,11 +99,17 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private let configCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ff")
     private let tempCharUUID = CBUUID(string: "01931c44-3867-7b5d-9774-18350e3e27db")
     
+    
+    private var cancellables = Set<AnyCancellable>() // Add this to store subscriptions
+    
     // MARK: Initialization
     
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: .main)
+        // Load any previously stored connected devices.
+        self.previouslyConnectedDevices = loadStoredPeripherals()
+        
     }
     
     // MARK: - Public Methods
@@ -195,7 +210,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             case .poweredOn:
                 print("Central state: poweredOn")
                 // Optionally, you can start scanning automatically:
-                // self.scanForDevices()
+                 self.scanForDevices()
                 if !self.didAttemptAutoReconnect {
                     self.didAttemptAutoReconnect = true
                     if let uuidString = UserDefaults.standard.string(forKey: "LastConnectedPeripheral"),
@@ -267,7 +282,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                         )
                         self.discoveredDevices.append(device)
                     }
-            
+            // NEW: Save the connected device to the list of previously connected devices.
+                        self.addToPreviouslyConnected(peripheral: peripheral)
             peripheral.delegate = self
             peripheral.discoverServices([self.serviceUUID])
             self.startRSSIMonitoring()
@@ -425,6 +441,55 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.showError = true
         }
     }
+    
+    // NEW: Adds a connected peripheral to persistent storage if not already present.
+    private func addToPreviouslyConnected(peripheral: CBPeripheral) {
+        let newDevice = StoredPeripheral(id: peripheral.identifier.uuidString, name: peripheral.name ?? "Unknown")
+        var storedDevices = loadStoredPeripherals()
+        if !storedDevices.contains(where: { $0.id == newDevice.id }) {
+            storedDevices.append(newDevice)
+            saveStoredPeripherals(storedDevices)
+            DispatchQueue.main.async {
+                self.previouslyConnectedDevices = storedDevices
+            }
+        }
+    }
+    // NEW: Loads previously connected devices from UserDefaults.
+        private func loadStoredPeripherals() -> [StoredPeripheral] {
+            if let data = UserDefaults.standard.data(forKey: "PreviouslyConnectedPeripherals") {
+                let decoder = JSONDecoder()
+                if let stored = try? decoder.decode([StoredPeripheral].self, from: data) {
+                    return stored
+                }
+            }
+            return []
+        }
+    
+    // NEW: Saves the provided list of devices to UserDefaults.
+        private func saveStoredPeripherals(_ devices: [StoredPeripheral]) {
+            let encoder = JSONEncoder()
+            if let data = try? encoder.encode(devices) {
+                UserDefaults.standard.set(data, forKey: "PreviouslyConnectedPeripherals")
+            }
+        }
+    
+    func connectToStoredPeripheral(_ stored: StoredPeripheral) {
+            if let uuid = UUID(uuidString: stored.id) {
+                let peripherals = centralManager.retrievePeripherals(withIdentifiers: [uuid])
+                if let peripheral = peripherals.first {
+                    let device = PeripheralDevice(
+                        id: peripheral.identifier,
+                        name: peripheral.name ?? stored.name,
+                        rssi: -100,
+                        advertisementServiceUUIDs: nil,
+                        peripheral: peripheral
+                    )
+                    connect(to: device)
+                } else {
+                    print("Peripheral with UUID \(stored.id) not found")
+                }
+            }
+        }
 }
 
 extension AccessoryViewModel {
