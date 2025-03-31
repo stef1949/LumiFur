@@ -6,10 +6,27 @@
 //
 
 import SwiftUI
+
 import UIKit
 import CoreBluetooth
 import Combine
 import ActivityKit
+import WidgetKit
+import Foundation // Needed for Notification.Name
+
+// MARK: - Shared Data Keys (Use these in both App and Widget)
+struct SharedDataKeys {
+    static let suiteName = "group.com.richies3d.lumifur" // <<< MUST MATCH YOUR APP GROUP ID
+    static let isConnected = "widgetIsConnected"
+    static let connectionStatus = "widgetConnectionStatus"
+    static let controllerName = "widgetControllerName"
+    static let temperature = "widgetTemperature"
+    static let signalStrength = "widgetSignalStrength"
+    static let selectedView = "widgetSelectedView"
+    // Add keys for chart data if needed, e.g.,
+    // static let temperatureChartData = "widgetTemperatureChartData"
+    static let widgetKind = "group.com.richies3d.LumiFur"
+}
 
 // MARK: - Data Structures
 
@@ -59,15 +76,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     // MARK: Published Properties
     
-    @Published var isConnected: Bool = false
+    @Published var isConnected: Bool = false { didSet { updateWidgetData() } }
+    @Published var isScanning: Bool = true
     @Published var discoveredDevices: [PeripheralDevice] = []   // Using our custom wrapper.
-    @Published var connectionStatus: String = "Disconnected"
-    @Published var temperature: String = "N/A"
+    @Published var connectionStatus: String = "Disconnected" { didSet { updateWidgetData() } }
+    @Published var temperature: String = ""  { didSet { updateWidgetData() } }
     @Published var temperatureData: [TemperatureData] = []
-    @Published var selectedView: Int = 1
+    @Published var selectedView: Int = 1 { didSet { updateWidgetData() } }
     @Published var errorMessage: String = ""
     @Published var showError: Bool = false
-    @Published var signalStrength: Int = -100
+    @Published var signalStrength: Int = -100 { didSet { updateWidgetData() } }
     @Published var connectingPeripheral: PeripheralDevice? = nil
     @Published var isConnecting: Bool = false
     @Published var cpuUsageData: [CPUUsageData] = [CPUUsageData(timestamp: Date(), cpuUsage: 50)]
@@ -109,9 +127,37 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         centralManager = CBCentralManager(delegate: self, queue: .main)
         // Load any previously stored connected devices.
         self.previouslyConnectedDevices = loadStoredPeripherals()
-        
+        // Subscribe to targetPeripheral changes to update controller name for widget
+                $targetPeripheral
+                    .sink { [weak self] peripheral in
+                        self?.updateWidgetData() // Update widget when peripheral changes (name might change)
+                    }
+                    .store(in: &cancellables)
+
+                // Initial data write if needed, or rely on property changes
+                updateWidgetData()
+        NotificationCenter.default.addObserver(
+                   self,
+                   selector: #selector(handleChangeViewIntent(_:)),
+                   name: .changeViewIntentTriggered,
+                   object: nil
+                   )
+            }
+    deinit {
+             // --- Remove Observer ---
+             NotificationCenter.default.removeObserver(self, name: .changeViewIntentTriggered, object: nil)
+        }
+
+    // --- Add Handler for Notification (if using Option B) ---
+    @objc private func handleChangeViewIntent(_ notification: Notification) {
+         if let userInfo = notification.userInfo, let nextView = userInfo["nextView"] as? Int {
+             print("AccessoryViewModel: Received change view intent notification for view \(nextView)")
+             // Call the existing method to change the view via BLE
+             self.setView(nextView)
+             // Note: setView likely already calls updateWidgetData which reloads the widget,
+             // so the reload in the intent might be slightly redundant but ensures faster feedback.
+         }
     }
-    
     // MARK: - Public Methods
     
     /// Begins scanning for peripherals that advertise the specified service.
@@ -127,6 +173,22 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         centralManager.scanForPeripherals(withServices: [serviceUUID], options: nil)
     }
     
+    func stopScan() {
+            // Only stop if the manager is initialized and powered on
+            if centralManager != nil && centralManager.state == .poweredOn {
+                 centralManager.stopScan()
+                 print("Stopped scanning.") // Add log
+            }
+            // Update the scanning state regardless
+            DispatchQueue.main.async { // Ensure UI updates on main thread
+                 self.isScanning = false
+                 // Optionally update connection status if needed when stopping scan manually
+                  if !self.isConnected && self.connectionStatus == "Scanning for devices..." {
+                      self.connectionStatus = "Disconnected"
+                  }
+            }
+        }
+    
     /// Connects to the specified device.
     func connect(to device: PeripheralDevice) {
         guard centralManager.state == .poweredOn else {
@@ -137,7 +199,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         
         // When connecting, we consider this a user-initiated connection.
         isManualDisconnect = false
-        
+        isScanning = false
         connectingPeripheral = device
         isConnecting = true
         connectionStatus = "Connecting..."
@@ -172,8 +234,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     /// Set a specific view and write the change to the characteristic.
     func setView(_ view: Int) {
         guard view >= 1 && view <= 12, view != selectedView else { return }
+        print("AccessoryViewModel: Setting view to \(view)")
         selectedView = view
         writeViewToCharacteristic()
+        // updateWidgetData() // Called automatically by didSet on selectedView
     }
     
     /// Begins periodic RSSI monitoring.
@@ -190,6 +254,31 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         rssiUpdateTimer = nil
     }
     
+    
+    private func updateWidgetData() {
+           // IMPORTANT: Ensure you have an App Group set up and use the correct ID
+           guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
+               print("Error: Could not access shared UserDefaults suite. Check App Group configuration.")
+               return
+           }
+
+           let controllerName = targetPeripheral?.name // Get name from current peripheral
+
+           print("AccessoryViewModel: Writing data to shared UserDefaults for widget.")
+           defaults.set(isConnected, forKey: SharedDataKeys.isConnected)
+           defaults.set(connectionStatus, forKey: SharedDataKeys.connectionStatus)
+           defaults.set(controllerName, forKey: SharedDataKeys.controllerName) // Writes nil if peripheral is nil
+           defaults.set(temperature, forKey: SharedDataKeys.temperature)
+           defaults.set(signalStrength, forKey: SharedDataKeys.signalStrength)
+           defaults.set(selectedView, forKey: SharedDataKeys.selectedView)
+
+           // Optional: Write chart data (ensure it's in a UserDefaults compatible format)
+           // let chartDataToWrite = temperatureData.suffix(10).map { $0.temperature }
+           // defaults.set(chartDataToWrite, forKey: SharedDataKeys.temperatureChartData)
+            let widgetKind = "group.com.richies3d.LumiFur"
+           // Notify WidgetKit that the timeline needs to be reloaded
+        WidgetCenter.shared.reloadTimelines(ofKind: widgetKind) // Use the 'kind' string from your widget
+       }
     // MARK: - CBCentralManagerDelegate Methods
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -260,6 +349,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         DispatchQueue.main.async {
             self.isConnected = true
+            self.isScanning = false
             self.liveActivityTerminationWorkItem?.cancel()
             self.liveActivityTerminationWorkItem = nil
             self.isConnecting = false
@@ -322,7 +412,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     await self.widgetLiveActivity?.end(nil as ActivityContent<LumiFur_WidgetAttributes.ContentState>?, dismissalPolicy: .immediate)
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + (20 * 60), execute: self.liveActivityTerminationWorkItem!) //Stops Live Activity after 20 minutes of inactivity
+            DispatchQueue.main.asyncAfter(deadline: .now() + (10 * 60), execute: self.liveActivityTerminationWorkItem!) //Stops Live Activity after 20 minutes of inactivity
             
             // If the disconnect was not manual, attempt automatic reconnection.
                         if !self.isManualDisconnect, let autoPeripheral = self.autoReconnectPeripheral {
@@ -332,6 +422,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                         } else {
                             // Otherwise, restart scanning.
                             self.scanForDevices()
+                            self.isScanning = true
                         }
         }
     }
@@ -493,6 +584,20 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 }
 
 extension AccessoryViewModel {
+   
+    var connectionColor: Color {
+            switch connectionStatus {
+            case "Connected":
+                return .green
+            case "Connecting...":
+                return .yellow
+            case "Disconnected":
+                return .red
+            default:
+                return .gray
+            }
+        }
+    
     /// Returns true if Bluetooth is powered on.
     var isBluetoothReady: Bool {
         return centralManager.state == .poweredOn
@@ -515,6 +620,7 @@ extension AccessoryViewModel {
             temperature: temperature,
             selectedView: selectedView,
             isConnected: isConnected,
+            isScanning:isScanning,
             temperatureChartData: Array(recentTemperatures)
         )
         // Wrap the initial state in ActivityContent.
@@ -549,6 +655,7 @@ extension AccessoryViewModel {
             temperature: temperature,
             selectedView: selectedView,
             isConnected: isConnected,
+            isScanning: isScanning,
             temperatureChartData: Array(recentTemperatures)
         )
         // Wrap the updated state in ActivityContent.

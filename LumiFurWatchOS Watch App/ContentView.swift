@@ -158,60 +158,57 @@ struct ItemView: View {
                     .renderingMode(.template)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                .padding(.bottom, 5)
+                    .padding(.bottom, 5)
                 // --- Display Connection Info ---
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Status: \(connectivityManager.connectionStatus)")
-                                        .foregroundColor(statusColor(connectivityManager.connectionStatus)) // Optional color coding
-                                    Text("Reachable: \(connectivityManager.isReachable ? "Yes" : "No")")
-                                                            .foregroundColor(connectivityManager.isReachable ? .green : .orange)
-
-                                                        // Display companion device name
-                                                        if let deviceName = connectivityManager.companionDeviceName {
-                                                            Text("Device: \(deviceName)")
-                                                        } else if connectivityManager.connectionStatus == "Connected" || connectivityManager.connectionStatus.starts(with: "Connected"){
-                                                            // Show placeholder only if actually connected but name not received yet
-                                                            Text("Device: iPhone (Requesting name...)")
-                                                               .foregroundColor(.gray)
-                                                        } else {
-                                                            Text("Device: N/A") // Show N/A if not connected
-                                                               .foregroundColor(.gray)
-                                                        }
-                                                                      }
-                                                                      .font(.system(size: 14)) // Adjust font size for watch
-                                                                      .padding(.vertical, 10)
-                Spacer() // Pushes info up
-
-                                // --- Connect/Action Button ---
-                                // Only show Connect if disconnected and not currently connecting
-                                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
-                                    Button {
-                                        // Send connect command using the manager
-                                        let message = ["command": "connectToDevice"]
-                                        print("Watch sending 'connectToDevice' command...")
-                                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                                            print("Connect command reply: \(reply)")
-                                        }, errorHandler: { error in
-                                            print("Connect command error: \(error.localizedDescription)")
-                                        })
-                                    } label: {
-                                        Text("Connect")
-                                    }
-                                    .padding(.top, 5)
-                                }
-                                 // Optional: Add a Disconnect button when connected
-                                 else if connectivityManager.connectionStatus == "Connected" {
-                                     Button("Disconnect?") { // Example placeholder
-                                          print("Disconnect button tapped (action not implemented)")
-                                          // You would need to send a "disconnect" command to iOS
-                                          // WatchConnectivityManager.shared.sendMessage(["command": "disconnectRequest"], ...)
-                                     }
-                                     .tint(.red) // Make disconnect button red
-                                     .padding(.top, 5)
-                                 }
-
-
-                                Spacer() // Pushes button down slightly if info is short
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Status: \(connectivityManager.connectionStatus)")
+                        .foregroundColor(statusColor(connectivityManager.connectionStatus)) // Optional color coding
+                    Text("Reachable: \(connectivityManager.isReachable ? "Yes" : "No")")
+                        .foregroundColor(connectivityManager.isReachable ? .green : .orange)
+                    
+                    // Display companion device name
+                    if let deviceName = connectivityManager.companionDeviceName {
+                        Text("Device: \(deviceName)")
+                    } else if connectivityManager.connectionStatus == "Connected" || connectivityManager.connectionStatus.starts(with: "Connected"){
+                        // Show placeholder only if actually connected but name not received yet
+                        Text("Device: iPhone (Requesting name...)")
+                            .foregroundColor(.gray)
+                    } else {
+                        Text("Device: N/A") // Show N/A if not connected
+                            .foregroundColor(.gray)
+                    }
+                }
+                .font(.system(size: 14)) // Adjust font size for watch
+                .padding(.vertical, 10)
+                Spacer()
+                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                    Button {
+                        // Send connect command using the manager
+                        let message = ["command": "connectToDevice"]
+                        print("Watch sending 'connectToDevice' command...")
+                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
+                            print("Connect command reply: \(reply)")
+                        }, errorHandler: { error in
+                            print("Connect command error: \(error.localizedDescription)")
+                        })
+                    } label: {
+                        Text("Connect")
+                    }
+                    .padding(.top, 5)
+                }
+                // Optional: Add a Disconnect button when connected
+                else if connectivityManager.connectionStatus == "Connected" {
+                    Button("Disconnect?") { // Example placeholder
+                        print("Disconnect button tapped (action not implemented)")
+                        // You would need to send a "disconnect" command to iOS
+                        // WatchConnectivityManager.shared.sendMessage(["command": "disconnectRequest"], ...)
+                    }
+                    .tint(.red) // Make disconnect button red
+                    .padding(.top, 5)
+                }
+                
+                
+                Spacer() // Pushes button down slightly if info is short
             }
             
             // Example content – replace with your own controls or info.
@@ -289,19 +286,19 @@ struct ItemView: View {
         .border(Color.yellow, width: 1)
     }
     // Helper for status color (Optional)
-      private func statusColor(_ status: String) -> Color {
-          switch status {
-          case "Connected": return .green
-          case "Connecting...", "Reconnecting...": return .yellow
-          case "Disconnected", "Inactive", "Deactivated", "Not Supported", "Not Activated": return .red
-          default: return .gray // Handle "Connected (Not Reachable)" or others
-          }
-      }
-
-      // Helper to check connection state
-      private func isConnectedOrConnecting(_ status: String) -> Bool {
-          return status == "Connected" || status.starts(with: "Connecting") || status.starts(with: "Connected (")
-      }
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "Connected": return .green
+        case "Connecting...", "Reconnecting...": return .yellow
+        case "Disconnected", "Inactive", "Deactivated", "Not Supported", "Not Activated": return .red
+        default: return .gray // Handle "Connected (Not Reachable)" or others
+        }
+    }
+    
+    // Helper to check connection state
+    private func isConnectedOrConnecting(_ status: String) -> Bool {
+        return status == "Connected" || status.starts(with: "Connecting") || status.starts(with: "Connected (")
+    }
 }
 
 
@@ -313,8 +310,8 @@ struct ContentView: View {
         NavigationSplitView {
             // Primary view: a carousel-style list
             List(selection: $selected) { /* ... List items ... */ }
-                             .listStyle(.carousel) // Use carousel for watchOS top-level navigation
-                             .containerBackground(.white.gradient, for: .navigation)
+                .listStyle(.carousel) // Use carousel for watchOS top-level navigation
+                .containerBackground(.white.gradient, for: .navigation)
         } detail: {
             // Detail view: a vertically paging TabView
             TabView(selection: $selected) {

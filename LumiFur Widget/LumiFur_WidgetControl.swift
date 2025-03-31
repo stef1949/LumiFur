@@ -9,6 +9,18 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
+struct SharedDataKeys {
+    static let suiteName = "group.com.richies3d.LumiFur" // <<< MUST MATCH YOUR APP GROUP ID
+    static let isConnected = "widgetIsConnected"
+    static let connectionStatus = "widgetConnectionStatus"
+    static let controllerName = "widgetControllerName"
+    static let temperature = "widgetTemperature"
+    static let signalStrength = "widgetSignalStrength"
+    static let selectedView = "widgetSelectedView"
+    static let widgetKind = "com.yourcompany.lumifur.statuswidget"
+    // static let temperatureChartData = "widgetTemperatureChartData"
+}
+
 struct LumiFur_WidgetControl: ControlWidget {
     static let kind: String = "com.richies3d.LumiFur.LumiFur Widget"
 

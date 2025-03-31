@@ -15,6 +15,9 @@ import Charts
 import UniformTypeIdentifiers
 import os
 import Combine
+
+import CoreHaptics
+
 // IOS 18.0 features
 //import AccessorySetupKit
 
@@ -87,6 +90,19 @@ let widgetItems = [
         )
     ]
 
+struct AppInfo {
+    static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "N/A"
+    }
+
+    static var buildNumber: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "N/A"
+    }
+
+    static var versionDisplay: String {
+        "\(appVersion) (\(buildNumber))"
+    }
+}
 
 struct WhatsNew: View {
     // Persist the last shown version in user defaults
@@ -297,30 +313,79 @@ struct BouncingButton<Label: View>: View {
     let action: () -> Void
     let label: () -> Label
     @State private var animate = false
-    
+    @State private var triggerHaptics = false
     var body: some View {
         Button(action: {
-            // Trigger the bounce animation on tap
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                animate = true
-            }
-            // Return to normal scale after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                    animate = false
-                }
-            }
+            // Trigger the bounce animation and haptics on tap
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                            animate = true
+                            triggerHaptics = true // Start haptic feedback
+                        }
+                        
+                        // Return to normal scale after a short delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                                animate = false
+                            }
+                        }
+                        
+                        // Reset the haptics trigger so subsequent taps can trigger it again
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            triggerHaptics = false
+                        }
             // Perform the button action
             action()
-        }) {
+        })
+{
             label()
                 .scaleEffect(animate ? 0.8 : 1.0)
         }
+.sensoryFeedback(.impact(flexibility: .rigid, intensity: 1.0), trigger: triggerHaptics)
     }
 }
 
 // MARK: ContentView
 struct ContentView: View {
+    @Environment(\.colorScheme) var colorScheme
+    
+    var overlayColor: Color {
+        colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
+    }
+    
+    @State private var engine: CHHapticEngine?
+    
+    func prepareHaptics() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+
+        do {
+            engine = try CHHapticEngine()
+            try engine?.start()
+        } catch {
+            print("There was an error creating the engine: \(error.localizedDescription)")
+        }
+    }
+    
+    func complexSuccess() {
+        // make sure that the device supports haptics
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+        var events = [CHHapticEvent]()
+
+        // create one intense, sharp tap
+        let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 1)
+        let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 1)
+        let event = CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: 0)
+        events.append(event)
+
+        // convert those events into a pattern and play it immediately
+        do {
+            let pattern = try CHHapticPattern(events: events, parameters: [])
+            let player = try engine?.makePlayer(with: pattern)
+            try player?.start(atTime: 0)
+        } catch {
+            print("Failed to play pattern: \(error.localizedDescription).")
+        }
+    }
+    
     @State private var isLedArrayExpanded: Bool = false
     
     @StateObject private var viewModel = iOSViewModel() // Instantiates the class defined above
@@ -335,14 +400,12 @@ struct ContentView: View {
     @State private var selectedMatrix: SettingsView.Matrixstyle = .array
     
     private let twoColumnGrid = [
-        GridItem(.adaptive(minimum: 200, maximum: 300)),
-        //GridItem(.flexible(minimum: 50), spacing: 5),
-        GridItem(.adaptive(minimum: 200, maximum: 300))
-        //GridItem(.flexible(minimum: 40))
+        GridItem(.adaptive(minimum: 125, maximum: 250))
     ]
     
     // Array of SF Symbol names
-    private var protoActionOptions: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
+    private var protoActionOptions: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️", "✨", "🎾","+"]
+    
     //dotMatrix variable
     @State private var dotMatrices: [[Bool]] = Array(repeating: Array(repeating: false, count: 64), count: 32)
     
@@ -351,22 +414,17 @@ struct ContentView: View {
     //Protogen image variables
     @State private var yOffset: CGFloat = 0
     @State private var animationDuration: Double = 1.0
+
+    @State private var showSplash = false
     
-    @State private var showSplash = true
     var body: some View {
-        ZStack {
-            Color.primary
-                .opacity(0.3)
-                .ignoresSafeArea()
-            
             NavigationStack {
-                VStack(spacing: 20) {
+                VStack() {
                     headerSection
-                    statusSection
                     ledArraySection
-                    Spacer()
+                        //.border(Color.green, width: 1)
                     gridSection
-                    Spacer()
+                    
                     settingsAndChartsSection
                     /*
                      HStack {
@@ -575,39 +633,41 @@ struct ContentView: View {
                      }
                      */
                 }
-                .background(Color.clear)
+                //.background(Color.clear)
                 .onChange(of: viewModel.receivedFaceFromWatch) { oldValue, newValue in
                     handleWatchFaceSelection(face: newValue) }
+                .onAppear(perform: prepareHaptics)
+                .background(overlayColor)
             }
             .scrollContentBackground(.hidden)
+            //.background(overlayColor)
             .navigationTitle("LumiFur")
-        }
+        
     }
     private var headerSection: some View {
         HStack {
             Image("Image")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth:150,maxHeight: 150)
+            .frame(maxWidth:100,maxHeight: 100)
             //.offset(x:10,y: 40)
-                .padding()
+                //.padding()
             Spacer()
             VStack(alignment: .trailing, spacing: 2.0) {
                 Text("LumiFur")
-                    .font(.title)
+                    .font(.largeTitle)
                     .frame(width: 150)
                 //.multilineTextAlignment(.trailing)
                     .fontDesign(.monospaced)
-                
+                    .padding(.top)
+                statusSection
+                    //.border(Color.blue, width: 1)
             }
-            .border(.green)
         }
-        .frame( height: 100)
-        .border(.red)
+        .frame(height: 100)
+        .padding(.horizontal)
     }
     private var statusSection: some View {
-        HStack {
-            Spacer()
             HStack {
                 SignalStrengthView(rssi: accessoryViewModel.signalStrength)
                 
@@ -622,42 +682,38 @@ struct ContentView: View {
                         .symbolEffect(.variableColor)
                         .saturation(0)
                 }
-                
-                // Only animate when not connected
-                //.animation(accessoryViewModel.isConnected ? nil : .easeInOut(duration: 0.3), value: accessoryViewModel.isConnected)
-                
-                
             }
             .padding(10)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
-            //.border(Color.green)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
-        .offset(x: -20, y: -40)
-    }
+    
     private var ledArraySection: some View {
-        
         DisclosureGroup("LED Array", isExpanded: $isLedArrayExpanded) {
             HStack {
                 Spacer()
                 LEDPreview()
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                Spacer()
                 LEDPreview()
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 Spacer()
             }
+            .frame(maxHeight: 100)
         }
-        .padding(.horizontal)
+        .padding([.top, .leading, .trailing])
         .accentColor(.gray)
+        .ignoresSafeArea()
+        .scrollContentBackground(.hidden)
+        .background(overlayColor)
+      
     }
+    
     static let gradientStart = Color(red: 0 / 255, green: 0 / 255, blue: 0 / 255)
     static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
     
     private var gridSection: some View {
-        ZStack {
             ScrollView(.horizontal) {
                 LazyHGrid(rows: twoColumnGrid) {
                     ForEach(protoActionOptions.indices, id: \.self) { index in
@@ -666,20 +722,26 @@ struct ContentView: View {
                             accessoryViewModel.setView(index + 1)
                         }) {
                             Text(protoActionOptions[index])
-                                .font(.system(size: 75))
-                                .frame(maxWidth: 150, maxHeight: 150)
+                                .dynamicTypeSize(.xxxLarge)
+                                .scaleEffect(2)
+                                .frame(maxWidth: 250, maxHeight: 250)
                                 .background(.ultraThinMaterial)
-                                .symbolRenderingMode(.monochrome)
+                                .symbolRenderingMode(.hierarchical)
                                 .aspectRatio(1, contentMode: .fit)
                         }
                         .cornerRadius(10)
                     }
-                    //.padding(.horizontal)
                 }
-                .frame(maxWidth:.infinity,maxHeight: 300)
             }
-        }
-        .mask(LinearGradient(gradient: Gradient(colors: [.clear, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .leading, endPoint: .trailing))
+            .padding()
+            .scrollContentBackground(.hidden)
+            .background(overlayColor)
+            .ignoresSafeArea()
+            .scrollClipDisabled()
+            
+            .frame(maxHeight: .infinity)
+        
+        //.mask(LinearGradient(gradient: Gradient(colors: [.clear, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .leading, endPoint: .trailing))
     }
     // MARK: - Helper Functions (Place handleWatchFaceSelection HERE)
 
@@ -747,13 +809,12 @@ struct ContentView: View {
                 }
                 .padding()
                 .background(.ultraThinMaterial)
-                .cornerRadius(10)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .frame(maxWidth:500,maxHeight: 70)
                 
                 Text("CPU")
                     .font(.footnote)
             }
-            //.padding()
             // Temperature Chart
             VStack {
                 Chart {
@@ -792,7 +853,7 @@ struct ContentView: View {
                 }
                 .padding()
                 .background(.ultraThinMaterial)
-                .cornerRadius(10)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .frame(maxWidth:500,maxHeight: 70)
                 
                 Text("Temperature (°C)")
@@ -800,23 +861,17 @@ struct ContentView: View {
                     .font(.footnote)
                 //.bold()
             }
-            //.padding()
-            //.border(Color.gray, width: 1)
-            
             // Isolated NavigationLinks
             NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
                 Image(systemName: "gear")
                     .imageScale(.large)
                     .symbolRenderingMode(.multicolor)
             }
-            //.padding()
-            /*
-             NavigationLink(destination: BluetoothConnectionView()) {
-             Image(systemName: "1.circle.fill")
-             }
-             */
         }
-        .padding(.horizontal)
+        .padding([.top, .leading, .trailing])
+        .frame(maxHeight: 100)
+        .scrollContentBackground(.hidden)
+        .background(overlayColor)
     }
 }
 /*
@@ -863,95 +918,141 @@ struct SettingsView: View {
     @State private var showPreview = true
     @ObservedObject var bleModel: AccessoryViewModel
     @State private var showAdvanced = false
+    @Binding var selectedMatrix: Matrixstyle
     
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter
         var id: Self { self }
     }
-    
     //Matrix Options
     enum Matrixstyle: String, CaseIterable, Identifiable {
         case array, dot, wled
         var id: Self { self }
     }
     
-    @Binding var selectedMatrix: Matrixstyle
+    // State for Scan button animation
+    @State private var isScanningForButton = false // Separate state for button animation trigger
+    @Environment(\.colorScheme) var colorScheme
+    
+    var overlayColor: Color {
+        colorScheme == .dark ? .init(uiColor: .systemGray5) : .white
+    }
+    
+    @State private var isLedArrayExpanded: Bool = false
     
     var body: some View {
-        ZStack {
             NavigationStack {
                 List {
-                    Section{
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Image("bluetooth.fill")
-                                    .font(.system(size: 100))
-                                    .opacity(0.2)
-                                    .padding()
-                                //.onAppear(perform: .symbolEffect(.appear))
-                                Spacer()
-                            }
-                            HStack {
-                                Spacer()
-                                SignalStrengthView(rssi: bleModel.signalStrength)
-                                Text(bleModel.connectionStatus)
-                                    .foregroundColor(bleModel.isConnected ? .green : .red)
-                                    .font(.system(.footnote, weight: .semibold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(bleModel.isConnected ? Color.green.opacity(0.12) : Color.red.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 5))
-                                    .animation(.easeInOut(duration: 0.3), value: bleModel.isConnected)
-                                Spacer()
-                            }
-                        }
-                        
+                    // Section 1: Connection Status
+                    connectionStatusSection
+                    // Section 2: Device Connection (Dynamic Content)
+                    if bleModel.isConnected {
+                        connectedDeviceSection
+                    } else {
+                        discoveredDevicesSection
+                        previouslyConnectedSection
                     }
-                    Section{
-                        connectionSection
-                    } header: {
-                        Text("Device Connection")
-                    } footer: {
-                        Text("Connect to your LumiFur Controller")
-                    }
-                    Section{
-                        // matrixSection
-                        advancedSettings
-                    } header: {
-                        Text("Advanced Settings")
-                    } footer: {
-                        Text("Additional configuration options")
-                    }
+                    // Section 3: Matrix Configuration
+                    matrixSection
+                    // Section 4: Advanced Settings
+                    advancedSettingsSection
+                    
+                    aboutSection
                     
                 }
-                .alert("Connection Error",
-                       isPresented: $bleModel.showError) {
+                //.listStyle(.insetGrouped)
+                //.listRowBackground(Color.blue)
+                .background(Color(UIColor.systemGray6))
+                .scrollContentBackground(.hidden)
+                .navigationTitle("Settings")
+                .navigationBarTitleDisplayMode(.automatic)
+                .toolbar {
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    // Consider moving Info link into the About section?
+                                     NavigationLink(destination: InfoView()) {
+                                         Image(systemName: "info.circle")
+                                     }
+                                }
+                            }
+                /*
+                 .toolbar {
+                 ToolbarItem(placement: .navigationBarTrailing) {
+                 NavigationLink(destination: InfoView()) {
+                 Image(systemName: "info.circle")
+                 }
+                 }
+                 }
+                 */
+                .alert("Connection Error", isPresented: $bleModel.showError) {
                     Button("OK", role: .cancel) { }
                 } message: {
                     Text(bleModel.errorMessage)
                 }
-                
-                
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.automatic)
-            VStack{
-                Spacer()
-                HStack {
-                    Spacer()
-                    NavigationLink(destination: infoView()) {
-                        Image(systemName: "info.circle")
-                            .padding()
+                // Refresh list content when connection state changes
+                .id(bleModel.isConnected)
+                // Start scanning immediately if BT is ready and not connected
+                .onAppear {
+                    if bleModel.isBluetoothReady && !bleModel.isConnected {
+                        // Don't trigger button animation on initial appear scan
+                        bleModel.scanForDevices()
                     }
-                }}}
+                }
+        }
     }
+    // MARK: - About Section (New)
+        private var aboutSection: some View {
+            Section("About") {
+                // Row for Release Notes
+                NavigationLink {
+                    ReleaseNotesView() // Destination view
+                } label: {
+                     HStack {
+                         Image(systemName: "list.bullet.clipboard") // Example icon
+                         Text("App Release Notes")
+                     }
+                }
+                // Same styling as other NavLink rows if desired
+                 .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+                // Row for App Version
+                HStack {
+                    Image(systemName: "info.circle") // Or gear, number, etc.
+                    Text("App Version")
+                    Spacer()
+                    Text(AppInfo.versionDisplay) // Use the helper
+                        .foregroundColor(.secondary)
+                }
+                
+                NavigationLink {
+                    ReleaseNotesView() // Destination view
+                } label: {
+                     HStack {
+                         Image(systemName: "list.bullet.clipboard") // Example icon
+                         Text("Controller Release Notes")
+                     }
+                }
+                // Same styling as other NavLink rows if desired
+                 .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+                // Row for Controller Version
+                HStack {
+                    Image(systemName: "info.circle") // Or gear, number, etc.
+                    Text("Controller Version")
+                    Spacer()
+                    Text(AppInfo.versionDisplay) // Use the helper
+                        .foregroundColor(.secondary)
+                }
+                // .listRowInsets(EdgeInsets(top: 10, leading: 15, bottom: 10, trailing: 15)) // Standard padding
+                 .padding(.vertical, 5) // Add some vertical padding if needed
+            }
+             // Apply .clear background if the section contains custom styled rows
+             //.listRowBackground(Color.clear)
+             // If the App Version row should have default background, remove .listRowBackground from the Section
+             // and apply .listRowBackground(.clear) ONLY to the Release Notes NavLink individually.
+        }
+
     // MARK: - Connection Section
-    @State private var animateSymbol = false
-    private var connectionSection: some View {
-        
-        
+    @State  var animateSymbol = false
+     var connectionSection: some View {
         VStack(alignment: .leading, spacing: 15) {
             Section{
                 if !bleModel.isConnected {
@@ -973,16 +1074,12 @@ struct SettingsView: View {
                         Spacer()
                     }
                 }
-                
                 deviceList
             }
-            
-            //.padding(50)
-            
         }
     }
     
-    private var deviceList: some View {
+     var deviceList: some View {
         Group {
             if bleModel.isConnected, let device = bleModel.connectedDevice {
                 AnyView(ConnectedDeviceView(peripheral: device))
@@ -1032,19 +1129,7 @@ struct SettingsView: View {
         }
     }
     
-    private var matrixSection: some View {
-        Section {
-            HStack {
-                LEDPreview()
-                LEDPreview()
-            }
-            MatrixStylePicker(selectedMatrix: $selectedMatrix)
-        } header: {
-            Text("Matrix Configuration")
-        }
-    }
-    
-    private var advancedSettings: some View {
+     var advancedSettings: some View {
         Section {
             Toggle("Show Advanced Settings", isOn: $showAdvanced)
             
@@ -1058,7 +1143,219 @@ struct SettingsView: View {
             }
         }
     }
-}
+
+    // MARK: - Connection Status Section
+         var connectionStatusSection: some View {
+            Section("Status") {
+                HStack {
+                    Image(systemName: bleModel.isConnected ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                        .foregroundColor(bleModel.connectionColor)
+                    Text(bleModel.connectionStatus)
+                        .foregroundColor(bleModel.connectionColor)
+                    Spacer()
+                    if bleModel.isConnected {
+                        SignalStrengthView(rssi: bleModel.signalStrength)
+                    } else if bleModel.isConnecting {
+                        ProgressView() // Show spinner when connecting globally
+                            .frame(width: 20, height: 20) // Consistent size
+                    }
+                     else if bleModel.isScanning {
+                         ProgressView() // Show spinner when scanning
+                            .frame(width: 20, height: 20)
+                    }
+                }
+                .animation(.easeInOut, value: bleModel.connectionStatus) // Animate changes
+            }
+            .listRowBackground(overlayColor)
+        }
+
+        // MARK: - Connected Device Section
+         var connectedDeviceSection: some View {
+            Section("Connected Device") {
+                if let device = bleModel.targetPeripheral { // Use targetPeripheral directly
+                    HStack {
+                        Image(systemName: "personalhotspot.circle.fill") // Example icon
+                            .foregroundColor(.blue)
+                        Text(device.name ?? "Unknown Device")
+                            .fontWeight(.semibold)
+                        Spacer()
+                        Button("Disconnect", role: .destructive) {
+                            bleModel.disconnect()
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.red) // Make disconnect button red
+                    }
+                } else {
+                    // This shouldn't ideally happen if isConnected is true, but good fallback
+                    Text("Connected (Error fetching name)")
+                        .foregroundColor(.orange)
+                }
+            }
+            .listRowBackground(overlayColor)
+        }
+
+        // MARK: - Discovered Devices Section
+    
+         var discoveredDevicesSection: some View {
+            Section {
+                // Scan Button
+                Button {
+                    isScanningForButton.toggle() // Trigger animation
+                    bleModel.scanForDevices()
+                } label: {
+                    if #available(iOS 18.0, *) {
+                        Label("Scan for Devices", systemImage: "arrow.clockwise")
+                        // Apply effect only on iOS 17+ where it's reliable
+                            .symbolEffect(.rotate, options: .repeating, value: bleModel.isScanning && isScanningForButton)
+                    } else {
+                        Label("Scan for Devices", systemImage: "arrow.clockwise")
+                    } // Rotate when scanning AND button triggered it
+                         
+                }
+                .disabled(!bleModel.isBluetoothReady || bleModel.isConnecting)
+                .frame(maxWidth: .infinity, alignment: .center) // Center the button
+                
+                // Device List
+                if bleModel.discoveredDevices.isEmpty && !bleModel.isScanning {
+                     Text("No devices found. Ensure your LumiFur Controller is nearby and powered on.")
+                         .foregroundColor(.secondary)
+                         .padding(.vertical)
+                } else {
+                    ForEach(bleModel.discoveredDevices) { device in
+                        Button {
+                            if !bleModel.isConnecting { // Prevent multiple connection attempts
+                                bleModel.connect(to: device)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "wave.3.right.circle") // Example icon
+                                    .foregroundColor(.blue)
+                                Text(device.name)
+                                    .foregroundColor(.primary) // Ensure text is default color
+                                Spacer()
+                                if bleModel.connectingPeripheral?.id == device.id {
+                                    ProgressView()
+                                        .frame(width: 20, height: 20)
+                                } else {
+                                    SignalStrengthView(rssi: device.rssi) // Use device's discovered RSSI
+                                }
+                            }
+                        }
+                        .disabled(bleModel.isConnecting) // Disable row if any connection is in progress
+                    }
+                }
+            } header: {
+                Text("Discovered Devices")
+            } footer: {
+                 if bleModel.isScanning {
+                     Text("Scanning...")
+                         .foregroundColor(.secondary)
+                 } else if !bleModel.isBluetoothReady {
+                     Text("Bluetooth is turned off.")
+                          .foregroundColor(.red)
+                 }
+            }
+            .listRowBackground(overlayColor)
+        }
+
+
+        // MARK: - Previously Connected Section
+        @ViewBuilder // Use ViewBuilder to conditionally show the section
+        private var previouslyConnectedSection: some View {
+            // Only show this section if not connected AND there are previous devices
+            if !bleModel.isConnected && !bleModel.previouslyConnectedDevices.isEmpty {
+                Section("Previously Connected") {
+                    ForEach(bleModel.previouslyConnectedDevices) { storedDevice in
+                        // Avoid showing if already listed in discovered devices
+                        if !bleModel.discoveredDevices.contains(where: { $0.id.uuidString == storedDevice.id }) {
+                            Button {
+                                 if !bleModel.isConnecting {
+                                     bleModel.connectToStoredPeripheral(storedDevice)
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "clock.arrow.circlepath")
+                                        .foregroundColor(.purple) // Different color for distinction
+                                    Text(storedDevice.name)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    if bleModel.connectingPeripheral?.id.uuidString == storedDevice.id {
+                                         ProgressView()
+                                             .frame(width: 20, height: 20)
+                                     }
+                                }
+                            }
+                            .disabled(bleModel.isConnecting)
+                        }
+                    }
+                }
+                .listRowBackground(overlayColor)
+            }
+        }
+
+        // MARK: - Matrix Configuration Section
+    private var matrixSection: some View {
+        DisclosureGroup("LED Configuration", isExpanded: $isLedArrayExpanded) {
+           // Section("Matrix Configuration") {
+                // Example Layout: Could be more sophisticated
+                VStack(alignment: .leading) {
+                    Text("Preview:") // Add a label for context
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Spacer()
+                        LEDPreview() // Your custom preview view
+                        Spacer()
+                        // You might add another preview or controls here
+                    }
+                    .padding(.bottom, 5) // Add some spacing
+                    
+                    MatrixStylePicker(selectedMatrix: $selectedMatrix) // Your custom picker
+                }
+            }
+            .listRowBackground(overlayColor)
+        }
+
+        // MARK: - Advanced Settings Section
+        private var advancedSettingsSection: some View {
+            Section("Advanced") {
+                Toggle("Show Advanced Options", isOn: $showAdvanced.animation()) // Animate toggle reveal
+                if showAdvanced {
+                    NavigationLink("Connection Parameters") {
+                        // Ensure AdvancedSettingsView is correctly defined
+                        AdvancedSettingsView(bleModel: bleModel)
+                    }
+                    Button("Reset to Defaults", role: .destructive) {
+                        // Add your reset logic here
+                        print("Resetting to defaults...")
+                    }
+                    .tint(.red)
+                }
+            }
+            .listRowBackground(overlayColor)
+        }
+    }
+
+    // Helper for conditional modifiers (like symbolEffect)
+    extension View {
+        @ViewBuilder
+        func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+            if condition {
+                transform(self)
+            } else {
+                self
+            }
+        }
+        
+        @ViewBuilder
+        func ifLet<V, Content: View>(_ value: V?, transform: (Self, V) -> Content) -> some View {
+            if let value = value {
+                transform(self, value)
+            } else {
+                self
+            }
+        }
+    }
 
 struct MatrixStylePicker: View {
     @Binding var selectedMatrix: SettingsView.Matrixstyle
@@ -1160,7 +1457,6 @@ struct AdvancedSettingsView: View {
                     bleModel.scanForDevices()
                 }
             }
-            
             // RSSI Monitoring Section
             Section(header: Text("RSSI Monitoring")) {
                 Toggle("Enable RSSI Monitoring", isOn: $rssiMonitoringEnabled)
@@ -1172,7 +1468,6 @@ struct AdvancedSettingsView: View {
                             print("RSSI monitoring disabled")
                         }
                     }
-                
                 if rssiMonitoringEnabled {
                     Stepper("Update Interval: \(rssiUpdateInterval, specifier: "%.1f") sec", value: $rssiUpdateInterval, in: 0.5...5.0, step: 0.5)
                         .onChange(of: rssiUpdateInterval) { oldValue, newValue in
@@ -1181,7 +1476,6 @@ struct AdvancedSettingsView: View {
                         }
                 }
             }
-            
             // Debug / Status Information Section
             Section(header: Text("Debug Info")) {
                 Text("Connection Status: \(bleModel.connectionStatus)")
@@ -1192,6 +1486,114 @@ struct AdvancedSettingsView: View {
         }
         .navigationTitle("Advanced Settings")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct ReleaseNotesView: View {
+    @State private var releases: [GitHubRelease] = []
+    @State private var isLoading = true // Start in loading state
+    @State private var errorMessage: String? = nil
+
+    private let githubService = GitHubService() // Instance of the service
+
+    var body: some View {
+        Group { // Use Group to switch between views based on state
+            if isLoading {
+                ProgressView("Loading Release Notes...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+            } else if let errorMsg = errorMessage {
+                VStack(spacing: 15) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(.red)
+                    Text("Failed to Load Notes")
+                        .font(.headline)
+                    Text(errorMsg)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        Task {
+                            await loadReleases()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.top)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+
+            } else if releases.isEmpty {
+                Text("No release notes found.")
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+            } else {
+                // Display fetched releases in a List
+                List {
+                    ForEach(releases) { release in
+                        Section {
+                             // Use MarkdownUI if imported:
+                             // Markdown(release.body ?? "No details provided.")
+                             //    .markdownTheme(.gitHub) // Example theme
+
+                             // Or display as plain text:
+                              Text(release.body ?? "No details provided.")
+                                 .font(.body)
+                                 .foregroundColor(.secondary) // Style as needed
+                                 .lineSpacing(5)
+                                 // Make links tappable (basic detection)
+                                 .environment(\.openURL, OpenURLAction { url in
+                                     print("Opening URL: \(url)")
+                                     return .systemAction // Use default browser
+                                  })
+
+
+                        } header: {
+                            HStack {
+                                Text(release.displayName)
+                                    .font(.headline)
+                                Spacer()
+                                Text(release.publishedAt, style: .date) // Format date
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                         // Use clear background if your List has a colored background overall
+                         // .listRowBackground(Color.clear)
+                    }
+                }
+                // Optional: Apply List style if needed
+                // .listStyle(.plain)
+            }
+        }
+        .navigationTitle("Release Notes")
+        .navigationBarTitleDisplayMode(.inline)
+        // Use .task for async operations tied to view lifecycle
+        .task {
+            await loadReleases()
+        }
+    }
+
+    // Function to load releases using the service
+    private func loadReleases() async {
+        // Reset state before loading
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let fetchedReleases = try await githubService.fetchReleases()
+            // Update state on the main thread
+            await MainActor.run {
+                 self.releases = fetchedReleases
+                 self.isLoading = false
+             }
+        } catch {
+            // Update state on the main thread
+            await MainActor.run {
+                 self.errorMessage = (error as? LocalizedError)?.errorDescription ?? "An unexpected error occurred."
+                 self.isLoading = false
+            }
+        }
     }
 }
 
@@ -1311,67 +1713,80 @@ struct InfoView: View {
                 Image("Logo")
                     .resizable()
                     .scaledToFit()
+                    .frame( height: 100)
                 
                 Image("Logo")
                     .resizable()
                     .scaledToFit()
+                    .frame( height: 100)
                     .blur(radius: 10)
-                    .opacity(0.5)
+                    .opacity(0.75)
             }
             .padding()
-            VStack {
-                HStack {
-                    Spacer()
-                    Text("About")
-                        .font(.title)
-                    Spacer()
-                }
-                Text("LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.")
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundStyle(.ultraThinMaterial)
                     .padding()
-            }
-            .multilineTextAlignment(.leading)
-            .padding()
-            
-            HStack {
-                
-                Spacer()
-                Text("Features")
-                    .font(.title)
-                Spacer()
-            }
-            .padding()
-            VStack(spacing: 28) {
-                ForEach(widgetItems) { item in // Replace with your data model here
+                VStack {
                     HStack {
-                        Image(systemName: item.iconName)
-                            .symbolRenderingMode(.monochrome)
-                            .foregroundStyle(.blue)
-                            .font(.system(.title, weight: .regular))
-                            .frame(width: 60, height: 50)
-                            .clipped()
-                        VStack(alignment: .leading, spacing: 3) {
-                            // Title
-                            Text(item.title)
-                                .font(.system(.footnote, weight: .semibold))
-                            // Description
-                            Text(item.description)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                        .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Text("About")
+                            .font(.largeTitle)
+                            .bold()
                         Spacer()
                     }
+                    Text("LumiFur is an innovative iOS app designed to control LED and light systems for fursuits. It provides an intuitive interface for managing various lighting effects and patterns, enhancing the visual appeal of fursuit costumes.")
                 }
+                .multilineTextAlignment(.leading)
+                .padding(50)
             }
-            .padding()
-            Spacer()
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundStyle(.ultraThinMaterial)
+                    .padding()
+                VStack {
+                    HStack {
+                        Spacer()
+                        Text("Features")
+                            .font(.largeTitle)
+                            .bold()
+                        Spacer()
+                    }
+                    VStack(spacing: 25) {
+                        ForEach(widgetItems) { item in
+                            HStack {
+                                Image(systemName: item.iconName)
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(.blue)
+                                    .font(.system(.title, weight: .regular))
+                                    .frame(width: 60, height: 50)
+                                    .clipped()
+                                VStack(alignment: .leading, spacing: 3) {
+                                    // Title
+                                    Text(item.title)
+                                        .font(.system(.footnote, weight: .semibold))
+                                    // Description
+                                    Text(item.description)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .fixedSize(horizontal: false, vertical: true)
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding()
+                    Spacer()
+                }
+                .padding(.vertical, 50)
+        }
             HStack(alignment: .firstTextBaseline) {
                 Text("Complete feature list")
                 Image(systemName: "chevron.forward")
                     .imageScale(.small)
             }
             .padding(32)
-            .foregroundStyle(.blue)
+            .foregroundStyle(Color("AccentColor"))
             .font(.subheadline)
         }
     }
@@ -2208,41 +2623,41 @@ struct LEDPreview: View {
  }
  */
 
-struct infoView: View {
-    
-    
+struct infoViewold: View {
     var body: some View {
         VStack {
             Image("Logo")
                 .resizable()
-                .frame(width: 150, height: 150)
+                .scaledToFit()
+                .frame(height: 150)
+                //.border(.green)
             Spacer()
         }
         //.background(Color(UIColor.systemBackground))
     }
 }
-///*
-#Preview {
+
+#Preview ("SplashView") {
     SplashView()
 }
-//*/
 
-#Preview {
+
+#Preview ("Whats New") {
     WhatsNew()
 }
  
-/*
- #Preview {
+
+ #Preview ("ContentView") {
  ContentView()
  }
- */
-/*
-#Preview {
+ 
+
+#Preview ("Info View") {
     InfoView()
 }
-*/
 
- #Preview {
+
+ #Preview ("Settings") {
  SettingsView(bleModel: AccessoryViewModel(), selectedMatrix: .constant(SettingsView.Matrixstyle.array))
  }
 

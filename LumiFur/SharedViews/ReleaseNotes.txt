@@ -1,0 +1,19 @@
+//
+//  ReleaseNotes.txt
+//  LumiFur
+//
+//  Created by Stephan Ritchie on 3/31/25.
+//
+
+Version 1.1.0 (Current)
+
+- Added Release Notes section to Settings.
+- Improved Bluetooth connection stability.
+- Fixed minor UI layout issues on smaller devices.
+
+Version 1.0.0
+
+- Initial release of LumiFur Controller.
+- Bluetooth LE connectivity.
+- Basic view switching.
+- Temperature monitoring.

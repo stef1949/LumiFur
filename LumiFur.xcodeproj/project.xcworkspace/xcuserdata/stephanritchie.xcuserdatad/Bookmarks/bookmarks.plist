@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1334</string>
+					<string>1742</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1333</string>
+					<string>1741</string>
 					<key>Timestamp</key>
-					<string>764908066.910237</string>
+					<string>765078040.180601</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,16 +53,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            
+				<string>            }
 </string>
 				<key>leading</key>
-				<string>            .multilineTextAlignment(.leading)
-            .padding()
+				<string>                .multilineTextAlignment(.leading)
+                .padding(50)
 </string>
 				<key>trailing</key>
-				<string>            HStack {
-                
-                Spacer()
+				<string>            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundStyle(.ultraThinMaterial)
 </string>
 			</dict>
 			<key>type</key>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1334</string>
+					<string>1742</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1333</string>
+					<string>1741</string>
 					<key>Timestamp</key>
-					<string>764908066.910192</string>
+					<string>765078040.180656</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -98,16 +98,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            
+				<string>            }
 </string>
 				<key>leading</key>
-				<string>            .multilineTextAlignment(.leading)
-            .padding()
+				<string>                .multilineTextAlignment(.leading)
+                .padding(50)
 </string>
 				<key>trailing</key>
-				<string>            HStack {
-                
-                Spacer()
+				<string>            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundStyle(.ultraThinMaterial)
 </string>
 			</dict>
 			<key>type</key>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1334</string>
+					<string>1742</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1333</string>
+					<string>1741</string>
 					<key>Timestamp</key>
-					<string>764908066.910267</string>
+					<string>765078040.180541</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -143,16 +143,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            
+				<string>            }
 </string>
 				<key>leading</key>
-				<string>            .multilineTextAlignment(.leading)
-            .padding()
+				<string>                .multilineTextAlignment(.leading)
+                .padding(50)
 </string>
 				<key>trailing</key>
-				<string>            HStack {
-                
-                Spacer()
+				<string>            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundStyle(.ultraThinMaterial)
 </string>
 			</dict>
 			<key>type</key>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1108</string>
+					<string>1405</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1107</string>
+					<string>1404</string>
 					<key>Timestamp</key>
-					<string>764908066.9102989</string>
+					<string>765078040.180711</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>860</string>
+					<string>1002</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>859</string>
+					<string>1001</string>
 					<key>Timestamp</key>
-					<string>764897605.3015569</string>
+					<string>765077876.561044</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,16 +233,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>struct SettingsView: View {
+				<string>    }
 </string>
 				<key>leading</key>
-				<string>// MARK: SettingsView
-
+				<string>                }
+        }
 </string>
 				<key>trailing</key>
-				<string>    @State private var fontSize: CGFloat = 15
-    @State private var showLineNumbers = false
-    @State private var showPreview = true
+				<string>    // MARK: - About Section (New)
+        private var aboutSection: some View {
+            Section("About") {
 </string>
 			</dict>
 			<key>type</key>
@@ -256,13 +256,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>370</string>
+					<string>428</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>369</string>
+					<string>427</string>
 					<key>Timestamp</key>
-					<string>764897294.180928</string>
+					<string>765074146.657853</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -282,7 +282,7 @@
 </string>
 				<key>leading</key>
 				<string>                    gridSection
-                    Spacer()
+                    
 </string>
 				<key>trailing</key>
 				<string>                    /*
@@ -301,13 +301,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1672</string>
+					<string>2087</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1671</string>
+					<string>2086</string>
 					<key>Timestamp</key>
-					<string>764908066.909924</string>
+					<string>765078040.180485</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -337,6 +337,96 @@
 			</dict>
 			<key>title</key>
 			<string>LED Preview grid</string>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>716</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>715</string>
+					<key>Timestamp</key>
+					<string>765074146.657722</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>    private var gridSection: some View {
+</string>
+				<key>leading</key>
+				<string>    static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
+    
+</string>
+				<key>trailing</key>
+				<string>            ScrollView(.horizontal) {
+                LazyHGrid(rows: twoColumnGrid) {
+                    ForEach(protoActionOptions.indices, id: \.self) { index in
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>402</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>401</string>
+					<key>Timestamp</key>
+					<string>765074146.657792</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>    private let twoColumnGrid = [
+</string>
+				<key>leading</key>
+				<string>    @State private var selectedMatrix: SettingsView.Matrixstyle = .array
+    
+</string>
+				<key>trailing</key>
+				<string>        GridItem(.adaptive(minimum: 125, maximum: 250))
+    ]
+    
+</string>
+			</dict>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>

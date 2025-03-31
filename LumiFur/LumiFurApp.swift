@@ -29,7 +29,7 @@ struct RootView: View {
     
     var body: some View {
         ContentView()
-            .fullScreenCover(isPresented: $showWhatsNew) {
+            .sheet(isPresented: $showWhatsNew) {
                 // Present WhatsNew as a full screen cover
                 WhatsNew()
             }

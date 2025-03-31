@@ -13,7 +13,7 @@ import SwiftUI  // For ObservableObject, @Published
 import WatchKit // For WKInterfaceDevice
 
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
-    static let shared = WatchConnectivityManager() // Singleton
+    @MainActor static let shared = WatchConnectivityManager() // Singleton
 
     // MARK: - Published Properties (For watchOS UI)
     @Published var connectionStatus: String = "Initializing..."

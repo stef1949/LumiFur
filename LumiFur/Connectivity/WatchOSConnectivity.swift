@@ -6,13 +6,14 @@
 //
 
 import Foundation
-
+#if canImport(WatchConnectivity)
 import WatchConnectivity
+#endif
 import SwiftUI
 import Combine
 
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
-    static let shared = WatchConnectivityManager()
+    @MainActor static let shared = WatchConnectivityManager()
 
     // MARK: - Published Properties for SwiftUI
     @Published var connectionStatus: String = "Initializing..."
