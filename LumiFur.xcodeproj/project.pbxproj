@@ -18,6 +18,7 @@
 		35AE1A602D5D24C700FDD29E /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		35D1A10E2D9A18DE00AEC573 /* ReleaseNotes.txt in Sources */ = {isa = PBXBuildFile; fileRef = 35D1A10D2D9A18D700AEC573 /* ReleaseNotes.txt */; };
 		35D1A1102D9A1C8A00AEC573 /* GitHubRelease.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D1A10F2D9A1C8A00AEC573 /* GitHubRelease.swift */; };
+		35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D1A1152D9A377700AEC573 /* ReleaseViewModel.swift */; };
 		35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */; };
 		35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35DA3A612C8739FB0039D19D /* ContentView.swift */; };
 		35DA3A642C8739FD0039D19D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35DA3A632C8739FD0039D19D /* Assets.xcassets */; };
@@ -114,6 +115,7 @@
 		35D1A1072D98FF0C00AEC573 /* LumiFur WidgetExtensionRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "LumiFur WidgetExtensionRelease.entitlements"; sourceTree = "<group>"; };
 		35D1A10D2D9A18D700AEC573 /* ReleaseNotes.txt */ = {isa = PBXFileReference; explicitFileType = text; path = ReleaseNotes.txt; sourceTree = "<group>"; };
 		35D1A10F2D9A1C8A00AEC573 /* GitHubRelease.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubRelease.swift; sourceTree = "<group>"; };
+		35D1A1152D9A377700AEC573 /* ReleaseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseViewModel.swift; sourceTree = "<group>"; };
 		35DA3A5C2C8739FB0039D19D /* LumiFur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LumiFur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumiFurApp.swift; sourceTree = "<group>"; };
 		35DA3A612C8739FB0039D19D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 		358427A42C8CF59B0096B1D0 /* SharedViews */ = {
 			isa = PBXGroup;
 			children = (
+				35D1A1152D9A377700AEC573 /* ReleaseViewModel.swift */,
 				35D1A10F2D9A1C8A00AEC573 /* GitHubRelease.swift */,
 				35D1A10D2D9A18D700AEC573 /* ReleaseNotes.txt */,
 				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
@@ -623,6 +626,7 @@
 				35D1A1102D9A1C8A00AEC573 /* GitHubRelease.swift in Sources */,
 				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
+				35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -892,7 +896,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1.1.0;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -920,7 +924,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2;
+				MARKETING_VERSION = 3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -965,7 +969,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1.1.0;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -988,7 +992,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2;
+				MARKETING_VERSION = 3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;

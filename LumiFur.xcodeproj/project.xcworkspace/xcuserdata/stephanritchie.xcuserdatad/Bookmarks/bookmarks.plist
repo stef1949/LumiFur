@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1742</string>
+					<string>1806</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1741</string>
+					<string>1805</string>
 					<key>Timestamp</key>
-					<string>765078040.180601</string>
+					<string>765086163.574628</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -76,13 +76,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1742</string>
+					<string>1806</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1741</string>
+					<string>1805</string>
 					<key>Timestamp</key>
-					<string>765078040.180656</string>
+					<string>765086163.574671</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1742</string>
+					<string>1806</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1741</string>
+					<string>1805</string>
 					<key>Timestamp</key>
-					<string>765078040.180541</string>
+					<string>765086163.574659</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -166,13 +166,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1405</string>
+					<string>1469</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1404</string>
+					<string>1468</string>
 					<key>Timestamp</key>
-					<string>765078040.180711</string>
+					<string>765086163.574699</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -211,13 +211,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1002</string>
+					<string>1019</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1001</string>
+					<string>1018</string>
 					<key>Timestamp</key>
-					<string>765077876.561044</string>
+					<string>765083661.831089</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -240,9 +240,9 @@
         }
 </string>
 				<key>trailing</key>
-				<string>    // MARK: - About Section (New)
+				<string>    
+    // MARK: - About Section (New)
         private var aboutSection: some View {
-            Section("About") {
 </string>
 			</dict>
 			<key>type</key>
@@ -301,13 +301,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>2087</string>
+					<string>2151</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>2086</string>
+					<string>2150</string>
 					<key>Timestamp</key>
-					<string>765078040.180485</string>
+					<string>765086163.574687</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>

@@ -919,7 +919,8 @@ struct SettingsView: View {
     @ObservedObject var bleModel: AccessoryViewModel
     @State private var showAdvanced = false
     @Binding var selectedMatrix: Matrixstyle
-    
+    @Environment(\.repositoryConfig) private var config // Still read config here
+    @StateObject private var releaseViewModel = ReleaseViewModel()
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter
@@ -959,7 +960,7 @@ struct SettingsView: View {
                     advancedSettingsSection
                     
                     aboutSection
-                    
+                    releaseNotesSection
                 }
                 //.listStyle(.insetGrouped)
                 //.listRowBackground(Color.blue)
@@ -992,6 +993,22 @@ struct SettingsView: View {
                 // Refresh list content when connection state changes
                 .id(bleModel.isConnected)
                 // Start scanning immediately if BT is ready and not connected
+                .task {
+                                // Use config directly from environment when calling load methods
+                                // Only fetch if needed
+                                if releaseViewModel.appReleases.isEmpty && !releaseViewModel.isLoadingAppReleases {
+                                    await releaseViewModel.loadAppReleases(
+                                        owner: config.appRepoName, // Get from config
+                                        repo: config.appRepoName      // Get from config
+                                    )
+                                }
+                                if releaseViewModel.controllerReleases.isEmpty && !releaseViewModel.isLoadingControllerReleases {
+                                    await releaseViewModel.loadControllerReleases(
+                                        owner: config.controllerRepoOwner, // Get from config
+                                        repo: config.controllerRepoName   // Get from config
+                                    )
+                                }
+                            }
                 .onAppear {
                     if bleModel.isBluetoothReady && !bleModel.isConnected {
                         // Don't trigger button animation on initial appear scan
@@ -1000,56 +1017,31 @@ struct SettingsView: View {
                 }
         }
     }
+    
     // MARK: - About Section (New)
         private var aboutSection: some View {
             Section("About") {
-                // Row for Release Notes
-                NavigationLink {
-                    ReleaseNotesView() // Destination view
-                } label: {
-                     HStack {
-                         Image(systemName: "list.bullet.clipboard") // Example icon
-                         Text("App Release Notes")
-                     }
-                }
-                // Same styling as other NavLink rows if desired
-                 .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
-                // Row for App Version
+                        HStack { Text("App Version"); Spacer(); Text(AppInfo.versionDisplay).foregroundColor(.secondary) }
+                         // Read directly from environment config here
                 HStack {
-                    Image(systemName: "info.circle") // Or gear, number, etc.
-                    Text("App Version")
-                    Spacer()
-                    Text(AppInfo.versionDisplay) // Use the helper
+                    Text("LumiFur Controller Firmware"); Spacer(); Text(bleModel.firmwareVersion)
                         .foregroundColor(.secondary)
                 }
-                
-                NavigationLink {
-                    ReleaseNotesView() // Destination view
-                } label: {
-                     HStack {
-                         Image(systemName: "list.bullet.clipboard") // Example icon
-                         Text("Controller Release Notes")
-                     }
-                }
-                // Same styling as other NavLink rows if desired
-                 .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
-                // Row for Controller Version
-                HStack {
-                    Image(systemName: "info.circle") // Or gear, number, etc.
-                    Text("Controller Version")
-                    Spacer()
-                    Text(AppInfo.versionDisplay) // Use the helper
-                        .foregroundColor(.secondary)
-                }
-                // .listRowInsets(EdgeInsets(top: 10, leading: 15, bottom: 10, trailing: 15)) // Standard padding
-                 .padding(.vertical, 5) // Add some vertical padding if needed
-            }
-             // Apply .clear background if the section contains custom styled rows
-             //.listRowBackground(Color.clear)
-             // If the App Version row should have default background, remove .listRowBackground from the Section
-             // and apply .listRowBackground(.clear) ONLY to the Release Notes NavLink individually.
+                        .opacity(bleModel.isConnected ? 1 : 0.5)
+                    }
         }
-
+    
+    @ViewBuilder
+        private func repositoryLink(repoName: String) -> some View {
+            // Assuming GitHub URLs, adjust base URL if needed
+            let baseURL = "https://github.com/"
+            if let url = URL(string: baseURL + repoName) {
+                Link(repoName, destination: url).lineLimit(1).truncationMode(.middle)
+            } else {
+                Text(repoName).foregroundColor(.secondary).lineLimit(1).truncationMode(.middle)
+            }
+        }
+    
     // MARK: - Connection Section
     @State  var animateSymbol = false
      var connectionSection: some View {
@@ -1315,7 +1307,79 @@ struct SettingsView: View {
             }
             .listRowBackground(overlayColor)
         }
+    
+    private var releaseNotesSection: some View {
+        Section("Release Notes") {
+            NavigationLink {
+                ReleaseNotesView() // Destination view
+            } label: {
+                HStack {
+                    Image(systemName: "list.bullet.clipboard") // Example icon
+                    Text("App Release Notes")
+                }
+            }
+            // Same styling as other NavLink rows if desired
+            .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+            
+            NavigationLink {
+                ReleaseNotesView() // Destination view
+            } label: {
+                HStack {
+                    Image(systemName: "list.bullet.clipboard") // Example icon
+                    Text("Controller Release Notes")
+                }
+            }
+            // Same styling as other NavLink rows if desired
+            .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+            // Row for Controller Version
+           
+            // .listRowInsets(EdgeInsets(top: 10, leading: 15, bottom: 10, trailing: 15)) // Standard padding
+            .padding(.vertical, 5) // Add some vertical padding if needed
+        }
+        // Apply .clear background if the section contains custom styled rows
+        //.listRowBackground(Color.clear)
+        // If the App Version row should have default background, remove .listRowBackground from the Section
+        // and apply .listRowBackground(.clear) ONLY to the Release Notes NavLink individually.
+    }
+    
+    @ViewBuilder
+        private func releaseRow(for release: GitHubRelease) -> some View {
+            VStack(alignment: .leading, spacing: 5) {
+                // Display Release Name/Tag and Date
+                HStack {
+                    Text(release.displayName)
+                        .font(.headline)
+                        .lineLimit(1) // Ensure name doesn't wrap excessively
+                    Spacer() // Push date to the right
+                    Text(release.publishedAt, style: .date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
+                // Display Release Body (Notes)
+                // Use optional chaining and nil-coalescing for the body.
+                // Use .prefix() to limit initial display length.
+                // Use .fixedSize to allow text to wrap correctly within limits.
+                Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200) ?? "No description provided.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(4) // Limit number of lines shown
+                    .fixedSize(horizontal: false, vertical: true) // Allows text wrapping
+
+                // --- Optional: Add Read More ---
+                // Show 'Read More' if the body text was truncated
+                // Note: Simple prefix check isn't foolproof for truncation, but gives an idea
+                if let body = release.body?.trimmingCharacters(in: .whitespacesAndNewlines), body.count > 200 {
+                     Button("Read More...") {
+                         // TODO: Implement showing full body (e.g., navigate, show sheet)
+                         print("Show full body for release: \(release.displayName)")
+                     }
+                     .font(.caption)
+                     .padding(.top, 1)
+                }
+                // -----------------------------
+            }
+        }
         // MARK: - Advanced Settings Section
         private var advancedSettingsSection: some View {
             Section("Advanced") {

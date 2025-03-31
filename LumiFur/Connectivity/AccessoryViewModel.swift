@@ -91,6 +91,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var cpuUsageData: [CPUUsageData] = [CPUUsageData(timestamp: Date(), cpuUsage: 50)]
     @Published var bootButtonState: Bool = false   // Optional additional state.
     
+    // NEW: Test firmware versioning
+    @Published var firmwareVersion: String = "1.2.0"
     // NEW: Published property for previously connected devices.
     @Published var previouslyConnectedDevices: [StoredPeripheral] = []
     
