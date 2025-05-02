@@ -14,22 +14,24 @@ import Combine
 
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @MainActor static let shared = WatchConnectivityManager()
-
+    
     // MARK: - Published Properties for SwiftUI
     @Published var connectionStatus: String = "Initializing..."
     @Published var isReachable: Bool = false
-
+    
     // MARK: - Subject for Received Messages
     let messageSubject = PassthroughSubject<[String: Any], Never>()
     // let contextSubject = PassthroughSubject<[String: Any], Never>() // Uncomment if using context
-
+    
     private let session: WCSession
-
+    // Use the updated accessory view model.
+    @Published var accessoryViewModel = AccessoryViewModel.shared  // Use the shared instance
+    
     // MARK: - Initialization
     override private init() {
         self.session = WCSession.default
         super.init()
-
+        
         if WCSession.isSupported() {
             session.delegate = self
             session.activate()
@@ -42,20 +44,18 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             }
         }
     }
-
+    
     // MARK: - Public Sending Methods
     func sendMessage(_ message: [String: Any],
                      replyHandler: (([String: Any]) -> Void)? = nil,
                      errorHandler: ((Error) -> Void)? = nil) {
-
+        
         guard session.activationState == .activated else {
             print("Cannot send message: Session not activated.")
             errorHandler?(WCError(.sessionNotActivated))
             return
         }
-
-        // Note: The #if os(watchOS) check for isCompanionAppInstalled is *NOT* included here for iOS
-
+        
         if session.isReachable {
             session.sendMessage(message, replyHandler: replyHandler, errorHandler: { error in
                 print("Error sending message: \(error.localizedDescription)")
@@ -66,9 +66,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             errorHandler?(WCError(.notReachable))
         }
     }
-
+    
     func updateApplicationContext(_ context: [String: Any]) {
-         guard session.activationState == .activated else {
+        guard session.activationState == .activated else {
             print("Cannot update context: Session not activated.")
             return
         }
@@ -79,82 +79,149 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             print("Error updating application context: \(error.localizedDescription)")
         }
     }
-
-    // MARK: - WCSessionDelegate Methods (Common)
-
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        let statusText: String
-        var reachable = false
-
-        switch activationState {
-        case .activated: statusText = "Connected"; reachable = session.isReachable; print("WCSession activated successfully.")
-        case .inactive: statusText = "Inactive"; print("WCSession inactive.")
-        case .notActivated: statusText = "Not Activated"; print("WCSession not activated.")
-        @unknown default: statusText = "Unknown State"; print("WCSession activation state unknown.")
+    
+    // MARK: - Helper to Update Accessory Settings from Message
+    private func updateAccessorySettingsFromMessage(_ message: [String: Any]) {
+        if let autoBrightness = message["autoBrightness"] as? Bool {
+            accessoryViewModel.autoBrightness = autoBrightness
+            print("iOS: Updated autoBrightness to \(autoBrightness)")
         }
-
-        if let error = error {
-            print("WCSession activation failed with error: \(error.localizedDescription)")
+        if let accelerometer = message["accelerometer"] as? Bool {
+            accessoryViewModel.accelerometerEnabled = accelerometer
+            print("iOS: Updated accelerometerEnabled to \(accelerometer)")
         }
-
+        if let sleepMode = message["sleepMode"] as? Bool {
+            accessoryViewModel.sleepModeEnabled = sleepMode
+            print("iOS: Updated sleepModeEnabled to \(sleepMode)")
+        }
+        if let auroraMode = message["auroraMode"] as? Bool {
+            accessoryViewModel.auroraModeEnabled = auroraMode
+            print("iOS: Updated auroraModeEnabled to \(auroraMode)")
+        }
+        if let customMessage = message["customMessage"] as? String {
+            accessoryViewModel.customMessage = customMessage
+            print("iOS: Updated customMessage to \"\(customMessage)\"")
+        }
+        
+        // Update AppStorage via UserDefaults so that SwiftUI views bound to these keys update.
+                let defaults = UserDefaults.standard
+                if let autoBrightness = message["autoBrightness"] as? Bool {
+                    defaults.set(autoBrightness, forKey: "autoBrightness")
+                    print("iOS: AppStorage autoBrightness updated to \(autoBrightness)")
+                }
+                if let accelerometer = message["accelerometer"] as? Bool {
+                    defaults.set(accelerometer, forKey: "accelerometer")
+                    print("iOS: AppStorage accelerometer updated to \(accelerometer)")
+                }
+                if let sleepMode = message["sleepMode"] as? Bool {
+                    defaults.set(sleepMode, forKey: "sleepMode")
+                    print("iOS: AppStorage sleepMode updated to \(sleepMode)")
+                }
+                if let auroraMode = message["auroraMode"] as? Bool {
+                    // Note: The AppStorage key is "arouraMode" per your snippet.
+                    defaults.set(auroraMode, forKey: "arouraMode")
+                    print("iOS: AppStorage arouraMode updated to \(auroraMode)")
+                }
+                if let customMessage = message["customMessage"] as? String {
+                    defaults.set(customMessage, forKey: "customMessage")
+                    print("iOS: AppStorage customMessage updated to \"\(customMessage)\"")
+                }
+    }
+    // MARK: - WCSessionDelegate Methods
+        
+        func session(_ session: WCSession,
+                     activationDidCompleteWith activationState: WCSessionActivationState,
+                     error: Error?) {
+            let statusText: String
+            var reachable = false
+            
+            switch activationState {
+            case .activated:
+                statusText = "Connected"
+                reachable = session.isReachable
+                print("iOS: WCSession activated successfully.")
+            case .inactive:
+                statusText = "Inactive"
+                print("iOS: WCSession inactive.")
+            case .notActivated:
+                statusText = "Not Activated"
+                print("iOS: WCSession not activated.")
+            @unknown default:
+                statusText = "Unknown State"
+                print("iOS: WCSession activation state unknown.")
+            }
+            
+            if let error = error {
+                print("iOS: WCSession activation error: \(error.localizedDescription)")
+            }
+        
         DispatchQueue.main.async {
             self.connectionStatus = statusText
             self.isReachable = reachable
         }
     }
-
+    
     func sessionReachabilityDidChange(_ session: WCSession) {
         print("Reachability changed: \(session.isReachable)")
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
             if self.connectionStatus == "Connected" && !session.isReachable {
-                 self.connectionStatus = "Connected (Not Reachable)"
+                self.connectionStatus = "Connected (Not Reachable)"
             } else if self.connectionStatus.starts(with: "Connected") && session.isReachable {
-                 self.connectionStatus = "Connected"
+                self.connectionStatus = "Connected"
             }
         }
     }
-
-    // --- Receiving Data (Common) ---
+    
+    // --- Receiving Data ---
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         print("Received message: \(message)")
+        // Update the accessory view model when a message is received.
         DispatchQueue.main.async {
+            self.updateAccessorySettingsFromMessage(message)
             self.messageSubject.send(message)
         }
     }
-
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+    
+    func session(_ session: WCSession,
+                 didReceiveMessage message: [String : Any],
+                 replyHandler: @escaping ([String : Any]) -> Void) {
         print("Received message with reply handler: \(message)")
-
-        // Process the message...
         var replyData: [String: Any] = [:] // Default to an empty dictionary
-
+        
         if let command = message["command"] as? String, command == "getData" {
-            // Example: Prepare some data for the reply
-            //replyData["requestedData"] = "Here is the data from \(WKInterfaceDevice.current().name)" // Use WKInterfaceDevice on watchOS
-            replyData["timestamp"] = Date()
+            let vm = self.accessoryViewModel
+            replyData = [
+                "timestamp": Date(),
+                "autoBrightness": vm.autoBrightness,
+                "accelerometer": vm.accelerometerEnabled,
+                "sleepMode": vm.sleepModeEnabled,
+                "auroraMode": vm.auroraModeEnabled,
+                "customMessage": vm.customMessage
+            ]
+            print("iOS: Responding with current accessory settings: \(replyData)")
         } else {
-            // Example: Just acknowledge receipt if command unknown or not requiring data
-            replyData["status"] = "Message received and processed by Watch"
+            self.updateAccessorySettingsFromMessage(message)
+            replyData["status"] = "Message received and processed on iOS."
         }
-
+        
         // ALWAYS call replyHandler with a valid dictionary
         DispatchQueue.main.async { // Or background if processing takes time, but call handler when done
             self.messageSubject.send(message) // Still broadcast if needed
             replyHandler(replyData) // <-- Pass the prepared dictionary (which might be empty)
         }
     }
-
+    
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
         print("Received application context: \(applicationContext)")
         DispatchQueue.main.async {
-             // Handle context update in your app logic here...
-             // self.contextSubject.send(applicationContext) // Uncomment if using context
+            // Handle context update in your app logic here...
+            // self.contextSubject.send(applicationContext) // Uncomment if using context
         }
     }
-
+    
     // MARK: - iOS Specific Delegate Methods (Included because #if os(iOS) is true)
-
+    
     func sessionDidBecomeInactive(_ session: WCSession) {
         print("WCSession did become inactive")
         DispatchQueue.main.async {
@@ -162,23 +229,23 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.isReachable = false
         }
     }
-
+    
     func sessionDidDeactivate(_ session: WCSession) {
         print("WCSession did deactivate, reactivating...")
         DispatchQueue.main.async {
             self.connectionStatus = "Deactivated"
             self.isReachable = false
         }
-        session.activate() // Reactivate
+        session.activate() // Reactivate the session
     }
-
+    
     func sessionWatchStateDidChange(_ session: WCSession) {
         print("Watch state changed:")
         print(" - isPaired: \(session.isPaired)")
         print(" - isWatchAppInstalled: \(session.isWatchAppInstalled)")
-         DispatchQueue.main.async {
-             // Update UI or state if needed
-         }
+        DispatchQueue.main.async {
+            // Update UI or state if needed
+        }
     }
 }
 

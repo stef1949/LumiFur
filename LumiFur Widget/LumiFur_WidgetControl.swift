@@ -3,6 +3,8 @@
 //  LumiFur Widget
 //
 //  Created by Stephan Ritchie on 2/12/25.
+//  Copyright © (Richies3D Ltd). All rights reserved.
+//
 //
 
 import AppIntents
@@ -14,16 +16,21 @@ struct SharedDataKeys {
     static let isConnected = "widgetIsConnected"
     static let connectionStatus = "widgetConnectionStatus"
     static let controllerName = "widgetControllerName"
-    static let temperature = "widgetTemperature"
     static let signalStrength = "widgetSignalStrength"
+    static let temperature = "widgetTemperature"
+    static let temperatureHistory = "temperatureHistoryData" // NEW Temp history for widgets
+
     static let selectedView = "widgetSelectedView"
-    static let widgetKind = "com.yourcompany.lumifur.statuswidget"
-    // static let temperatureChartData = "widgetTemperatureChartData"
+    static let accelerometerEnabled = "accelerometerEnabled"
+    static let sleepModeEnabled = "sleepModeEnabled"
+    static let auroraModeEnabled = "auroraModeEnabled"
+    static let widgetKind = "com.richies3d.lumifur.statuswidget"
 }
 
 struct LumiFur_WidgetControl: ControlWidget {
-    static let kind: String = "com.richies3d.LumiFur.LumiFur Widget"
-
+    static let kind: String = "com.richies3d.lumifur.statuswidget"
+    //static let kind: String = SharedDataKeys.widgetKind
+    
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(
             kind: Self.kind,
@@ -86,4 +93,10 @@ struct StartTimerIntent: SetValueIntent {
         // Start the timer…
         return .result()
     }
+}
+
+struct TemperatureDataPoint: Identifiable, Codable, Equatable {
+    var id = UUID()
+    let timestamp: Date
+    let temperature: Double
 }

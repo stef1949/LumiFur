@@ -5,6 +5,8 @@
 //  Created by Stephan Ritchie on 2/12/25.
 //  Copyright © (Richies 3D Ltd). All rights reserved.
 //
+//
+
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -79,6 +81,9 @@ struct LumiFur_WidgetAttributes: ActivityAttributes {
         //var emoji: String
         // New: an array of recent temperature values (you could also send timestamps if needed)
         var temperatureChartData: [Double]
+        var sleepModeEnabled: Bool
+         var auroraModeEnabled: Bool
+        var customMessage: String
     }
     
     // Fixed non-changing properties about your activity go here!
@@ -112,7 +117,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("LumiFur Controller")
-                            .frame(width: 150, alignment: .bottom)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                             .font(.system(.callout, weight: .semibold))
                             .padding(.leading, 10)
                         Text("LF-052618")
@@ -129,11 +134,11 @@ struct LumiFur_WidgetLiveActivity: Widget {
                             ZStack {
                                 ContainerRelativeShape()
                                     .stroke(.clear.opacity(0), lineWidth: 0)
-                                    .background(.ultraThinMaterial)
+                                    .background(Color(uiColor: .systemGray6))
                                     .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .center)
                                     .aspectRatio(1/1, contentMode: .fit)
                                     .clipShape(RoundedRectangle(cornerRadius: 5))
-                                //.clipped()
+                                .clipped()
                                 LazyHGrid(rows: [GridItem(.flexible(), alignment: .center), GridItem(.flexible(), alignment: .center)]) {
                                     ForEach(0..<1) { _ in // Replace with your data model here
                                         Image(systemName: context.state.isConnected ? "antenna.radiowaves.left.and.right": "antenna.radiowaves.left.and.right.slash")
@@ -162,20 +167,11 @@ struct LumiFur_WidgetLiveActivity: Widget {
                                     .aspectRatio(1/1, contentMode: .fit)
                                     .clipped()
                                 }
-                                //.shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .padding(4)
                                 .fixedSize(horizontal: false, vertical: false)
                             }
-                            .frame(maxWidth: 150, maxHeight: 150)
-                            //.clipShape(RoundedRectangle(cornerRadius: 5))
                         }
-                        .border(.green)
-                    }
-                    .background {
-                        Group {
-                            
-                        }
+                        //.border(.green, width: 0.2)
                     }
                 }
                 Spacer()
@@ -227,7 +223,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
             }
             .padding(16)
             .activityBackgroundTint(Color(uiColor: .systemGray6))
-            .activitySystemActionForegroundColor(Color.gray)
+            //.activitySystemActionForegroundColor(Color.gray)
             
         } dynamicIsland: { context in
             DynamicIsland {
@@ -303,7 +299,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                         .frame(maxWidth: 70, maxHeight: 70)
                         //.clipShape(RoundedRectangle(cornerRadius: 5))
                     }
-                    .border(.green)
+                    //.border(.green)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(){
@@ -350,7 +346,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                             .chartYAxis {
                                 AxisMarks(position: .leading, values: .automatic) { axisValue in
                                     AxisValueLabel {
-                                        if let tempValue = axisValue.as(Int.self) {
+                                        if let tempValue = axisValue.as(Double.self) {
                                             Text(String(tempValue))
                                                 .font(.caption2)
                                         }
@@ -447,6 +443,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
             }
             .widgetURL(URL(string: "https://www.richies.uk"))
             .keylineTint(Color.white)
+        
         }
     }
 }
@@ -459,11 +456,11 @@ extension LumiFur_WidgetAttributes {
 
 extension LumiFur_WidgetAttributes.ContentState {
     fileprivate static var smiley: LumiFur_WidgetAttributes.ContentState {
-        LumiFur_WidgetAttributes.ContentState(connectionStatus: "Connected", signalStrength: 75,  temperature: "47.7°C", selectedView: 4, isConnected: true, isScanning: false, temperatureChartData: [45.33])
+        LumiFur_WidgetAttributes.ContentState(connectionStatus: "Connected", signalStrength: 75,  temperature: "47.7°C", selectedView: 4, isConnected: true, isScanning: false, temperatureChartData: [45.5], sleepModeEnabled: true, auroraModeEnabled: true, customMessage: "")
     }
     
     fileprivate static var starEyes: LumiFur_WidgetAttributes.ContentState {
-        LumiFur_WidgetAttributes.ContentState(connectionStatus: "Disconnected", signalStrength: 80,  temperature: "58.7°C", selectedView: 6, isConnected: false, isScanning: true, temperatureChartData: [67.33])
+        LumiFur_WidgetAttributes.ContentState(connectionStatus: "Disconnected", signalStrength: 80,  temperature: "58.7°C", selectedView: 6, isConnected: false, isScanning: true, temperatureChartData: [67.9], sleepModeEnabled: true, auroraModeEnabled: true, customMessage: "")
     }
 }
 

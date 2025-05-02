@@ -19,7 +19,6 @@ struct RepositoryConfig {
     )
 }
 
-
 // 2. EnvironmentKey (can be private if only used within this file scope)
 private struct RepositoryConfigurationKey: EnvironmentKey {
     static let defaultValue: RepositoryConfig = RepositoryConfig.defaultValues

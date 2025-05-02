@@ -3,11 +3,14 @@
 //  LumiFur Widget
 //
 //  Created by Stephan Ritchie on 2/12/25.
+//  Copyright © (Richies3D Ltd). All rights reserved.
+//
 //
 
 import WidgetKit
 import SwiftUI
-import Intents // If using configuration intents later
+import Intents
+import Charts
 
 
 // MARK: - Timeline Provider
@@ -19,6 +22,7 @@ struct Provider: TimelineProvider {
     
     // Provides a snapshot entry for transient situations (e.g., gallery preview).
     func getSnapshot(in context: Context, completion: @escaping (LumiFurEntry) -> ()) {
+        print("Widget Provider: getSnapshot called")
         let entry = readDataFromUserDefaults()
         completion(entry)
     }
@@ -27,8 +31,9 @@ struct Provider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         let entry = readDataFromUserDefaults()
         
-        // Determine the next update time (e.g., 15 minutes from now)
-        let nextUpdateDate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+        let nextUpdateIntervalMinutes = 15 // Sensible default, adjust as needed
+                let nextUpdateDate = Calendar.current.date(byAdding: .minute, value: nextUpdateIntervalMinutes, to: Date())!
+                print("Widget Provider: Scheduling next timeline reload after \(nextUpdateIntervalMinutes) minutes.")
         
         // Create a timeline with the single current entry and the reload policy
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdateDate))
@@ -44,8 +49,10 @@ struct Provider: TimelineProvider {
         
         print("Widget Provider: Reading data from shared UserDefaults.")
         let isConnected = defaults.bool(forKey: SharedDataKeys.isConnected)
+        print(isConnected ? "Widget Provider: Connected\n" : "Widget Provider: Not connected\n")
         let connectionStatus = defaults.string(forKey: SharedDataKeys.connectionStatus) ?? "Unknown"
         let controllerName = defaults.string(forKey: SharedDataKeys.controllerName) // Can be nil
+        print(controllerName ?? "No controller name found")
         let temperature = defaults.string(forKey: SharedDataKeys.temperature) ?? "--°C"
         let signalStrength = defaults.integer(forKey: SharedDataKeys.signalStrength) // Defaults to 0 if not found
         let selectedView = defaults.integer(forKey: SharedDataKeys.selectedView) // Defaults to 0
@@ -54,9 +61,19 @@ struct Provider: TimelineProvider {
         let finalSignalStrength = defaults.object(forKey: SharedDataKeys.signalStrength) == nil ? -100 : signalStrength
         let finalSelectedView = defaults.object(forKey: SharedDataKeys.selectedView) == nil ? 1 : selectedView // Default to 1 maybe?
         
-        // Optional: Read chart data
-        // let chartData = defaults.array(forKey: SharedDataKeys.temperatureChartData) as? [Double] ?? []
-        
+        // 1) Decode your [TemperatureDataPoint]
+            var temperaturePoints: [TemperatureDataPoint] = []
+        if let data = defaults.data(forKey: SharedDataKeys.temperatureHistory) {
+            do {
+                temperaturePoints = try JSONDecoder()
+                    .decode([TemperatureDataPoint].self, from: data)
+            } catch {
+                temperaturePoints = []
+            }
+        }
+
+        // 2) Supply raw data points array
+        let temperatureHistory = temperaturePoints
         
         return LumiFurEntry(
             date: Date(),
@@ -65,7 +82,8 @@ struct Provider: TimelineProvider {
             temperature: temperature,
             signalStrength: finalSignalStrength,
             selectedView: finalSelectedView,
-            isConnected: isConnected
+            isConnected: isConnected,
+            temperatureHistory: temperatureHistory
             // temperatureChartData: chartData
         )
     }
@@ -80,17 +98,36 @@ struct LumiFurEntry: TimelineEntry {
     let signalStrength: Int
     let selectedView: Int
     let isConnected: Bool
-    // let temperatureChartData: [Double]
+    let temperatureHistory: [TemperatureDataPoint] // raw point array for charts // <-- ADD THIS
+    //let temperatureChartData: [Double]
     
     // Placeholder data for previews and initial loading
-    static var placeholder: LumiFurEntry {
-        LumiFurEntry(date: Date(), connectionStatus: "Connecting...", controllerName: "LumiFur Device", temperature: "---°C", signalStrength: -75, selectedView: 1, isConnected: false/*, temperatureChartData: [20, 22, 21, 23, 25]*/)
+        static var placeholder: LumiFurEntry {
+            // Improved placeholder history for better chart preview
+            let placeholderHistory: [TemperatureDataPoint] = (0..<20).map { index in
+                let timeInterval = TimeInterval(-index * 300) // Points every 5 mins going back
+                let timestamp = Date().addingTimeInterval(timeInterval)
+                // Simulate some temperature variation
+                let temperature = 20.0 + sin(Double(index) * 0.5) * 3.0 + Double.random(in: -0.5...0.5)
+                return TemperatureDataPoint(timestamp: timestamp, temperature: temperature)
+            }.reversed() // Show oldest first
+
+            return LumiFurEntry(date: Date(), connectionStatus: "Connecting...", controllerName: "LumiFur Device", temperature: "---°C", signalStrength: -75, selectedView: 1, isConnected: false, temperatureHistory: placeholderHistory)
+        }
+    // Sample data for snapshots (Unchanged)
+        static var sample: LumiFurEntry {
+            LumiFurEntry(date: Date(), connectionStatus: "Connected", controllerName: "LF-052618", temperature: "24.5°C", signalStrength: -60, selectedView: 3, isConnected: true, temperatureHistory: [
+                .init(timestamp: Date().addingTimeInterval(-7200), temperature: 18.0),
+                .init(timestamp: Date().addingTimeInterval(-5400), temperature: 19.5),
+                .init(timestamp: Date().addingTimeInterval(-3600), temperature: 22.0),
+                .init(timestamp: Date().addingTimeInterval(-1800), temperature: 24.0),
+                .init(timestamp: Date().addingTimeInterval(-600), temperature: 25.5),
+                .init(timestamp: Date(), temperature: 24.5)
+            ])
+        }
     }
-    // Sample data for snapshots
-    static var sample: LumiFurEntry {
-        LumiFurEntry(date: Date(), connectionStatus: "Connected", controllerName: "LumiFur Max", temperature: "24.5°C", signalStrength: -60, selectedView: 3, isConnected: true/*, temperatureChartData: [20, 22, 21, 23, 25]*/)
-    }
-}
+
+
 
 // MARK: - Widget View
 struct LumiFur_WidgetEntryView : View {
@@ -104,9 +141,10 @@ struct LumiFur_WidgetEntryView : View {
             SmallWidgetView(entry: entry)
         case .systemMedium:
             MediumWidgetView(entry: entry)
-            
-             case .systemLarge:
+        case .systemLarge:
             LargeWidgetView(entry: entry)
+        //case .systemExtraLarge:
+          //  ExtraLargeWidgetView(entry: entry)
         default:
             // Default or fallback view (medium)
             MediumWidgetView(entry: entry)
@@ -151,8 +189,7 @@ struct SmallWidgetView: View {
             
         }
         .padding(10)
-        // Use .widgetBackground modifier for background color (iOS 17+)
-        .widgetBackground(backgroundView: Color(UIColor.systemBackground))
+        .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
     }
 }
 
@@ -203,7 +240,7 @@ struct MediumWidgetView: View {
                 Image("LumiFur_Controller_AK_Compressed")
                     .resizable()
                     .scaledToFit()
-                    .scaleEffect(2)
+                    .scaleEffect(1.8)
                     .rotationEffect(.degrees(90))
                 Spacer()
                 // --- INTERACTIVE BUTTON ---
@@ -215,7 +252,7 @@ struct MediumWidgetView: View {
             }
         }
         .padding()
-        .widgetBackground(backgroundView: Color(UIColor.systemBackground))
+        .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
     }
 }
 struct LargeWidgetView: View {
@@ -237,15 +274,55 @@ struct LargeWidgetView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                
-                Spacer()
-                
-                HStack(spacing: 15) {
-                    Label(entry.temperature, systemImage: "thermometer")
-                    Label("View: \(entry.selectedView)", systemImage: "display")
+                Chart {
+                    ForEach(entry.temperatureHistory, id: \.timestamp) { element in
+                        LineMark(
+                            x: .value("Time", element.timestamp),
+                            y: .value("Temperature", element.temperature)
+                        )
+                        //.foregroundStyle(.red) // Change to blue if preferred.
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        
+                    }
                 }
-                .font(.footnote)
-                
+                //.id(accessoryViewModel.temperatureData.count)
+                .animation(.easeInOut(duration: 0.5), value: entry.temperatureHistory)
+                .chartYScale(domain: 15...85) // Adjust the domain to your expected temperature range.
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { axisValue in
+                        AxisValueLabel() {
+                            if let tempValue = axisValue.as(Double.self) {
+                                Text(String(format: "%.1f°C", tempValue))
+                                    .font(.caption2)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis { // Simplified Y Axis
+                                     AxisMarks(preset: .automatic, values: .automatic) { value in
+                                         AxisGridLine()
+                                         AxisValueLabel {
+                                             if let temp = value.as(Double.self) {
+                                                 Text(String(format: "%.0f°", temp)) // Format as integer degree
+                                             }
+                                         }
+                                     }
+                                 }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(maxWidth:500,maxHeight: .infinity)
+                .padding(.vertical,5)
+                VStack(spacing: 10) {
+                    Label(entry.temperature, systemImage: "thermometer")
+                        .font(.caption)
+                    Label("View: \(entry.selectedView)", systemImage: "display")
+                        .font(.headline)
+                }
+                .fixedSize(horizontal: true, vertical: false)
+                .lineLimit(1)
+                .allowsTightening(false)
+                .padding(.bottom)
                 
                 HStack {
                     Image(systemName: signalStrengthIcon(rssi: entry.signalStrength))
@@ -276,9 +353,113 @@ struct LargeWidgetView: View {
             }
         }
         .padding()
-        .widgetBackground(backgroundView: Color(UIColor.systemBackground))
+        .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
     }
 }
+/*
+struct ExtraLargeWidgetView: View {
+    var entry: LumiFurEntry
+    
+    var body: some View {
+        HStack(spacing: 15) {
+            // Left Column (Status)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: entry.isConnected ? "link.circle.fill" : "link.circle")
+                        .foregroundColor(entry.isConnected ? .green : .gray)
+                        .imageScale(.large)
+                    Text(entry.connectionStatus)
+                        .font(.headline)
+                        .foregroundColor(entry.isConnected ? .primary : .secondary)
+                }
+                Text(entry.controllerName ?? "No Controller Connected")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                Chart {
+                    ForEach(entry.temperatureHistory, id: \.timestamp) { element in
+                        LineMark(
+                            x: .value("Time", element.timestamp),
+                            y: .value("Temperature", element.temperature)
+                        )
+                        //.foregroundStyle(.red) // Change to blue if preferred.
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        
+                    }
+                }
+                //.id(accessoryViewModel.temperatureData.count)
+                .animation(.easeInOut(duration: 0.5), value: entry.temperatureHistory)
+                .chartYScale(domain: 15...85) // Adjust the domain to your expected temperature range.
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { axisValue in
+                        AxisValueLabel() {
+                            if let tempValue = axisValue.as(Double.self) {
+                                Text(String(format: "%.1f°C", tempValue))
+                                    .font(.caption2)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .stride(by: 25)) { axisValue in
+                        AxisValueLabel() {
+                            if let tempValue = axisValue.as(Int.self) {
+                                Text(String(tempValue))
+                                    .font(.caption2)
+                            }
+                        }
+                    }
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(maxWidth:500,maxHeight: .infinity)
+                .padding(.vertical,5)
+                VStack(spacing: 10) {
+                    Label(entry.temperature, systemImage: "thermometer")
+                        .font(.caption)
+                    Label("View: \(entry.selectedView)", systemImage: "display")
+                        .font(.headline)
+                }
+                .fixedSize(horizontal: true, vertical: false)
+                .lineLimit(1)
+                .allowsTightening(false)
+                .padding(.bottom)
+                
+                HStack {
+                    Image(systemName: signalStrengthIcon(rssi: entry.signalStrength))
+                        .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                    Text("Signal: \(entry.signalStrength) dBm")
+                        .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                }
+                .font(.caption)
+                
+            }
+            .padding(.trailing, 5)
+            
+            
+            // Right Column (Maybe a Chart or Gauge?) - Placeholder for now
+            VStack {
+                Spacer()
+                Image("LumiFur_Controller_AK_Compressed")
+                    .resizable()
+                    .scaledToFit()
+                    .scaleEffect(2)
+                Spacer()
+                // --- INTERACTIVE BUTTON ---
+                Button(intent: ChangeLumiFurViewIntent()) { // Create instance of the intent
+                    Label("Next View", systemImage: "arrow.right.circle")
+                }
+                .tint(.blue) // Style the button
+                // Add Chart here if desired using entry.temperatureChartData
+            }
+        }
+        .padding()
+        .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
+    }
+}
+*/
+
 struct circleView: View {
     var body: some View {
         Circle()
@@ -305,32 +486,20 @@ func signalStrengthColor(rssi: Int) -> Color {
     }
 }
 
-// Extension for widget background modifier (makes code cleaner)
-extension View {
-    func widgetBackground(backgroundView: some View) -> some View {
-        if #available(iOS 17.0, *) { // Check availability for containerBackground
-            return containerBackground(for: .widget) {
-                backgroundView
-            }
-        } else {
-            return background(backgroundView)
-        }
-    }
-}
-
 
 // MARK: - Widget Definition
 struct LumiFur_Widget: Widget {
     // Unique identifier for this widget kind
     static let kind: String = "com.richies3d.lumifur.statuswidget" // <<< Use a unique string
-    
+    //static let kind: String = SharedDataKeys.widgetKind
+
     var body: some WidgetConfiguration {
         StaticConfiguration(kind:LumiFur_Widget.kind, provider: Provider()) { entry in
             LumiFur_WidgetEntryView(entry: entry)
         }
         .configurationDisplayName("LumiFur Status")
         .description("Monitor your LumiFur device connection and status.")
-        .supportedFamilies([.systemSmall, .systemMedium]) // Choose supported sizes
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge]) // Choose supported sizes
         //.contentMarginsDisabled() // Potentially better button placement
     }
 }
@@ -347,7 +516,7 @@ struct LumiFur_Widget: Widget {
  }
  */
 
-// MARK: - Previews (For SwiftUI Canvas)
+// MARK: - Previews (For SwiftUI Canvas) (Using improved placeholder)
 struct LumiFur_Widget_Previews: PreviewProvider {
     static var previews: some View {
         // Preview for Small
@@ -359,5 +528,16 @@ struct LumiFur_Widget_Previews: PreviewProvider {
         LumiFur_WidgetEntryView(entry: LumiFurEntry.sample)
             .previewContext(WidgetPreviewContext(family: .systemMedium))
             .previewDisplayName("Medium Widget")
+        
+        // Preview for Large
+        LumiFur_WidgetEntryView(entry: LumiFurEntry.sample)
+            .previewContext(WidgetPreviewContext(family: .systemLarge))
+            .previewDisplayName("Large Widget")
+        /*
+        // Preview for Extra Large (Not supported on iOS)
+        LumiFur_WidgetEntryView(entry: LumiFurEntry.placeholder)
+            .previewContext(WidgetPreviewContext(family: .systemExtraLarge))
+            .previewDisplayName("Extra Large Widget")
+         */
     }
 }

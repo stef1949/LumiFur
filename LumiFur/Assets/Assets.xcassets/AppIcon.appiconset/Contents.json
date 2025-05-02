@@ -1,12 +1,37 @@
 {
   "images" : [
     {
-      "filename" : "AppIcon~ios-marketing.png",
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-11.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
     },
     {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-10.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "filename" : "LFicon.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "16x16"
@@ -22,45 +47,49 @@
       "size" : "32x32"
     },
     {
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-5 - 1.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
     },
     {
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-5 - 2.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
     },
     {
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-5 - 4.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
     },
     {
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-5 - 3.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "play_store_512.png",
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-8 - 2.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
-      "filename" : "play_store_512 1.png",
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-8 - 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "AppIcon~ios-marketing 1.png",
+      "filename" : "AppIcon512x512@2x.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
     },
     {
-      "filename" : "AppIcon~ios-marketing 2.png",
+      "filename" : "Advanced Light and Shadow Blur Material@1-1024x1024-5.png",
       "idiom" : "universal",
       "platform" : "watchos",
       "size" : "1024x1024"

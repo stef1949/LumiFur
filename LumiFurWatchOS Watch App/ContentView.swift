@@ -23,84 +23,33 @@ enum Item: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK - Gauge Views
-struct StyledGauge: View {
-    @State private var current = 47.0
-    @State private var minValue = 15.0
-    @State private var maxValue = 70.0
-    let gradient = Gradient(colors: [.green, .yellow, .orange, .red])
-    
-    
-    var body: some View {
-        Gauge(value: current, in: minValue...maxValue) {
-            Image(systemName: "heart.fill")
-                .foregroundColor(.red)
-        } currentValueLabel: {
-            Text("\(Int(current))")
-                .foregroundColor(Color.green)
-        } minimumValueLabel: {
-            Text("\(Int(minValue))")
-                .foregroundColor(Color.green)
-        } maximumValueLabel: {
-            Text("\(Int(maxValue))")
-                .foregroundColor(Color.red)
-        }
-        .gaugeStyle(CircularGaugeStyle(tint: gradient))
-        
-    }
-}
-
-struct GaugeUnit: View {
-    var body: some View {
-        VStack {
-            StyledGauge()
-            Text("Gauge")
-                .font(.system(size: 10))
-                .offset(y: -5)
-            
-        }
-        .padding()
-    }
-}
-
-struct currentViewGauge: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 2)
-                .frame(width: 25, height: 25)
-            
-            Text("4")
-        }
-    }
-}
-
 // MARK - Template data
 struct MonthlyHoursOfSunshine: Identifiable {
     var id: Date { date } // Using the date as a unique identifier
     var date: Date
-    var hoursOfSunshine: Double
+    var templateTemp: Double
     
     
-    init(month: Int, hoursOfSunshine: Double) {
+    init(month: Int, templateTemp: Double) {
         let calendar = Calendar.autoupdatingCurrent
         self.date = calendar.date(from: DateComponents(year: 2020, month: month))!
-        self.hoursOfSunshine = hoursOfSunshine
+        self.templateTemp = templateTemp
     }
 }
 //Dummy data
 let sunshineData: [MonthlyHoursOfSunshine] = [
-    MonthlyHoursOfSunshine(month: 1, hoursOfSunshine: 74),
-    MonthlyHoursOfSunshine(month: 2, hoursOfSunshine: 99),
-    MonthlyHoursOfSunshine(month: 3, hoursOfSunshine: 68),
-    MonthlyHoursOfSunshine(month: 4, hoursOfSunshine: 80),
-    MonthlyHoursOfSunshine(month: 5, hoursOfSunshine: 95),
-    MonthlyHoursOfSunshine(month: 6, hoursOfSunshine: 110),
-    MonthlyHoursOfSunshine(month: 7, hoursOfSunshine: 120),
-    MonthlyHoursOfSunshine(month: 8, hoursOfSunshine: 115),
-    MonthlyHoursOfSunshine(month: 9, hoursOfSunshine: 90),
-    MonthlyHoursOfSunshine(month: 10, hoursOfSunshine: 80),
-    MonthlyHoursOfSunshine(month: 11, hoursOfSunshine: 70),
-    MonthlyHoursOfSunshine(month: 12, hoursOfSunshine: 62)
+    MonthlyHoursOfSunshine(month: 1, templateTemp: 17),
+    MonthlyHoursOfSunshine(month: 2, templateTemp: 18),
+    MonthlyHoursOfSunshine(month: 3, templateTemp: 18),
+    MonthlyHoursOfSunshine(month: 4, templateTemp: 21),
+    MonthlyHoursOfSunshine(month: 5, templateTemp: 34),
+    MonthlyHoursOfSunshine(month: 6, templateTemp: 42),
+    MonthlyHoursOfSunshine(month: 7, templateTemp: 47),
+    MonthlyHoursOfSunshine(month: 8, templateTemp: 52),
+    MonthlyHoursOfSunshine(month: 9, templateTemp: 51),
+    MonthlyHoursOfSunshine(month: 10, templateTemp: 51),
+    MonthlyHoursOfSunshine(month: 11, templateTemp: 51),
+    MonthlyHoursOfSunshine(month: 12, templateTemp: 52)
 ]
 // MARK: - Face Grid View
 struct FaceGridView: View {
@@ -108,7 +57,7 @@ struct FaceGridView: View {
     let faces: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
     
     // Define a two-column grid.
-    let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 2)
+    let columns: [GridItem] = [GridItem(.adaptive(minimum: 50, maximum: 100))]
     
     var body: some View {
         
@@ -116,8 +65,10 @@ struct FaceGridView: View {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(faces, id: \.self) { face in
                     Button(action: {
+                        // Play system haptic (and sound, if available)
+                        WKInterfaceDevice.current().play(.start)
                         print("\(face) pressed - sending command...")
-                        // *** Use the WatchConnectivityManager to send the selected face ***
+                        // Uses  WatchConnectivityManager to send the selected face
                         let message: [String: Any] = [
                             "command": "setFace", // Define a command name
                             "faceValue": face     // Send the specific face emoji
@@ -131,17 +82,15 @@ struct FaceGridView: View {
                         })
                     }) {
                         Text(face)
-                            .font(.system(size: 40))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(8)
-                            .cornerRadius(8)
+                            .font(.system(size: 30))
                     }
-                    .border(Color.green) // Consider removing or styling differently
+                    //.border(Color.green)
                     // .backgroundStyle(.ultraThinMaterial) // This might be causing unexpected visual results with border
+                    .aspectRatio(1, contentMode: .fit)
                 }
             }
             .backgroundStyle(.ultraThinMaterial)
-            .padding()
+            //.padding()
         }
     }
 }
@@ -151,14 +100,23 @@ struct ItemView: View {
     let item: Item
     @ObservedObject private var connectivityManager = WatchConnectivityManager.shared
     
+    @State private var selectedView: Int? = nil
+    @State private var autoBrightness: Bool = true
+    @State private var accelerometer: Bool = true
+    @State private var sleepMode: Bool = true
+    @State private var arouraMode: Bool = true
+    
+    
     var body: some View {
         VStack {
             if item == .device {
-                Image ("Image")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .padding(.bottom, 5)
+                /*
+                 Image ("Image")
+                 .renderingMode(.template)
+                 .resizable()
+                 .aspectRatio(contentMode: .fit)
+                 .padding(.bottom, 5)
+                 */
                 // --- Display Connection Info ---
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Status: \(connectivityManager.connectionStatus)")
@@ -180,7 +138,10 @@ struct ItemView: View {
                 }
                 .font(.system(size: 14)) // Adjust font size for watch
                 .padding(.vertical, 10)
-                Spacer()
+            }
+            // Example content – replace with your own controls or info.
+            switch item {
+            case .device:
                 if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
                     Button {
                         // Send connect command using the manager
@@ -198,109 +159,164 @@ struct ItemView: View {
                 }
                 // Optional: Add a Disconnect button when connected
                 else if connectivityManager.connectionStatus == "Connected" {
-                    Button("Disconnect?") { // Example placeholder
+                    Button("Disconnect") {
                         print("Disconnect button tapped (action not implemented)")
-                        // You would need to send a "disconnect" command to iOS
-                        // WatchConnectivityManager.shared.sendMessage(["command": "disconnectRequest"], ...)
+                        // Send connect command using the manager
+                        let message = ["command": "connectToDevice"]
+                        print("Watch sending 'connectToDevice' command...")
+                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
+                            print("Connect command reply: \(reply)")
+                        }, errorHandler: { error in
+                            print("Connect command error: \(error.localizedDescription)")
+                        })
                     }
                     .tint(.red) // Make disconnect button red
-                    .padding(.top, 5)
+                    //.padding(.top, 5)
                 }
-                
-                
-                Spacer() // Pushes button down slightly if info is short
-            }
-            
-            // Example content – replace with your own controls or info.
-            switch item {
-            case .device:
-                Button {
-                    // *** Use the WatchConnectivityManager to send the message ***
-                    let message = ["command": "connectToDevice"]
-                    WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                        print("Connect command reply: \(reply)")
-                    }, errorHandler: { error in
-                        print("Connect command error: \(error.localizedDescription)")
-                    })
-                } label: {
-                    Text("Connect")
-                }
-                .foregroundStyle(.white.gradient)
-                .offset(y: 10)
-                
             case .faces:
-                VStack{
-                    FaceGridView()
-                        .frame(width: .infinity, height: 170)
-                    HStack {
-                        Spacer()
-                        Text("Current View")
-                            .font(.caption)
-                            .opacity(0.4)
-                        
-                        Spacer()
-                        currentViewGauge()
-                        Spacer()
+                ZStack {
+                    VStack {
+                        FaceGridView()
+                    }
+                    .overlay(alignment: .bottom){
+                        HStack {
+                            Spacer()
+                            HStack {
+                                Text("Current View")
+                                    .font(.callout)
+                                    .opacity(1)
+                                    .foregroundStyle(.secondary)
+                                CurrentViewGauge()
+                            }
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 3)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius:(8)))
+                            Spacer()
+                        }.environment(\.colorScheme, .light)
+                            .offset(y: 20)
                     }
                 }
             case .status:
-                VStack{
-                    HStack{
-                        GaugeUnit()
-                        Spacer()
-                        GaugeUnit()
-                    }
-                    
-                    Spacer()
-                    //Dummy Data
-                    Chart(sunshineData) {
-                        LineMark(
-                            x: .value("Time", $0.date),
-                            y: .value("Temperature", $0.hoursOfSunshine)
-                        )
-                        .foregroundStyle(.white)
-                        .interpolationMethod(.catmullRom)
-                    }
-                    .chartYAxis {
-                        AxisMarks(stroke: StrokeStyle(lineWidth: 0))
+                VStack {
+                    //Spacer(minLength: 40)
+                    // Nicer watchOS chart for sunshine data
+                    Chart {
+                        ForEach(sunshineData) { data in
+                            // Light fill under the curve
+                            AreaMark(
+                                x: .value("Month", data.date),
+                                y: .value("Sunshine (h)", data.templateTemp)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue.opacity(0.25), Color.blue.opacity(0.05)]),
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                            // Crisp line on top
+                            LineMark(
+                                x: .value("Month", data.date),
+                                y: .value("Sunshine (h)", data.templateTemp)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue, Color.green]),
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                        }
+                        // Highlight the latest point with trailing annotation
+                        if let last = sunshineData.last {
+                            PointMark(
+                                x: .value("Month", last.date),
+                                y: .value("Sunshine (h)", last.templateTemp)
+                            )
+                            .symbolSize(20)
+                            .annotation(position: .trailing) {
+                                Text("\(last.templateTemp.formatted())℃")
+                                    .font(.caption2)
+                            }
+                            .foregroundStyle(.primary)
+                        }
                     }
                     .chartXAxis {
-                        AxisMarks(stroke: StrokeStyle(lineWidth: 0))
+                       // AxisMarks(values: .stride(by: .month)) { mark in
+                          //  AxisGridLine()
+                          //  AxisValueLabel(format: .dateTime.month(.abbreviated), centered: true)
+                          //      .font(.caption2)
+                       // }
                     }
-                    //.frame(width: .infinity, height: 89)
+                    .chartYAxis {
+                        AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                            AxisGridLine()
+                        }
+                    }
+                    .chartPlotStyle { plotArea in
+                        plotArea
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                    }
+                    .frame(height: 120)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
                     
-                    
-                    Text("Live information")
-                        .font(.caption)
-                        .opacity(0.4)
+                    Text("Temperature ")
+                        .font(.caption2)
+                        .opacity(0.6)
                 }
-                
-                .border(Color.red, width: 1)
             case .settings:
-                Text("Connect to LumiFur to configure your settings here")
+                
+                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                    Text("Connect to LumiFur to configure your settings here")
+                        .listItemTint(.clear)
+                }
+                List{
+                    Toggle("Auto Brightness", isOn: $autoBrightness)
+                        .onChange(of: !autoBrightness) { newValue, _ in
+                            sendMessage(["autoBrightness": newValue])
+                        }
+                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                    Toggle("Accelerometer", isOn: $accelerometer)
+                        .onChange(of: !accelerometer) { newValue, _ in
+                            sendMessage(["accelerometer": newValue])
+                        }
+                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                    Toggle("Sleep Mode", isOn: $sleepMode)
+                        .onChange(of: !sleepMode) { newValue, _ in
+                            sendMessage(["sleepMode": newValue])
+                        }
+                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                    Toggle("Aroura Mode", isOn: $arouraMode)
+                        .onChange(of: !arouraMode) { newValue, _ in
+                            sendMessage(["arouraMode": newValue])
+                        }
+                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                }
+                .onAppear {
+                    // Ensure WCSession is activated
+                    _ = WatchConnectivityManager.shared
+                }
+                .listStyle(.carousel)
             }
         }
-        //.ignoresSafeArea()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(.gray.gradient, for: .tabView)
-        .border(Color.yellow, width: 1)
-    }
-    // Helper for status color (Optional)
-    private func statusColor(_ status: String) -> Color {
-        switch status {
-        case "Connected": return .green
-        case "Connecting...", "Reconnecting...": return .yellow
-        case "Disconnected", "Inactive", "Deactivated", "Not Supported", "Not Activated": return .red
-        default: return .gray // Handle "Connected (Not Reachable)" or others
-        }
-    }
-    
-    // Helper to check connection state
-    private func isConnectedOrConnecting(_ status: String) -> Bool {
-        return status == "Connected" || status.starts(with: "Connecting") || status.starts(with: "Connected (")
+        //.border(Color.yellow, width: 1)
+        .containerBackground(.green.gradient, for: .navigation)
     }
 }
-
+private func sendMessage(_ message: [String: Any]) {
+    if WCSession.default.isReachable {
+        WCSession.default.sendMessage(message, replyHandler: nil) { error in
+            print("Error sending message: \(error)")
+        }
+    }
+}
 
 struct ContentView: View {
     @State private var selected: Item? = .device
@@ -309,9 +325,14 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             // Primary view: a carousel-style list
-            List(selection: $selected) { /* ... List items ... */ }
-                .listStyle(.carousel) // Use carousel for watchOS top-level navigation
-                .containerBackground(.white.gradient, for: .navigation)
+            List(selection: $selected) {
+                ForEach(Item.allCases) { item in
+                                  Text(item.displayName)
+                        .tag(item)
+             }
+            }
+            .listStyle(.carousel) // Use carousel for watchOS top-level navigation
+            .containerBackground(.green.gradient, for: .navigationSplitView)
         } detail: {
             // Detail view: a vertically paging TabView
             TabView(selection: $selected) {

@@ -7,5 +7,9 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Assets/MonochromeEmoji_regular.ttf</string>
+	</array>
 </dict>
 </plist>

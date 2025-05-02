@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1806</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1805</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765086163.574628</string>
+					<string>767729103.4628789</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,17 +53,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            }
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>                .multilineTextAlignment(.leading)
-                .padding(50)
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .foregroundStyle(.ultraThinMaterial)
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -76,13 +72,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1806</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1805</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765086163.574671</string>
+					<string>767729103.462901</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -98,17 +94,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            }
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>                .multilineTextAlignment(.leading)
-                .padding(50)
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .foregroundStyle(.ultraThinMaterial)
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -121,13 +113,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1806</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1805</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765086163.574659</string>
+					<string>767729103.462858</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -143,17 +135,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            }
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>                .multilineTextAlignment(.leading)
-                .padding(50)
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .foregroundStyle(.ultraThinMaterial)
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -166,13 +154,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1469</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1468</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765086163.574699</string>
+					<string>767729103.462894</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -188,17 +176,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>struct SignalStrengthView: View {
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>}
-
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>    @AppStorage("rssiMonitoringEnabled") private var rssiMonitoringEnabled: Bool = false
-    let rssi: Int
-    
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -211,13 +195,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1019</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1018</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765083661.831089</string>
+					<string>767729103.4629329</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -233,17 +217,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    }
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>                }
-        }
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>    
-    // MARK: - About Section (New)
-        private var aboutSection: some View {
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -256,13 +236,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>428</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>427</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765074146.657853</string>
+					<string>767729103.462919</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -278,17 +258,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    settingsAndChartsSection
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>                    gridSection
-                    
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>                    /*
-                     HStack {
-                     // animated image
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -301,13 +277,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>2151</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>2150</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765086163.574687</string>
+					<string>767729103.462909</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -323,17 +299,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>struct LEDPreview: View {
-</string>
+				<string></string>
 				<key>leading</key>
-				<string> */
-
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>    // The state of the grid, with 64 rows and 32 columns
-    @State private var ledStates: [[Color]] = Array(
-        repeating: Array(repeating: .black, count: 32),
-</string>
+				<string></string>
 			</dict>
 			<key>title</key>
 			<string>LED Preview grid</string>
@@ -348,13 +320,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>716</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>715</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765074146.657722</string>
+					<string>767729103.462887</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -370,17 +342,13 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    private var gridSection: some View {
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>    static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
-    
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>            ScrollView(.horizontal) {
-                LazyHGrid(rows: twoColumnGrid) {
-                    ForEach(protoActionOptions.indices, id: \.self) { index in
-</string>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -393,13 +361,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>402</string>
+					<string>3170</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>401</string>
+					<string>3170</string>
 					<key>Timestamp</key>
-					<string>765074146.657792</string>
+					<string>767729103.462926</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -415,17 +383,100 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    private let twoColumnGrid = [
-</string>
+				<string></string>
 				<key>leading</key>
-				<string>    @State private var selectedMatrix: SettingsView.Matrixstyle = .array
-    
+				<string>    ReleaseNotesView()
+}
 </string>
 				<key>trailing</key>
-				<string>        GridItem(.adaptive(minimum: 125, maximum: 250))
-    ]
-    
+				<string></string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>query-specification</key>
+			<dict>
+				<key>anchoring</key>
+				<string>word</string>
+				<key>include-symbol-members</key>
+				<integer>1</integer>
+				<key>match-case</key>
+				<integer>1</integer>
+				<key>query</key>
+				<string>conformers</string>
+				<key>term</key>
+				<dict>
+					<key>display-string</key>
+					<string>PersistentModel</string>
+					<key>symbol</key>
+					<string>s:9SwiftData15PersistentModelP</string>
+				</dict>
+			</dict>
+			<key>title</key>
+			<string>SwiftData Model</string>
+			<key>type</key>
+			<string>batch-find-query</string>
+		</dict>
+		<dict>
+			<key>query-specification</key>
+			<dict>
+				<key>anchoring</key>
+				<string>word</string>
+				<key>match-case</key>
+				<integer>1</integer>
+				<key>query</key>
+				<string>conformers</string>
+				<key>term</key>
+				<dict>
+					<key>display-string</key>
+					<string>View</string>
+					<key>symbol</key>
+					<string>s:7SwiftUI4ViewP</string>
+				</dict>
+			</dict>
+			<key>title</key>
+			<string>SwiftUI Views</string>
+			<key>type</key>
+			<string>batch-find-query</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>3170</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>3170</string>
+					<key>Timestamp</key>
+					<string>767729103.46294</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string></string>
+				<key>leading</key>
+				<string>    ReleaseNotesView()
+}
 </string>
+				<key>trailing</key>
+				<string></string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
