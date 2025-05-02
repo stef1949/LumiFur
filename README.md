@@ -1,5 +1,9 @@
 <p align="center">
-<img width="200" alt="Stencil Image" src="https://github.com/stef1949/LumiFur/blob/ab25593c41cac15a84b33315575f0e78f2f03eee/.github/Assets/Page23.svg">
+<picture>
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/stef1949/LumiFur/blob/ab25593c41cac15a84b33315575f0e78f2f03eee/.github/Assets/Page23.svg" height="200">
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/stef1949/LumiFur/blob/main/.github/Assets/Page23inverted.svg" height="200">
+<img alt="LumiFur Logo in a CAD Stencil design"> 
+</picture>
 </p>
 <h1 align="center">
 LumiFur
