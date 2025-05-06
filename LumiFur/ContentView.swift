@@ -19,7 +19,7 @@ import MarkdownUI
 
 import CoreHaptics
 
-let actions = SharedOptions.protoActionOptions2
+let actions = SharedOptions.protoActionOptions3
 let configs = SharedOptions.protoConfigOptions
 
 // IOS 18.0 features
@@ -213,105 +213,105 @@ struct WhatsNew: View {
     }
 }
 /*
-struct SplashView2: View {
-    @Environment(\.colorScheme) var colorScheme
-    
-    var overlayColor: Color {
-        colorScheme == .dark ? .black : .clear
-    }
-    
-    @State var isActive: Bool = false
-    //Protogen hover effect
-    @State private var yOffset: CGFloat = -10
-    @State private var animationDirection: Bool = true // True for moving up, false for moving down
-    let animationDuration: Double =  2.0 //Duratio for full hover effect
-    
-    var body: some View {
-        ZStack {
-            if self.isActive {
-                ContentView()
-            } else {
-                NavigationStack {
-                    ZStack {
-                        VStack {
-                            animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
-                            
-                            ZStack {
-                                Image(systemName: "aqi.medium")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .font(.title)
-                                    .symbolEffect(.variableColor.cumulative)
-                                    .blur(radius: 10)
-                                
-                                Image(systemName: "aqi.medium")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .font(.title)
-                                    .symbolEffect(.variableColor.cumulative)
-                                    .blur(radius: 1)
-                                    .opacity(0.5)
-                                
-                                Circle()
-                                    .fill(RadialGradient(
-                                        gradient: Gradient(colors: [Color.clear, overlayColor]),
-                                        center: .center,
-                                        startRadius: 0,
-                                        endRadius: 150
-                                    )
-                                    )
-                                    .scaleEffect(CGSize(width: 1.2, height: 1.2))
-                                    .font(.title)
-                                    .blur(radius: 3.0)
-                                    .scaledToFit()
-                                
-                            }
-                            .padding()
-                            
-                            Text("Welcome to LumiFur")
-                                .font(.title)
-                                .multilineTextAlignment(.trailing)
-                                .fontDesign(.monospaced)
-                            
-                            Text("An app designed to control your fursuit LEDs & light systems")
-                                .multilineTextAlignment(.center)
-                                .padding([.leading, .bottom, .trailing])
-                                .fontDesign(.monospaced)
-                            
-                            
-                            Button(action: {
-                                withAnimation {
-                                    self.isActive = true
-                                }
-                            }) {
-                                Text("Start")
-                                    .font(.title2)
-                                    .padding()
-                                    .padding(.horizontal)
-                                    .background(.ultraThinMaterial)
-                                    .tint(.gray)
-                                    .clipShape(RoundedRectangle(cornerSize: CGSize(width: 15, height: 10)))
-                            }
-                            
-                        }
-                    }
-                    .overlay(alignment: .bottomTrailing) {
-                        NavigationLink(destination: InfoView()) {
-                            Image(systemName: "info.square")
-                                .imageScale(.large)
-                                .symbolRenderingMode(.multicolor)
-                                .tint(.gray)
-                                .padding()
-                                .offset(CGSize(width: -10.0, height: -5.0))
-                        }
-                    }
-                    .padding()
-                }
-            }
-        }
-    }
-}
-*/
+ struct SplashView2: View {
+ @Environment(\.colorScheme) var colorScheme
+ 
+ var overlayColor: Color {
+ colorScheme == .dark ? .black : .clear
+ }
+ 
+ @State var isActive: Bool = false
+ //Protogen hover effect
+ @State private var yOffset: CGFloat = -10
+ @State private var animationDirection: Bool = true // True for moving up, false for moving down
+ let animationDuration: Double =  2.0 //Duratio for full hover effect
+ 
+ var body: some View {
+ ZStack {
+ if self.isActive {
+ ContentView()
+ } else {
+ NavigationStack {
+ ZStack {
+ VStack {
+ animatedProtogenImage(yOffset: $yOffset, animationDirection: true, animationDuration: animationDuration)
+ 
+ ZStack {
+ Image(systemName: "aqi.medium")
+ .resizable()
+ .scaledToFit()
+ .font(.title)
+ .symbolEffect(.variableColor.cumulative)
+ .blur(radius: 10)
+ 
+ Image(systemName: "aqi.medium")
+ .resizable()
+ .scaledToFit()
+ .font(.title)
+ .symbolEffect(.variableColor.cumulative)
+ .blur(radius: 1)
+ .opacity(0.5)
+ 
+ Circle()
+ .fill(RadialGradient(
+ gradient: Gradient(colors: [Color.clear, overlayColor]),
+ center: .center,
+ startRadius: 0,
+ endRadius: 150
+ )
+ )
+ .scaleEffect(CGSize(width: 1.2, height: 1.2))
+ .font(.title)
+ .blur(radius: 3.0)
+ .scaledToFit()
+ 
+ }
+ .padding()
+ 
+ Text("Welcome to LumiFur")
+ .font(.title)
+ .multilineTextAlignment(.trailing)
+ .fontDesign(.monospaced)
+ 
+ Text("An app designed to control your fursuit LEDs & light systems")
+ .multilineTextAlignment(.center)
+ .padding([.leading, .bottom, .trailing])
+ .fontDesign(.monospaced)
+ 
+ 
+ Button(action: {
+ withAnimation {
+ self.isActive = true
+ }
+ }) {
+ Text("Start")
+ .font(.title2)
+ .padding()
+ .padding(.horizontal)
+ .background(.ultraThinMaterial)
+ .tint(.gray)
+ .clipShape(RoundedRectangle(cornerSize: CGSize(width: 15, height: 10)))
+ }
+ 
+ }
+ }
+ .overlay(alignment: .bottomTrailing) {
+ NavigationLink(destination: InfoView()) {
+ Image(systemName: "info.square")
+ .imageScale(.large)
+ .symbolRenderingMode(.multicolor)
+ .tint(.gray)
+ .padding()
+ .offset(CGSize(width: -10.0, height: -5.0))
+ }
+ }
+ .padding()
+ }
+ }
+ }
+ }
+ }
+ */
 struct SplashView: View {
     //Protogen hover effect
     @State private var fadeTitle: CGFloat = 20
@@ -344,7 +344,7 @@ struct SplashView: View {
                             .background(Material.ultraThin)
                             .clipped()
                             .frame(minWidth: 30, maxHeight: .infinity)
-                            //.border(.red)
+                        //.border(.red)
                             .overlay(alignment: .topLeading) {
                                 // Hero
                                 VStack(alignment: .leading, spacing: 11) {
@@ -362,10 +362,10 @@ struct SplashView: View {
                                         }
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text("LumiFur")
-                                            //.font(.largeTitle)
+                                        //.font(.largeTitle)
                                             .font(Font.custom("Meloriac", size: 45))
-                                            //.fontDesign(.monospaced)
-                                            //.fontWeight(.heavy)
+                                        //.fontDesign(.monospaced)
+                                        //.fontWeight(.heavy)
                                             .blur(radius: fadeTitle)
                                             .onAppear {
                                                 withAnimation(Animation.easeInOut(duration: 2)) {
@@ -513,7 +513,7 @@ struct SplashView: View {
 // MARK: ContentView
 struct ContentView: View {
     // Use @AppStorage to persist a flag in UserDefaults.
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
+    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     // Local state to control the splash screen appearance.
     @State private var showSplash = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
@@ -522,6 +522,9 @@ struct ContentView: View {
     var overlayColor: Color {
         colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
     }
+    
+    @State private var showSignalView = false
+    
     // Taptic Engine
     @State private var engine: CHHapticEngine?
     
@@ -842,6 +845,7 @@ struct ContentView: View {
         }
         // Animate changes to showSplash.
         .animation(.easeInOut(duration: 1.5), value: showSplash)
+        .onDisappear { engine?.stop() }
     }
     
     private var headerSection: some View {
@@ -853,36 +857,46 @@ struct ContentView: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 6.0) {
                 Text("LumiFur")
-                    //.font(.largeTitle)
+                //.font(.largeTitle)
                     .font(Font.custom("Meloriac", size: 35))
                     .frame(width: 150)
-                    //.fontDesign(.monospaced)
-                    .padding(.top)
+                //.fontDesign(.monospaced)
+                    .padding(.top, 5)
                 statusSection
             }
         }
         .frame(height: 100)
         .padding(.horizontal)
     }
+    
     private var statusSection: some View {
         HStack(spacing: 8) {
-            SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+            if showSignalView {
+                SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+                    .transition(.move(edge: .trailing))
+            }
             // only show RSSI when truly “.connected”
             Image(accessoryViewModel.connectionImageName)
-              // choose a mode that *allows* tinting
-              .symbolRenderingMode(
-                accessoryViewModel.connectionState == .connected
-                  ? .hierarchical      // iOS 15+; retains depth but is tinted
-                  : .monochrome        // single-color, template style
-              )
-              // use foregroundStyle (preferred) or foregroundColor
-              //.foregroundStyle(accessoryViewModel.connectionColor)
-              // optional: fade out when not connected
-              .opacity(accessoryViewModel.connectionState == .connected ? 1 : 0.5)
-
+            // choose a mode that *allows* tinting
+                .symbolRenderingMode(
+                    accessoryViewModel.connectionState == .connected
+                    ? .hierarchical      // iOS 15+; retains depth but is tinted
+                    : .monochrome        // single-color, template style
+                )
+            // use foregroundStyle (preferred) or foregroundColor
+            //.foregroundStyle(accessoryViewModel.connectionColor)
+            // optional: fade out when not connected
+                .opacity(accessoryViewModel.connectionState == .connected ? 1 : 0.5)
+            
             Text(accessoryViewModel.connectionStatus)
-              .font(.caption)
-              .foregroundStyle(accessoryViewModel.connectionColor)
+                .font(.caption)
+                .foregroundStyle(accessoryViewModel.connectionColor)
+        }
+        .animation(.easeInOut, value: showSignalView) // Smooth animation
+        .onChange(of: accessoryViewModel.connectionState) { oldValue, newValue in
+            withAnimation {
+                showSignalView = newValue != .disconnected
+            }
         }
         .padding(10)
         .background(.ultraThinMaterial)
@@ -951,18 +965,18 @@ struct ContentView: View {
                     optionType: .auroraMode
                 )
                 OptionToggleView(
-                                title: "Custom Message",
-                                isOn: $customMessage,  // Binding<Bool> for the toggle
-                                optionType: .customMessage
-                            )
-                            
-                            // Optionally show a TextField when the toggle is on:
-                            if customMessage {
-                                TextField("Enter your custom message", text: $customMessageText)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .padding()
-                            }
-                  
+                    title: "Custom Message",
+                    isOn: $customMessage,  // Binding<Bool> for the toggle
+                    optionType: .customMessage
+                )
+                
+                // Optionally show a TextField when the toggle is on:
+                if customMessage {
+                    TextField("Enter your custom message", text: $customMessageText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding()
+                }
+                
             }
         }
         .scrollContentBackground(.hidden)
@@ -976,24 +990,13 @@ struct ContentView: View {
     private var faceGridSection: some View {
         ScrollView(.horizontal) {
             LazyHGrid(rows: twoColumnGrid) {
-                ForEach(actions.indices, id: \.self) { index in
-                    BouncingButton(action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            print("\(actions[index]) button pressed – setting view \(index + 1)")
-                            accessoryViewModel.setView(index + 1)
-                        }
-                    }) {
-                        Text(actions[index])
-                            .font(.custom("SFIndicesAMEmoji_regular", size: 50))
-                        //.dynamicTypeSize(.xxxLarge)
-                        //.scaleEffect(2)
-                            //.symbolRenderingMode(.monochrome)
-                            .foregroundStyle(.black)
-                            .frame(maxWidth: 250, maxHeight: 250)
-                            .background(.ultraThinMaterial)
-                            .aspectRatio(1, contentMode: .fit)
-                    }
-                    .cornerRadius(15)
+                ForEach(SharedOptions.protoActionOptions3.indices, id: \.self) { index in
+                    FaceCellView(
+                        action: SharedOptions.protoActionOptions3[index],
+                        index: index + 1,
+                        selected: accessoryViewModel.selectedView,
+                        onTap: { accessoryViewModel.setView($0) }
+                    )
                 }
             }
         }
@@ -1015,25 +1018,31 @@ struct ContentView: View {
             return
         }
         
-        if let index = actions.firstIndex(of: selectedFace) {
+        // Find the index where the enum's String == selectedFace
+        if let index = SharedOptions.protoActionOptions3.firstIndex(where: { action in
+            switch action {
+            case .emoji(let e):    return e == selectedFace
+            case .symbol(let s):   return s == selectedFace
+            }
+        }) {
             let viewToSet = index + 1
-            print("Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet) on AccessoryViewModel.")
-            accessoryViewModel.setView(viewToSet) // Call accessoryViewModel method
-            
-            // Optional: Clear the trigger in iOSViewModel after handling.
-            // viewModel.receivedFaceFromWatch = nil
+            print("Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet).")
+            accessoryViewModel.setView(viewToSet)
         } else {
-            print("Received face '\(selectedFace)' from watch, but it was not found in the iOS protoActionOptions array.")
+            print("Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions3.")
         }
     }
     
-    /// Gets the face emoji corresponding to the accessory's selected view.
-    private func getFaceForView(_ view: Int) -> String { // <--- DEFINITION INSIDE ContentView
-        let index = view - 1
-        if actions.indices.contains(index) {
-            return actions[index]
-        } else {
+    /// Given a numeric “view” (1…n), return the matching emoji or symbol-string,
+    /// so you can show it back in your SwiftUI view or send it to the watch.
+    private func getFaceForView(_ view: Int) -> String {
+        let idx = view - 1
+        guard SharedOptions.protoActionOptions3.indices.contains(idx) else {
             return "❓"
+        }
+        switch SharedOptions.protoActionOptions3[idx] {
+        case .emoji(let e):  return e
+        case .symbol(let s): return s
         }
     }
     
@@ -1082,7 +1091,7 @@ struct ContentView: View {
             // Temperature Chart
             VStack {
                 // Compute a cutoff date exactly 3 minutes ago
-                    let cutoff = Date().addingTimeInterval(-3 * 60)
+                let cutoff = Date().addingTimeInterval(-3 * 60)
                 Chart {
                     ForEach(accessoryViewModel.temperatureData.filter { $0.timestamp >= cutoff }) { element in
                         LineMark(
@@ -1101,13 +1110,13 @@ struct ContentView: View {
                     )
                 )
                 .chartXScale(domain: cutoff...Date())
-                    .foregroundStyle(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
+                .foregroundStyle(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
+                        startPoint: .bottom,
+                        endPoint: .top
                     )
+                )
                 .chartXAxis {
                     AxisMarks() { axisValue in
                         AxisValueLabel(format: .dateTime.minute().second(), centered: true)
@@ -1129,10 +1138,11 @@ struct ContentView: View {
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 25))
                 .frame(maxWidth:.infinity,maxHeight: 80)
+                
                 Text("Temperature (°C)")
-                //.fontDesign( .default)
-                    .font(.footnote)
-                //.bold()
+                    .padding(.top, 4)
+                    .font(.caption)
+                
             }
             // Isolated NavigationLinks
             NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
@@ -1146,6 +1156,55 @@ struct ContentView: View {
         //.frame(maxHeight: 100)
         .scrollContentBackground(.hidden)
         //.background(overlayColor)
+    }
+}
+
+struct FaceCellView: View {
+    let action: SharedOptions.ProtoAction
+    let index: Int
+    let selected: Int
+    let onTap: (Int) -> Void
+    
+    var body: some View {
+        BouncingButton {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                onTap(index)
+            }
+        } label: {
+            Group {
+                switch action {
+                case .emoji(let e):
+                    Text(e)
+                        .dynamicTypeSize(.xxxLarge)
+                        .scaleEffect(2)
+                case .symbol(let s):
+                    Image(systemName: s)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(50)
+                        .symbolRenderingMode(.hierarchical)
+                }
+            }
+            .frame(maxWidth: 250, maxHeight: 250)
+            .foregroundStyle(.foreground)
+            .background {
+                if selected == index {
+                    ZStack {
+                        //meshGradient()
+                        Rectangle()
+                            .fill(Color.white)
+                            .opacity(0.8)
+                            .overlay(.ultraThinMaterial)
+                    }
+                } else {
+                    // Material must be used inside a view
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                }
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .cornerRadius(15)
+        }
     }
 }
 /*
@@ -1196,6 +1255,8 @@ struct SettingsView: View {
     @AppStorage("arouraMode")  var arouraMode = true
     @AppStorage("customMessage")  var customMessage = false
     
+    @State private var scanButtonTapped = false
+    
     @State private var fontSize: CGFloat = 15
     @State private var showLineNumbers = false
     @State private var showPreview = true
@@ -1232,6 +1293,7 @@ struct SettingsView: View {
     @State private var isLedArrayExpanded: Bool = false
     
     var body: some View {
+        
         NavigationStack {
             List {
                 // Section 1: Connection Status
@@ -1338,6 +1400,7 @@ struct SettingsView: View {
                     HStack {
                         Spacer()
                         Button(action: {
+                            self.scanButtonTapped = true
                             bleModel.scanForDevices()
                             animateSymbol.toggle()
                         }){
@@ -1349,7 +1412,16 @@ struct SettingsView: View {
                             }
                         }
                         .buttonStyle(.bordered)
-                        .disabled(!bleModel.isBluetoothReady)
+                        onChange(of: bleModel.isScanning) { _ , isScanningNow in
+                            if !isScanningNow {
+                                scanButtonTapped = false // Reset when scanning stops
+                            }
+                        }
+                        .onChange(of: bleModel.isConnected) { _, isConnectedNow in
+                            if isConnectedNow {
+                                scanButtonTapped = false // Reset if connected
+                            }
+                        }
                         Spacer()
                     }
                 }
@@ -1502,9 +1574,9 @@ struct SettingsView: View {
                                 .resizable()
                                 .padding()
                                 .frame(width: 150, height: 150)
-                                
+                            
                         }.animation(.easeInOut(duration: 0.5), value: bleModel.targetPeripheral)
-                        .transition(.move(edge: .leading))
+                            .transition(.move(edge: .leading))
                         
                         Spacer()
                         HStack {
@@ -1522,7 +1594,7 @@ struct SettingsView: View {
                                 }
                                 HStack {
                                     Text("Software Version:")
-                                   // Text(device.softwareVersion)
+                                    // Text(device.softwareVersion)
                                     Text("1.5.0")
                                 }
                             }
@@ -1545,7 +1617,9 @@ struct SettingsView: View {
     // MARK: - Discovered Devices Section
     
     var discoveredDevicesSection: some View {
-        Section {
+        // let isConnected = bleModel.isConnected
+        // let isScanning = bleModel.isScanning
+        return Section {
             // Scan Button
             Button {
                 isScanningForButton.toggle() // Trigger animation
@@ -2163,9 +2237,9 @@ struct SocialLink: View {
     let imageName: String
     let appURL: URL
     let webURL: URL
-
+    
     @Environment(\.openURL) var openURL
-
+    
     var body: some View {
         Button {
             // Try opening the app URL first
@@ -2189,115 +2263,115 @@ struct SocialLink: View {
 }
 
 struct InfoView: View {
-        struct Feature: Identifiable {
-            let id = UUID()
-            let icon: String
-            let title: String
-            let description: String
-        }
-        private let features: [Feature] = [
-            .init(icon: "play.circle.fill",     title: "Live Control",     description: "Adjust brightness, speed & colour in real time."),
-            .init(icon: "sparkles",              title: "Prebuilt Effects", description: "Pick from a gallery of dynamic patterns."),
-            .init(icon: "slider.horizontal.3",   title: "Custom Sequences", description: "Compose and save your own light shows."),
-            .init(icon: "bluetooth.fill",              title: "Bluetooth Sync",   description: "Wireless pairing to your suit’s controller.")
-        ]
-        var body: some View {
-            NavigationStack {
-                List {
-                    // MARK: – Logo Header
-                    VStack {
-                        HStack{
+    struct Feature: Identifiable {
+        let id = UUID()
+        let icon: String
+        let title: String
+        let description: String
+    }
+    private let features: [Feature] = [
+        .init(icon: "play.circle.fill",     title: "Live Control",     description: "Adjust brightness, speed & colour in real time."),
+        .init(icon: "sparkles",              title: "Prebuilt Effects", description: "Pick from a gallery of dynamic patterns."),
+        .init(icon: "slider.horizontal.3",   title: "Custom Sequences", description: "Compose and save your own light shows."),
+        .init(icon: "bluetooth.fill",              title: "Bluetooth Sync",   description: "Wireless pairing to your suit’s controller.")
+    ]
+    var body: some View {
+        NavigationStack {
+            List {
+                // MARK: – Logo Header
+                VStack {
+                    HStack{
                         Spacer()
-                            Image("Logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 60)
-                            Spacer()
-                        }
+                        Image("Logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 60)
                         Spacer()
-                        HStack(spacing: 15.0) {
-                            SocialLink(
-                                imageName: "bluesky.fill",
-                                appURL: URL(string: "bsky://profile/richies.uk")!,
-                                webURL: URL(string: "https://bsky.app/profile/richies.uk")!
-                            )
-                            SocialLink(
-                                imageName: "facebook.fill",
-                                appURL: URL(string: "fb://profile/richies3d")!,
-                                webURL: URL(string: "https://www.facebook.com/richies3d/")!
-                            )
-                            SocialLink(
-                                imageName: "x",
-                                appURL: URL(string: "twitter://user?screen_name=richies3d")!,
-                                webURL: URL(string: "https://x.com/Richies3D")!
-                            )
-                            SocialLink(
-                                imageName: "github.fill",
-                                appURL: URL(string: "github://user?username=stef1949")!, // GitHub’s custom scheme
-                                webURL: URL(string: "https://github.com/stef1949")!
-                            )
-                            SocialLink(
-                                imageName: "linkedin.fill",
-                                appURL: URL(string: "linkedin://in/stefan-ritchie")!,
-                                webURL: URL(string: "https://www.linkedin.com/in/stefan-ritchie/")!
-                            )
-                        }
-                        
                     }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
+                    Spacer()
+                    HStack(spacing: 15.0) {
+                        SocialLink(
+                            imageName: "bluesky.fill",
+                            appURL: URL(string: "bsky://profile/richies.uk")!,
+                            webURL: URL(string: "https://bsky.app/profile/richies.uk")!
+                        )
+                        SocialLink(
+                            imageName: "facebook.fill",
+                            appURL: URL(string: "fb://profile/richies3d")!,
+                            webURL: URL(string: "https://www.facebook.com/richies3d/")!
+                        )
+                        SocialLink(
+                            imageName: "x",
+                            appURL: URL(string: "twitter://user?screen_name=richies3d")!,
+                            webURL: URL(string: "https://x.com/Richies3D")!
+                        )
+                        SocialLink(
+                            imageName: "github.fill",
+                            appURL: URL(string: "github://user?username=stef1949")!, // GitHub’s custom scheme
+                            webURL: URL(string: "https://github.com/stef1949")!
+                        )
+                        SocialLink(
+                            imageName: "linkedin.fill",
+                            appURL: URL(string: "linkedin://in/stefan-ritchie")!,
+                            webURL: URL(string: "https://www.linkedin.com/in/stefan-ritchie/")!
+                        )
+                    }
                     
-                    // MARK: – About Section
-                    Section(header: Text("About LumiFur")) {
-                        Text("""
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                
+                // MARK: – About Section
+                Section(header: Text("About LumiFur")) {
+                    Text("""
                              LumiFur is an iOS‑native companion app for controlling LEDs on fursuits. It offers an intuitive interface for ramping colours, effects and sequences—right from your pocket.
                              """)
-                            .font(.body)
-                            //.foregroundColor(.secondary)
-                            .padding(.vertical, 4)
-                    }
-                    
-                    // MARK: – Features Section
-                    Section(header: Text("Features")) {
-                        ForEach(features) { feature in
-                            HStack(spacing: 12) {
-                                Image(systemName: feature.icon)
-                                    .font(.title2)
-                                    .symbolRenderingMode(.hierarchical)
-                                    //.foregroundStyle()
-                                    .frame(width: 36)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(feature.title)
-                                        .font(.headline)
-                                    Text(feature.description)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
+                    .font(.body)
+                    //.foregroundColor(.secondary)
+                    .padding(.vertical, 4)
+                }
+                
+                // MARK: – Features Section
+                Section(header: Text("Features")) {
+                    ForEach(features) { feature in
+                        HStack(spacing: 12) {
+                            Image(systemName: feature.icon)
+                                .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                            //.foregroundStyle()
+                                .frame(width: 36)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(feature.title)
+                                    .font(.headline)
+                                Text(feature.description)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
-                            .padding(.vertical, 6)
                         }
-                    }
-                    
-                    // MARK: – Full List Link
-                    Section {
-                        HStack {
-                            Spacer()
-                            Label("Complete feature list", systemImage: "chevron.forward")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(.accentColor)
-                            Spacer()
-                        }
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 6)
                     }
                 }
-                .listStyle(.insetGrouped)                         // iOS18 default grouping
-                .scrollContentBackground(.hidden)                 // let our list sit over the material
-                .background(.thinMaterial)                        // global bg
-                .navigationTitle("About")
-                .navigationBarTitleDisplayMode(.inline)
+                
+                // MARK: – Full List Link
+                Section {
+                    HStack {
+                        Spacer()
+                        Label("Complete feature list", systemImage: "chevron.forward")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                }
             }
+            .listStyle(.insetGrouped)                         // iOS18 default grouping
+            .scrollContentBackground(.hidden)                 // let our list sit over the material
+            .background(.thinMaterial)                        // global bg
+            .navigationTitle("About")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
+}
 
 
 // MARK: -WORKING- Testing matrix arducode code
@@ -3144,27 +3218,53 @@ struct infoViewold: View {
     }
 }
 
-#Preview ("SplashView") {
+
+#Preview("ContentView") {
+    ContentView()
+}
+#Preview("SplashView") {
     SplashView(showSplash: .constant(true))
 }
 
-#Preview ("Whats New") {
+#Preview("Whats New") {
     WhatsNew()
 }
 
-#Preview ("ContentView") {
-    ContentView()
-}
-
-#Preview ("Info View") {
+#Preview("Info View") {
     InfoView()
 }
 
-#Preview ("Settings") {
+#Preview("Settings") {
     @Previewable @State var isScanningForButton = true
     SettingsView(bleModel: AccessoryViewModel(), selectedMatrix: .constant(SettingsView.Matrixstyle.array))
 }
 
-#Preview ("Release Notes") {
+#Preview("Release Notes") {
     ReleaseNotesView()
 }
+
+// ——————— Your mock view model at file-scope ———————
+class MockViewModel: AccessoryViewModel {
+    init(state: ConnectionState, rssi: Int = -65) {
+        super.init()
+        self.connectionState = state
+        self.signalStrength = rssi
+    }
+}
+/*
+ // ——————— Three separate #Preview entries at file-scope ———————
+ #Preview("Connected") {
+ @Previewable @StateObject var accessoryViewModel = MockViewModel(state: .connected)
+ ContentView(accessoryViewModel: accessoryViewModel)
+ }
+ 
+ #Preview("Disconnected") {
+ @Previewable @StateObject var accessoryViewModel = MockViewModel(state: .disconnected, rssi: -100)
+ ContentView(accessoryViewModel: accessoryViewModel)
+ }
+ 
+ #Preview("Connecting") {
+ @Previewable @StateObject var accessoryViewModel = MockViewModel(state: .connecting, rssi: -70)
+ ContentView(accessoryViewModel: accessoryViewModel)
+ }
+ */

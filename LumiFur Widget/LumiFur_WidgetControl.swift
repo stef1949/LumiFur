@@ -11,25 +11,10 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct SharedDataKeys {
-    static let suiteName = "group.com.richies3d.LumiFur" // <<< MUST MATCH YOUR APP GROUP ID
-    static let isConnected = "widgetIsConnected"
-    static let connectionStatus = "widgetConnectionStatus"
-    static let controllerName = "widgetControllerName"
-    static let signalStrength = "widgetSignalStrength"
-    static let temperature = "widgetTemperature"
-    static let temperatureHistory = "temperatureHistoryData" // NEW Temp history for widgets
-
-    static let selectedView = "widgetSelectedView"
-    static let accelerometerEnabled = "accelerometerEnabled"
-    static let sleepModeEnabled = "sleepModeEnabled"
-    static let auroraModeEnabled = "auroraModeEnabled"
-    static let widgetKind = "com.richies3d.lumifur.statuswidget"
-}
 
 struct LumiFur_WidgetControl: ControlWidget {
-    static let kind: String = "com.richies3d.lumifur.statuswidget"
-    //static let kind: String = SharedDataKeys.widgetKind
+    //static let kind: String = "com.richies3d.LumiFur.statuswidget"
+    static let kind: String = SharedDataKeys.widgetKind
     
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(

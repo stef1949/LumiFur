@@ -14,6 +14,6 @@ struct LumiFur_WidgetBundle: WidgetBundle {
     var body: some Widget {
         LumiFur_Widget()
         LumiFur_WidgetControl()
-        //LumiFur_WidgetLiveActivity()
+        LumiFur_WidgetLiveActivity()
     }
 }

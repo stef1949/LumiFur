@@ -69,26 +69,7 @@ struct currentViewGauge: View {
 }
 
 
-struct LumiFur_WidgetAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var connectionStatus: String
-        var signalStrength: Int
-        var temperature: String
-        var selectedView: Int
-        var isConnected: Bool
-        var isScanning: Bool
-        //var emoji: String
-        // New: an array of recent temperature values (you could also send timestamps if needed)
-        var temperatureChartData: [Double]
-        var sleepModeEnabled: Bool
-         var auroraModeEnabled: Bool
-        var customMessage: String
-    }
-    
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
+
 
 struct LumiFur_WidgetLiveActivity: Widget {
     //@ObservedObject var accessoryViewModel = AccessoryViewModel()
@@ -99,7 +80,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
             VStack {
                 HStack(spacing: 16) {
                     HStack {
-                        Image("LumiFurFrontBottomSide")
+                        Image("mps3")
                             .renderingMode(.original)
                             .resizable()
                             .aspectRatio(contentMode: .fit)

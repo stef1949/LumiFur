@@ -70,5 +70,5 @@ struct ChangeLumiFurViewIntent: AppIntent {
 
 // Optional: Define Notification Name if using Option B
 extension Notification.Name {
-     static let changeViewIntentTriggered = Notification.Name("changeViewIntentTriggered")
+     static let changeViewIntentTriggered = Notification.Name("com.richies3d.LumiFur.ChangeViewIntentTriggered")
 }

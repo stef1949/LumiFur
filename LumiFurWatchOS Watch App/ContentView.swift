@@ -59,12 +59,15 @@ struct FaceGridView: View {
     // Define a two-column grid.
     let columns: [GridItem] = [GridItem(.adaptive(minimum: 50, maximum: 100))]
     
+    @State private var selectedFace: String? = nil
+    
     var body: some View {
         
         ScrollView {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(faces, id: \.self) { face in
                     Button(action: {
+                        selectedFace = face
                         // Play system haptic (and sound, if available)
                         WKInterfaceDevice.current().play(.start)
                         print("\(face) pressed - sending command...")
@@ -84,12 +87,20 @@ struct FaceGridView: View {
                         Text(face)
                             .font(.system(size: 30))
                     }
-                    //.border(Color.green)
-                    // .backgroundStyle(.ultraThinMaterial) // This might be causing unexpected visual results with border
+                    .background {
+                        if selectedFace == face {
+                            Rectangle()
+                                .fill(Color.white)
+                        } else {
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                        }
+                    }
                     .aspectRatio(1, contentMode: .fit)
+                    .cornerRadius(15)
                 }
             }
-            .backgroundStyle(.ultraThinMaterial)
+            //.backgroundStyle(.ultraThinMaterial)
             //.padding()
         }
     }
