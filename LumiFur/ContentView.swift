@@ -911,24 +911,25 @@ struct ContentView: View {
     
     private var ledArraySection: some View {
         DisclosureGroup("LED Array", isExpanded: $isLedArrayExpanded) {
-            HStack {
-                Spacer()
-                LEDPreview()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                LEDPreview()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                Spacer()
-            }
-            .frame(maxHeight: 100)
+            if isLedArrayExpanded{
+                HStack {
+                    Spacer()
+                    LEDPreview()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    LEDPreview()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    Spacer()
+                }
+                .frame(maxHeight: 100)
+            }}
+                .padding([.top, .leading, .trailing])
+                .accentColor(.gray)
+                .ignoresSafeArea()
+                .scrollContentBackground(.hidden)
+            //.background(overlayColor)
         }
-        .padding([.top, .leading, .trailing])
-        .accentColor(.gray)
-        .ignoresSafeArea()
-        .scrollContentBackground(.hidden)
-        //.background(overlayColor)
-    }
     
     static let gradientStart = Color(red: 0 / 255, green: 0 / 255, blue: 0 / 255)
     static let gradientEnd = Color(red: 239.0 / 255, green: 172.0 / 255, blue: 120.0 / 255)
@@ -1046,6 +1047,25 @@ struct ContentView: View {
         }
     }
     
+    // 1) Move this up in your View
+    private var downsampledTempData: [TemperatureData] {
+        // cut off 3 minutes ago
+        let cutoff = Date().addingTimeInterval(-3 * 60)
+        // only the recent bits
+        let recent = accessoryViewModel.temperatureData
+            .filter { $0.timestamp >= cutoff }
+        // cap at ~100 points
+        let strideSize = max(1, recent.count / 100)
+        // take every Nth element
+        return recent.enumerated().compactMap { idx, el in
+            idx % strideSize == 0 ? el : nil
+        }
+    }
+    
+    @AppStorage("charts") private var isChartsExpanded = false
+    
+    @State private var samples: [TemperatureData] = []
+    
     private var settingsAndChartsSection: some View {
         HStack {
             Spacer()
@@ -1089,61 +1109,61 @@ struct ContentView: View {
              }
              */
             // Temperature Chart
-            VStack {
-                // Compute a cutoff date exactly 3 minutes ago
-                let cutoff = Date().addingTimeInterval(-3 * 60)
-                Chart {
-                    ForEach(accessoryViewModel.temperatureData.filter { $0.timestamp >= cutoff }) { element in
-                        LineMark(
-                            x: .value("Time", element.timestamp),
-                            y: .value("Temperature", element.temperature)
-                        )
-                        //.foregroundStyle(.red) // Change to blue if preferred.
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                    }
-                }
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
-                        startPoint: .bottom,
-                        endPoint: .top
-                    )
-                )
-                .chartXScale(domain: cutoff...Date())
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
-                        startPoint: .bottom,
-                        endPoint: .top
-                    )
-                )
-                .chartXAxis {
-                    AxisMarks() { axisValue in
-                        AxisValueLabel(format: .dateTime.minute().second(), centered: true)
-                            .font(.caption2)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: .automatic) { axisValue in
-                        AxisValueLabel() {
-                            if let tempValue = axisValue.as(Double.self) {
-                                Text(String(format: "%.1f°C", tempValue))
+            DisclosureGroup("Charts", isExpanded: $isChartsExpanded) {
+                if isChartsExpanded {
+                    VStack {
+                        Chart(samples) {
+                            element in
+                            LineMark(
+                                x: .value("Time", element.timestamp),
+                                y: .value("℃", element.temperature)
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .interpolationMethod(.catmullRom)
+                        }
+                        .foregroundStyle(Color.blue)
+                        .chartXScale(domain: Date().addingTimeInterval(-3 * 60)...Date())
+                        /*
+                         .foregroundStyle(
+                         LinearGradient(
+                         gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
+                         startPoint: .bottom,
+                         endPoint: .top
+                         )
+                         )
+                         */
+                        .chartXAxis {
+                            AxisMarks(values: .stride(by: .minute)) { value in
+                                AxisValueLabel(format: .dateTime.minute().second())
                                     .font(.caption2)
                             }
                         }
+                        .chartYAxis {
+                            AxisMarks(values: .automatic) { axisValue in
+                                AxisValueLabel() {
+                                    if let temp = axisValue.as(Double.self) {
+                                        Text(String(format: "%.0f°C", temp))
+                                            .font(.caption2)
+                                    }
+                                }
+                            }
+                        }
+                        .drawingGroup()
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 25))
+                        .frame(maxWidth:.infinity,maxHeight: 80)
+                        
+                        Text("Temperature (°C)")
+                            .padding(.top, 4)
+                            .font(.caption)
                     }
                 }
-                .animation(.easeInOut(duration: 1.5), value: accessoryViewModel.temperatureData) // Single smooth update animation. // Animate based on data change
-                .padding()
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 25))
-                .frame(maxWidth:.infinity,maxHeight: 80)
-                
-                Text("Temperature (°C)")
-                    .padding(.top, 4)
-                    .font(.caption)
-                
             }
+            .onReceive(accessoryViewModel.temperatureChartPublisher) { newSamples in
+                self.samples = newSamples
+            }
+            .animation(.easeInOut(duration: 1.5), value: accessoryViewModel.temperatureData) // Single smooth update animation. // Animate based on data change
             // Isolated NavigationLinks
             NavigationLink(destination: SettingsView(bleModel: accessoryViewModel, selectedMatrix: $selectedMatrix)) {
                 Image(systemName: "gear")
@@ -1176,12 +1196,13 @@ struct FaceCellView: View {
                 case .emoji(let e):
                     Text(e)
                         .dynamicTypeSize(.xxxLarge)
-                        .scaleEffect(2)
+                        .font(.system(size: 40))
                 case .symbol(let s):
                     Image(systemName: s)
                         .resizable()
-                        .scaledToFit()
-                        .padding(50)
+                        .aspectRatio(contentMode: .fit)
+                        .scaleEffect(0.25)
+                        //.padding(70)
                         .symbolRenderingMode(.hierarchical)
                 }
             }
@@ -1570,8 +1591,9 @@ struct SettingsView: View {
                     }
                     HStack {
                         HStack {
-                            Image("LumiFur_Controller_AK")
+                            Image("mps3")
                                 .resizable()
+                                .scaledToFit()
                                 .padding()
                                 .frame(width: 150, height: 150)
                             
@@ -1724,6 +1746,7 @@ struct SettingsView: View {
     // MARK: - Matrix Configuration Section
     private var matrixSection: some View {
         DisclosureGroup("LED Configuration", isExpanded: $isLedArrayExpanded) {
+            if isLedArrayExpanded {
             // Section("Matrix Configuration") {
             // Example Layout: Could be more sophisticated
             VStack(alignment: .leading) {
@@ -1740,7 +1763,7 @@ struct SettingsView: View {
                 
                 MatrixStylePicker(selectedMatrix: $selectedMatrix) // Your custom picker
             }
-        }
+        }}
         .listRowBackground(overlayColor)
     }
     

@@ -158,13 +158,16 @@ struct SmallWidgetView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Image(systemName: entry.isConnected ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
-                    .foregroundColor(entry.isConnected ? .green : .gray)
+            Label {
                 Text(entry.connectionStatus)
                     .font(.caption)
-                    .foregroundColor(entry.isConnected ? .green : .gray)
+                    .foregroundColor(entry.isConnected ? .primary : .gray)
+            } icon: {
+                Image(entry.isConnected ? "bluetooth.fill" : "bluetooth.slash.fill")
+                    .foregroundColor(entry.isConnected ? .blue : .gray)
+                    .frame(width:10)
             }
+            
             Text(entry.controllerName ?? "No Controller")
                 .font(.footnote)
                 .lineLimit(1)
@@ -172,23 +175,37 @@ struct SmallWidgetView: View {
             
             Spacer()
             
-            HStack {
-                Image(systemName: "thermometer")
+            Label {
                 Text(entry.temperature)
+            } icon: {
+                Image(systemName: "thermometer")
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width:10)
             }
-            .font(.title3)
-            .minimumScaleFactor(0.7)
+
+            Label {
+                Text("View: \(entry.selectedView)")
+            } icon: {
+                Image(systemName: "display")
+                    .frame(width:10)
+            }
             
-            HStack {
+            Spacer()
+            
+            Label {
+                Text("\(entry.signalStrength) dBm")
+                    .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                    .font(.caption)
+            } icon: {
                 Image(systemName: signalStrengthIcon(rssi: entry.signalStrength))
                     .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
-                Text("View: \(entry.selectedView)")
+                    .imageScale(.small)
+                    .frame(width:10)
             }
-            .font(.caption)
-            
         }
         .padding(10)
         .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
+        //.border(Color.gray.opacity(0.2), width: 1)
     }
 }
 
@@ -199,14 +216,18 @@ struct MediumWidgetView: View {
         HStack(spacing: 15) {
             // Left Column (Status)
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: entry.isConnected ? "link.circle.fill" : "link.circle")
-                        .foregroundColor(entry.isConnected ? .green : .gray)
-                        .imageScale(.large)
+                Label {
                     Text(entry.connectionStatus)
                         .font(.headline)
                         .foregroundColor(entry.isConnected ? .primary : .secondary)
+                        .offset(x: -6)
+                } icon: {
+                    Image(systemName: entry.isConnected ? "link.circle.fill" : "link.circle")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(entry.isConnected ? .green : .gray)
+                        .imageScale(.large)
                 }
+                
                 Text(entry.controllerName ?? "No Controller Connected")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -214,42 +235,49 @@ struct MediumWidgetView: View {
                 
                 Spacer()
                 
-                HStack(spacing: 15) {
-                    Label(entry.temperature, systemImage: "thermometer")
-                    Label("View: \(entry.selectedView)", systemImage: "display")
-                }
-                .font(.footnote)
-                
-                
                 HStack {
-                    Image(systemName: signalStrengthIcon(rssi: entry.signalStrength))
-                        .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
-                    Text("Signal: \(entry.signalStrength) dBm")
-                        .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                    VStack(alignment: .leading) {
+                        Label(entry.temperature, systemImage: "thermometer")
+                        Label("\(entry.selectedView)", systemImage: "display")
+                    }
+                    .font(.footnote)
+                    .frame(width: 70)
+                    //.border(.gray)
+                    
+                    VStack {
+                        Spacer()
+                        Image(systemName: signalStrengthIcon(rssi: entry.signalStrength))
+                            .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                            .scaleEffect(1.5)
+                        
+                        Text("\(entry.signalStrength) dBm")
+                            .foregroundColor(signalStrengthColor(rssi: entry.signalStrength))
+                    }
+                    .font(.caption)
+                    .frame(width: 50)
+                    //.border(.gray)
+                    
                 }
-                .font(.caption)
-                
             }
-            .padding(.trailing, 5)
+            //.border(.red)
+            //.padding(.trailing, 5)
             
             
             // Right Column (Maybe a Chart or Gauge?) - Placeholder for now
             VStack {
                 Spacer()
-                /*
-                Image("LumiFur_Controller_AK_Compressed")
+                Image("mps3")
                     .resizable()
                     .scaledToFit()
-                    .scaleEffect(1.8)
-                    .rotationEffect(.degrees(90))
-                 */
+                    .scaleEffect(1.25)
+                    //.rotationEffect(.degrees(90))
+                 
                 Spacer()
                 // --- INTERACTIVE BUTTON ---
                 Button(intent: ChangeLumiFurViewIntent()) { // Create instance of the intent
                     Label("Next View", systemImage: "arrow.right.circle")
                 }
                 .tint(.blue) // Style the button
-                // Add Chart here if desired using entry.temperatureChartData
             }
         }
         .padding()
@@ -284,12 +312,19 @@ struct LargeWidgetView: View {
                         )
                         //.foregroundStyle(.red) // Change to blue if preferred.
                         .lineStyle(StrokeStyle(lineWidth: 2))
-                        
+                        .interpolationMethod(.catmullRom)
                     }
                 }
+                .foregroundStyle(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
                 //.id(accessoryViewModel.temperatureData.count)
                 .animation(.easeInOut(duration: 0.5), value: entry.temperatureHistory)
-                .chartYScale(domain: 15...85) // Adjust the domain to your expected temperature range.
+                .chartYScale(domain: .automatic) // Adjust the domain to your expected temperature range.
                 .chartXAxis {
                     AxisMarks(values: .automatic) { axisValue in
                         AxisValueLabel() {
@@ -310,16 +345,21 @@ struct LargeWidgetView: View {
                         }
                     }
                 }
-                .padding()
+                .padding(.vertical)
+                .padding(.leading, 10)
+                .padding(.trailing, 5)
+
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .frame(maxWidth:500,maxHeight: .infinity)
                 .padding(.vertical,5)
-                VStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 10) {
                     Label(entry.temperature, systemImage: "thermometer")
                         .font(.caption)
+                        .symbolRenderingMode(.hierarchical)
                     Label("View: \(entry.selectedView)", systemImage: "display")
                         .font(.headline)
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .fixedSize(horizontal: true, vertical: false)
                 .lineLimit(1)
@@ -341,10 +381,10 @@ struct LargeWidgetView: View {
             // Right Column (Maybe a Chart or Gauge?) - Placeholder for now
             VStack {
                 Spacer()
-                Image("LumiFur_Controller_AK_Compressed")
+                Image("mps3")
                     .resizable()
                     .scaledToFit()
-                    .scaleEffect(2)
+                    .scaleEffect(1.2)
                 Spacer()
                 // --- INTERACTIVE BUTTON ---
                 Button(intent: ChangeLumiFurViewIntent()) { // Create instance of the intent

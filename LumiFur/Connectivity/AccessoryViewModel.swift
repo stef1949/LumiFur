@@ -40,7 +40,45 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var isScanning: Bool = false
     @Published var discoveredDevices: [PeripheralDevice] = [] // Uses definition above
     @Published var temperature: String = "--" { didSet { updateWidgetAndActivityOnMain() } }
+    
+    
+    
     @Published var temperatureData: [TemperatureData] = [] { didSet { updateWidgetAndActivityOnMain() } }
+    
+    // 1) Raw incoming temperature readings
+        private let rawTempSubject = PassthroughSubject<TemperatureData, Never>()
+    
+        // 2) Public publisher of a down-sampled, 3-minute sliding window, throttled to 1 Hz
+        lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
+            rawTempSubject
+                // build & maintain a 3-minute sliding buffer in place
+                .scan([TemperatureData]()) { buffer, new in
+                    // make a mutable copy
+                    var buf = buffer
+                    // 2) mutate buffer in place — do NOT return it
+                    buf.append(new)
+                    let cutoff = Date().addingTimeInterval(-3 * 60)
+                    buf.removeAll { $0.timestamp < cutoff }
+                    return buf
+                }
+                // only emit at most once per second
+                .throttle(for: .seconds(5), scheduler: RunLoop.main, latest: true)
+                // down-sample to ~100 points
+                .map { buffer in
+                    let strideSize = max(1, buffer.count / 100)
+                    return buffer.enumerated().compactMap { idx, el in
+                        idx % strideSize == 0 ? el : nil
+                    }
+                }
+                .receive(on: RunLoop.main)
+                .eraseToAnyPublisher()
+        }()
+        // 3) Call this whenever you get a new reading
+        func didReceive(_ point: TemperatureData) {
+            rawTempSubject.send(point)
+        }
+    
+    
     @Published var errorMessage: String = ""
     @Published var showError: Bool = false
     @Published var signalStrength: Int = -100 { didSet { updateWidgetAndActivityOnMain() } }
@@ -580,15 +618,31 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
 
+    // Inside AccessoryViewModel…
+
     private func handleLiveTemperatureUpdate(data: Data) {
-        guard let tempString = String(data: data, encoding: .utf8),
-              let tempValue = Double(tempString.replacingOccurrences(of: "°C", with: "").trimmingCharacters(in: .whitespaces))
-        else { DispatchQueue.main.async { [weak self] in self?.temperature = "?" }; return }
+        guard
+            let tempString = String(data: data, encoding: .utf8),
+            let tempValue = Double(
+                tempString
+                    .replacingOccurrences(of: "°C", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+            )
+        else {
+            DispatchQueue.main.async { [weak self] in
+                self?.temperature = "?"
+            }
+            return
+        }
+
         let newDataPoint = TemperatureData(timestamp: Date(), temperature: tempValue)
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.temperature = tempString; self.temperatureData.append(newDataPoint)
-            if self.temperatureData.count > self.maxTemperatureDataPoints { self.temperatureData.removeFirst(self.temperatureData.count - self.maxTemperatureDataPoints) }
+            // update the display string as before
+            self.temperature = tempString
+            // feed the Combine pipeline instead of mutating an array
+            self.didReceive(newDataPoint)
         }
     }
 

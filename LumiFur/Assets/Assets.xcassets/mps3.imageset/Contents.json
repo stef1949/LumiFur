@@ -1,15 +1,33 @@
 {
   "images" : [
     {
-      "filename" : "MPS3Top - 1.png",
+      "display-gamut" : "sRGB",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "display-gamut" : "display-P3",
+      "filename" : "mps3.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "display-gamut" : "sRGB",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "display-gamut" : "display-P3",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "display-gamut" : "sRGB",
+      "idiom" : "universal",
+      "scale" : "3x"
+    },
+    {
+      "display-gamut" : "display-P3",
       "idiom" : "universal",
       "scale" : "3x"
     }

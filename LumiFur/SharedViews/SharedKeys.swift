@@ -39,8 +39,22 @@ struct TemperatureData: Identifiable, Codable, Equatable {
     let temperature: Double
 }
 
+/// Data structure for CPU usage data.
+struct CPUUsageData: Identifiable {
+    let id = UUID()
+    let timestamp: Date
+    let cpuUsage: Int
+}
+
+/// New structure to persist previously connected devices.
+struct StoredPeripheral: Identifiable, Codable {
+    let id: String
+    let name: String
+}
+
+// MARK: - Connection State Enum
+
 /// Enum for connection state (SHARED)
-// MARK: - Connection State Enum (Ensure this is defined BEFORE AccessoryViewModel)
 enum ConnectionState: String {
     case disconnected = "Disconnected"
     case scanning = "Scanning..."
@@ -68,20 +82,6 @@ enum ConnectionState: String {
         }
     }
 }
-
-/// Data structure for CPU usage data.
-struct CPUUsageData: Identifiable {
-    let id = UUID()
-    let timestamp: Date
-    let cpuUsage: Int
-}
-
-/// New structure to persist previously connected devices.
-struct StoredPeripheral: Identifiable, Codable {
-    let id: String
-    let name: String
-}
-
 
 // MARK: - Live Activity Attributes (SHARED)
 
