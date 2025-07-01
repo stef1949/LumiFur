@@ -36,8 +36,8 @@ extension EnvironmentValues {
 struct LumiFurApp: App {
     //@StateObject private var AccessoryViewModel = AccessoryViewModel.shared
     let repositoryConfiguration = RepositoryConfig(
-            appRepoName: "stef1949/LumiFur",          // Actual App Repo
-            controllerRepoName: "stef1949/LumiFur_Controller"  // Actual Controller Repo
+            appRepoName: "stef1949/LumiFur",          // App Repo
+            controllerRepoName: "stef1949/LumiFur_Controller"  // Controller Repo
         )
     var body: some Scene {
         WindowGroup {
@@ -56,12 +56,20 @@ struct RootView: View {
     // Controls whether to show the splash screen
     @State private var showWhatsNew: Bool = false
     
+    @Environment(\.scenePhase) private var scenePhase
     
+    @State private var showSplash = true
     
     var body: some View {
+        /*
+         ZStack{
+         if showSplash {
+         SplashView(showSplash: $showSplash)
+         }
+         */
+       // RootView2()
         ContentView()
             .sheet(isPresented: $showWhatsNew) {
-                // Present WhatsNew as a full screen cover
                 WhatsNew()
             }
             .onAppear {
@@ -70,5 +78,6 @@ struct RootView: View {
                     showWhatsNew = true
                 }
             }
+        // }
     }
 }

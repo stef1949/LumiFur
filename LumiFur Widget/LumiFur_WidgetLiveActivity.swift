@@ -26,16 +26,16 @@ struct StyledGauge: View {
     var body: some View {
         Gauge(value: temperature, in: minValue...maxValue) {
             Image(systemName: "heart.fill")
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
         } currentValueLabel: {
             Text("\(Int(temperature))")
-                .foregroundColor(Color.green)
+                .foregroundStyle(Color.green)
         } minimumValueLabel: {
             Text("\(Int(minValue))")
-                .foregroundColor(Color.green)
+                .foregroundStyle(Color.green)
         } maximumValueLabel: {
             Text("\(Int(maxValue))")
-                .foregroundColor(Color.red)
+                .foregroundStyle(Color.red)
         }
         .gaugeStyle(.accessoryCircular)
         
@@ -58,12 +58,33 @@ struct GaugeUnit: View {
 
 struct currentViewGauge: View {
     let selectedView: Int  // Pass in the selected view value
+    let previousView = 1
+
+    private var numberTransition: AnyTransition {
+            if selectedView > previousView {
+                // New number is higher → slide up from bottom, old slides out to top
+                return .asymmetric(
+                    insertion: .move(edge: .bottom),
+                    removal:   .move(edge: .top)
+                )
+            } else {
+                // New number is lower → slide down from top, old slides out to bottom
+                return .asymmetric(
+                    insertion: .move(edge: .top),
+                    removal:   .move(edge: .bottom)
+                )
+            }
+        }
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 5)
                 .frame(width: 50, height: 50)
                 .foregroundStyle(.secondary)
             Text("\(selectedView)")
+                .id(selectedView)                   // treat each value as a new view
+                .transition(numberTransition)       // apply dynamic .move transition
+                .animation(.easeInOut, value: selectedView)
         }
     }
 }
@@ -74,21 +95,17 @@ struct currentViewGauge: View {
 struct LumiFur_WidgetLiveActivity: Widget {
     //@ObservedObject var accessoryViewModel = AccessoryViewModel()
     //@State var isConnected = false
+    
+    // <-- Declare the namespace here
+        @Namespace private var animationNamespace
+    
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LumiFur_WidgetAttributes.self) { context in
             // Lock screen/banner UI
             VStack {
                 HStack(spacing: 16) {
                     HStack {
-                        Image("mps3")
-                            .renderingMode(.original)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: .infinity, alignment: .center)
-                        //.padding(.horizontal)
-                        //.border(Color.green, width: 1)
-                            .mask { RoundedRectangle(cornerRadius: 13, style: .continuous) }
-                            .shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
+                        mps3Image(namespace: animationNamespace)
                         Spacer()
                     }
                     
@@ -98,10 +115,12 @@ struct LumiFur_WidgetLiveActivity: Widget {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("LumiFur Controller")
+                            .matchedGeometryEffect(id: "LumFur Controller", in: animationNamespace)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                             .font(.system(.callout, weight: .semibold))
                             .padding(.leading, 10)
                         Text("LF-052618")
+                            .matchedGeometryEffect(id: "Device Name", in: animationNamespace)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                             .clipped()
                             .font(.system(.caption, weight: .medium))
@@ -166,6 +185,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                         .frame(maxWidth: .infinity)
                         .padding(5)
                         .padding(.horizontal, 5)
+                    
                         .background {
                             ContainerRelativeShape()
                                 .fill(context.state.connectionStatus == "Connected" ?
@@ -174,6 +194,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                         .fixedSize(horizontal: true, vertical: false) // Prevent horizontal truncation
                     Spacer()
                     Text("View: \(context.state.selectedView)")
+                        .matchedGeometryEffect(id: "selectedView", in: animationNamespace)
                         .lineLimit(1)
                         .foregroundStyle(.orange)
                         .font(.system(.footnote, weight: .semibold))
@@ -225,10 +246,9 @@ struct LumiFur_WidgetLiveActivity: Widget {
                          )
                          .clipShape(ContainerRelativeShape())
                          */
-                        Image("LumiFur_Controller_AK_Compressed")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                        //.frame(width: 40, height: 40)
+                        Spacer()
+                        mps3Image(namespace: animationNamespace)
+                            .offset(x: 10)
                     }
                     
                     //Image cannot exceed 4kb
@@ -279,12 +299,16 @@ struct LumiFur_WidgetLiveActivity: Widget {
                         }
                         .frame(maxWidth: 70, maxHeight: 70)
                         //.clipShape(RoundedRectangle(cornerRadius: 5))
+                        
                     }
+                    .padding(.bottom, 8)
+                    
                     //.border(.green)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(){
                         Text("LF-052618")
+                            .matchedGeometryEffect(id: "Device Name", in: animationNamespace)
                             .clipped()
                             .font(.system(.caption, weight: .medium))
                             .foregroundStyle(.blue)
@@ -334,20 +358,21 @@ struct LumiFur_WidgetLiveActivity: Widget {
                                     }
                                 }
                             }
-                            
                             .chartXAxis(.hidden)
                             .chartYAxis(.hidden)
                             .padding()
                             .background(.ultraThinMaterial)
                             .clipShape(ContainerRelativeShape())
                             .frame(maxWidth:100,maxHeight: 70)
-                            
+                            //.drawingGroup()      // ← collapse into one GPU texture
+                            //.compositingGroup()  // ← isolate blending into a single layer
+                            /*
                             Text("Temperature (°C)")
                             //.fontDesign( .default)
                                 .font(.footnote)
                                 .foregroundColor(Color.gray)
-                            
                             //.bold()
+                             */
                         }
                         //Text("Temp: \(context.state.temperature)")
                         //.font(.callout)
@@ -402,25 +427,31 @@ struct LumiFur_WidgetLiveActivity: Widget {
                 }
             } compactLeading: {
                 //Text("LumiFur")
-                Image("LumiFur_Controller_AK_100")
+                /*
+                Image("mps3_icon")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 25, height: 25)
-                
-                //Image("Protogen")
+                */
+                mps3Image(namespace: animationNamespace)
             } compactTrailing: {
                 //Text("T")
                 Image(context.state.isConnected ? "bluetooth.fill": "bluetooth.slash.fill")
-                //.symbolEffect(.appear)
+                // .symbolEffect(.appear)
                     .contentTransition(.symbolEffect(.replace))
                 
             } minimal: {
                 //Text("m")
-                Image("LumiFur_Controller_AK_Compressed")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .rotationEffect(.degrees(90))
-                    .frame(width: 25, height: 25)
+                //Image("mps3_icon")
+                //  .resizable()
+                //   .aspectRatio(contentMode: .fit)
+                //.rotationEffect(.degrees(90))
+                //  .frame(width: 25, height: 25)
+                
+                //SignalStrengthView(rssi: context.state.signalStrength)
+                
+                currentViewGauge(selectedView: context.state.selectedView)
+                    .matchedGeometryEffect(id: "selectedView", in: animationNamespace)
             }
             .widgetURL(URL(string: "https://www.richies.uk"))
             .keylineTint(Color.white)
@@ -436,11 +467,12 @@ extension LumiFur_WidgetAttributes {
 }
 
 extension LumiFur_WidgetAttributes.ContentState {
-    fileprivate static var smiley: LumiFur_WidgetAttributes.ContentState {
+     static var smiley: LumiFur_WidgetAttributes.ContentState {
         LumiFur_WidgetAttributes.ContentState(connectionStatus: "Connected", signalStrength: 75,  temperature: "47.7°C", selectedView: 4, isConnected: true, isScanning: false, temperatureChartData: [45.5], sleepModeEnabled: true, auroraModeEnabled: true, customMessage: "")
     }
     
-    fileprivate static var starEyes: LumiFur_WidgetAttributes.ContentState {
+    
+    static var starEyes: LumiFur_WidgetAttributes.ContentState {
         LumiFur_WidgetAttributes.ContentState(connectionStatus: "Disconnected", signalStrength: 80,  temperature: "58.7°C", selectedView: 6, isConnected: false, isScanning: true, temperatureChartData: [67.9], sleepModeEnabled: true, auroraModeEnabled: true, customMessage: "")
     }
 }
@@ -476,4 +508,21 @@ extension LumiFur_WidgetAttributes.ContentState {
 contentStates: {
     LumiFur_WidgetAttributes.ContentState.smiley
     LumiFur_WidgetAttributes.ContentState.starEyes
+}
+
+struct mps3Image: View {
+    let namespace: Namespace.ID
+    
+    var body: some View {
+        Image("mps3_pixelize")
+        //.renderingMode(.original)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxHeight: .infinity, alignment: .center)
+            .padding(5)
+        //.border(Color.green, width: 1)
+            .mask { RoundedRectangle(cornerRadius: 13, style: .continuous) }
+            .shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
+            .matchedGeometryEffect(id: "mps3Image", in: namespace)
+    }
 }

@@ -46,12 +46,6 @@ struct CPUUsageData: Identifiable {
     let cpuUsage: Int
 }
 
-/// New structure to persist previously connected devices.
-struct StoredPeripheral: Identifiable, Codable {
-    let id: String
-    let name: String
-}
-
 // MARK: - Connection State Enum
 
 /// Enum for connection state (SHARED)
@@ -74,11 +68,33 @@ enum ConnectionState: String {
         }
     }
 
-    var imageName: String {
+    /// Return a SwiftUI Image backed by an SF Symbol
+    var image: Image {
         switch self {
-        case .connected: "bluetooth.fill"
-        case .disconnected, .failed, .bluetoothOff, .unknown: "antenna.radiowaves.left.and.right.slash" // Includes failed, btOff
-        case .connecting, .scanning, .reconnecting: "antenna.radiowaves.left.and.right.circle" // Includes reconnecting
+        case .connected:
+            return Image("bluetooth.fill")
+        case .disconnected, .failed, .bluetoothOff, .unknown:
+            return Image("bluetooth.slash.fill")
+        case .connecting, .scanning, .reconnecting:
+            return Image(systemName: "antenna.radiowaves.left.and.right")
+        }
+    }
+    // NEW: Computed property for the SF Symbol name
+    var symbolName: String {
+        switch self {
+        case .connected:
+            // "bluetooth.fill" is not an SF Symbol.
+            // Choose an appropriate SF Symbol like "wifi", "bolt.fill", "network",
+            // or "antenna.radiowaves.left.and.right.circle.fill"
+            return "antenna.radiowaves.left.and.right" // Example: Using wifi symbol for connected
+        case .disconnected, .failed, .bluetoothOff, .unknown:
+            // "bluetooth.slash.fill" is not an SF Symbol.
+            // Choose "wifi.slash", "bolt.slash.fill", "network.slash"
+            return "antenna.radiowaves.left.and.right.slash" // Example: Using wifi.slash for disconnected states
+        case .connecting, .scanning, .reconnecting:
+            // This one was already good as an SF Symbol
+            return "arrow.triangle.2.circlepath.circle" // Good for "in progress", often animated by default
+            // Or, keep: "antenna.radiowaves.left.and.right"
         }
     }
 }
@@ -106,5 +122,65 @@ struct LumiFur_WidgetAttributes: ActivityAttributes {
 
     // Fixed non-changing properties about your activity go here!
     var name: String
+    
 }
 #endif
+
+private struct SignalBar: View, Equatable {
+    let filled: Bool
+    let fullHeight: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(filled ? .blue : Color.gray.opacity(0.3))
+            .frame(width: 4, height: fullHeight)
+    }
+
+    static func == (lhs: SignalBar, rhs: SignalBar) -> Bool {
+        lhs.filled == rhs.filled && lhs.fullHeight == rhs.fullHeight
+    }
+}
+
+struct SignalStrengthView: View {
+    @AppStorage("rssiMonitoringEnabled")
+    private var rssiMonitoringEnabled: Bool = false
+    let rssi: Int
+    
+    // BLE typically lives in about –100…–30 dBm
+    private let bleMinRssi: Int = -100
+    private let bleMaxRssi: Int =  -70
+    
+    private var signalLevel: Double {
+        // shift –100…–30 into 0…1
+        let normalized = Double(rssi - bleMinRssi) / Double(bleMaxRssi - bleMinRssi)
+        return min(max(normalized, 0), 1)
+    }
+    
+    var body: some View {
+        
+        HStack(alignment: .bottom, spacing: 4) {
+            ForEach(0..<4, id: \.self) { idx in
+                // Compute whether this bar is lit
+                let lit = idx < Int(signalLevel * 4)
+                let height = CGFloat(idx + 2) * 4
+                
+                SignalBar(filled: lit, fullHeight: height)
+                    .equatable()                    // <-- skip redraw when unchanged
+                    .animation(.easeInOut(duration: 0.3),
+                               value: lit)       // <-- still animate fill changes
+            }
+            
+            if rssiMonitoringEnabled {
+                Text("\(rssi)dBm")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3),
+                               value: rssiMonitoringEnabled)
+            }
+        }
+        // Flatten into a single layer so the GPU only re-rasterizes one texture
+        .compositingGroup()
+        .drawingGroup()
+    }
+}

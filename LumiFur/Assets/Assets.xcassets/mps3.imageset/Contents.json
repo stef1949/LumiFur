@@ -2,12 +2,13 @@
   "images" : [
     {
       "display-gamut" : "sRGB",
+      "filename" : "mps3 1.heif",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
       "display-gamut" : "display-P3",
-      "filename" : "mps3.png",
+      "filename" : "mps3.heif",
       "idiom" : "universal",
       "scale" : "1x"
     },

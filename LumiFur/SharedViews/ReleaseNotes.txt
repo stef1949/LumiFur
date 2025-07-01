@@ -5,6 +5,9 @@
 //  Created by Stephan Ritchie on 3/31/25.
 //
 
+Version 1.0.0
+
+
 Version 1.1.0 (Current)
 
 - Added Release Notes section to Settings.
@@ -17,3 +20,4 @@ Version 1.0.0
 - Bluetooth LE connectivity.
 - Basic view switching.
 - Temperature monitoring.
+

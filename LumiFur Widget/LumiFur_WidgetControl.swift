@@ -7,81 +7,45 @@
 //
 //
 
-import AppIntents
+
 import SwiftUI
 import WidgetKit
+import AppIntents
 
 
+
+/// Control widget to cycle the LumiFur display view
 struct LumiFur_WidgetControl: ControlWidget {
-    //static let kind: String = "com.richies3d.LumiFur.statuswidget"
-    static let kind: String = SharedDataKeys.widgetKind
-    
+     let kind = SharedDataKeys.widgetKind
+
     var body: some ControlWidgetConfiguration {
-        AppIntentControlConfiguration(
-            kind: Self.kind,
+        StaticControlConfiguration(
+            kind: kind,
             provider: Provider()
         ) { value in
-            ControlWidgetToggle(
-                "Start Timer",
-                isOn: value.isRunning,
-                action: StartTimerIntent(value.name)
-            ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+            ControlWidgetButton(action: ChangeLumiFurViewIntent()) {
+                Label("View: \(value.selectedView)", systemImage: "arrow.triangle.2.circlepath")
             }
         }
-        .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .displayName("Change LumiFur View")
+        .description("Advance to the next display view on your LumiFur device.")
     }
 }
 
 extension LumiFur_WidgetControl {
-    struct Value {
-        var isRunning: Bool
-        var name: String
+    struct ViewValue: Codable, Equatable {
+        var selectedView: Int
     }
 
-    struct Provider: AppIntentControlValueProvider {
-        func previewValue(configuration: TimerConfiguration) -> Value {
-            LumiFur_WidgetControl.Value(isRunning: false, name: configuration.timerName)
-        }
+    struct Provider: ControlValueProvider {
+           typealias Value = ViewValue
 
-        func currentValue(configuration: TimerConfiguration) async throws -> Value {
-            let isRunning = true // Check if the timer is running
-            return LumiFur_WidgetControl.Value(isRunning: isRunning, name: configuration.timerName)
-        }
-    }
-}
+           var previewValue: ViewValue { .init(selectedView: 1) }
 
-struct TimerConfiguration: ControlConfigurationIntent {
-    static let title: LocalizedStringResource = "Timer Name Configuration"
-
-    @Parameter(title: "Timer Name", default: "Timer")
-    var timerName: String
-}
-
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
-
-    @Parameter(title: "Timer Name")
-    var name: String
-
-    @Parameter(title: "Timer is running")
-    var value: Bool
-
-    init() {}
-
-    init(_ name: String) {
-        self.name = name
-    }
-
-    func perform() async throws -> some IntentResult {
-        // Start the timer…
-        return .result()
-    }
-}
-
-struct TemperatureDataPoint: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let timestamp: Date
-    let temperature: Double
-}
+           func currentValue() async throws -> ViewValue {
+               let view = UserDefaults(suiteName: SharedDataKeys.suiteName)?
+                   .integer(forKey: SharedDataKeys.selectedView) ?? 1
+               return .init(selectedView: view)
+           }
+       }
+   }

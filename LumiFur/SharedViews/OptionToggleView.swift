@@ -7,14 +7,23 @@
 
 import SwiftUI
 
-enum OptionType {
+
+enum OptionType: Equatable {
     case autoBrightness, accelerometer, sleepMode, auroraMode, customMessage
 }
 
-struct OptionToggleView: View {
+struct OptionToggleView: View, Equatable {
     let title: String
     @Binding var isOn: Bool
     let optionType: OptionType
+    
+    // Equatable conformance only looks at the data,
+    // not at any closures or view‐builder guts.
+    static func ==(lhs: OptionToggleView, rhs: OptionToggleView) -> Bool {
+        lhs.title       == rhs.title &&
+        lhs.isOn        == rhs.isOn &&
+        lhs.optionType  == rhs.optionType
+    }
     
     var body: some View {
         BouncingButton(action: {
@@ -25,54 +34,47 @@ struct OptionToggleView: View {
             Text(title)
                 .dynamicTypeSize(.medium)
                 .fontWeight(.medium)
-                .padding(8)
-                .padding(.horizontal, 4)
-                .clipShape(Capsule())
-                //.blendMode(.destinationOut)
-                .background(backgroundView)
+                .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)) // Combined padding
+            //.blendMode(.destinationOut)
+                .background(backgroundFillView)
                 .clipShape(Capsule())
         }
         .foregroundStyle(.primary)
     }
     
     @ViewBuilder
-    private var backgroundView: some View {
+    private var backgroundFillView: some View { // Renamed
+        if isOn {
+            activeBackground
+                .opacity(0.7)
+        } else {
+            Color(UIColor.systemGray5)
+        }
+    }
+    
+    @ViewBuilder
+    private var activeBackground: some View {
         switch optionType {
         case .autoBrightness:
-            if isOn {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.red, Color.orange, Color.yellow]),
-                    startPoint: .bottom,
-                    endPoint: .top
-                ).opacity(0.7)
-            } else {
-                Color(UIColor.systemGray5)
-            }
+            LinearGradient(
+                gradient: Gradient(colors: [.red, .orange, .yellow]),
+                startPoint: .bottom,
+                endPoint: .top
+            )
         case .auroraMode:
-            if isOn {
-                AngularGradient(
-                    gradient: Gradient(colors: [Color.pink, Color.purple, Color.blue, Color.green, Color.pink]),
-                    center: .center
-                ).opacity(0.7)
-            } else {
-                Color(UIColor.systemGray5)
-            }
+            AngularGradient(
+                gradient: Gradient(colors: [.pink, .purple, .blue, .green, .pink]),
+                center: .center
+            )
         case .sleepMode:
-            if isOn {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.clear, Color.blue]),
-                    startPoint: .bottomLeading,
-                    endPoint: .topTrailing
-                ).opacity(0.7)
-            } else {
-                Color(UIColor.systemGray5)
-            }
-        default:
-            if isOn {
-                Color.green.opacity(0.7)
-            } else {
-                Color(UIColor.systemGray5)
-            }
+            LinearGradient(
+                gradient: Gradient(colors: [.clear, .blue]),
+                startPoint: .bottomLeading,
+                endPoint: .topTrailing
+            )
+        default: // .accelerometer, .customMessage
+            Color.green
         }
     }
 }
+

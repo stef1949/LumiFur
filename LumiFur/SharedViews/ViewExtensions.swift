@@ -9,8 +9,10 @@
 
 import SwiftUI
 
+/*
 extension View {
     // Reusable function to display and animate the "Protogen" image
+
     func animatedProtogenImage(yOffset: Binding<CGFloat>, animationDirection: Bool, animationDuration: Double) -> some View {
         Image("Page23-2")
             .resizable()
@@ -24,37 +26,39 @@ extension View {
             }
     }
 }
+*/
 
-struct BouncingButton<Label: View>: View {
+
+// 2) Equatable, value‑only button so SwiftUI can skip it when inputs don’t change
+struct BouncingButton<Label: View>: View{
     let action: () -> Void
-    let label: () -> Label
-    @State private var animate = false
-    @State private var triggerHaptics = false
-    var body: some View {
-        Button(action: {
-            // Trigger the bounce animation and haptics on tap
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                animate = true
-                triggerHaptics = true // Start haptic feedback
-            }
-            // Return to normal scale after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                    animate = false
-                }
-            }
-            // Reset the haptics trigger so subsequent taps can trigger it again
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                triggerHaptics = false
-            }
-            // Perform the button action
-            action()
-        })
+    let label: Label
+
+    @State private var isPressed = false
+    private let spring = Animation.spring(response: 0.3, dampingFraction: 0.5)
+
+    init(action: @escaping () -> Void,
+             @ViewBuilder label: @escaping () -> Label)
         {
-            label()
-                .scaleEffect(animate ? 0.8 : 1.0)
+            self.action = action
+            self.label = label()
         }
-        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 1.0), trigger: triggerHaptics)
+
+    var body: some View {
+        Button {
+            // animate press
+            withAnimation(spring) { isPressed = true }
+            action()
+            // animate release
+            DispatchQueue.main.asyncAfter(deadline: .now()+0.15) {
+                withAnimation(spring) { isPressed = false }
+            }
+        } label: {
+            label
+                .scaleEffect(isPressed ? 0.8 : 1.0)
+                .animation(spring, value: isPressed)
+        }
+        .glassEffect(.regular.interactive())
     }
 }
 

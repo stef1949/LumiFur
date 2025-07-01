@@ -7,13 +7,13 @@
 
 import SwiftUI
 import WatchConnectivity
-import Charts
+//import Charts
 
 // MARK: - Face Grid View
 enum Item: String, CaseIterable, Identifiable {
     case device
     case faces
-    case status
+    //case status
     case settings
     
     var id: Self { self }
@@ -22,87 +22,109 @@ enum Item: String, CaseIterable, Identifiable {
         return self.rawValue.spaced
     }
 }
-
-// MARK - Template data
-struct MonthlyHoursOfSunshine: Identifiable {
-    var id: Date { date } // Using the date as a unique identifier
-    var date: Date
-    var templateTemp: Double
-    
-    
-    init(month: Int, templateTemp: Double) {
-        let calendar = Calendar.autoupdatingCurrent
-        self.date = calendar.date(from: DateComponents(year: 2020, month: month))!
-        self.templateTemp = templateTemp
-    }
+/*
+// -----------------------------------------------------------------------------
+// 1.  Dummy model + sample data (place anywhere above your view)
+// -----------------------------------------------------------------------------
+struct SunshineDatum: Identifiable {
+    let id = UUID()
+    let date: Date
+    let temp: Double
 }
-//Dummy data
-let sunshineData: [MonthlyHoursOfSunshine] = [
-    MonthlyHoursOfSunshine(month: 1, templateTemp: 17),
-    MonthlyHoursOfSunshine(month: 2, templateTemp: 18),
-    MonthlyHoursOfSunshine(month: 3, templateTemp: 18),
-    MonthlyHoursOfSunshine(month: 4, templateTemp: 21),
-    MonthlyHoursOfSunshine(month: 5, templateTemp: 34),
-    MonthlyHoursOfSunshine(month: 6, templateTemp: 42),
-    MonthlyHoursOfSunshine(month: 7, templateTemp: 47),
-    MonthlyHoursOfSunshine(month: 8, templateTemp: 52),
-    MonthlyHoursOfSunshine(month: 9, templateTemp: 51),
-    MonthlyHoursOfSunshine(month: 10, templateTemp: 51),
-    MonthlyHoursOfSunshine(month: 11, templateTemp: 51),
-    MonthlyHoursOfSunshine(month: 12, templateTemp: 52)
-]
+
+let templateSunshineData: [SunshineDatum] = {
+    let today = Calendar.current.startOfDay(for: Date())
+    // Five days ending today: 18 °C → 22 °C
+    return (0..<5).map { i in
+        SunshineDatum(
+            date: Calendar.current.date(byAdding: .day, value: i - 4, to: today)!,
+            temp: 18 + Double(i)          // 18,19,20,21,22
+        )
+    }
+}()
+*/
 // MARK: - Face Grid View
 struct FaceGridView: View {
     // The grid of face icons – same as your iOS protoActionOptions.
-    let faces: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
+    // let faces: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
+    
+    let faces: [SharedOptions.ProtoAction] = SharedOptions.protoActionOptions3
     
     // Define a two-column grid.
     let columns: [GridItem] = [GridItem(.adaptive(minimum: 50, maximum: 100))]
     
-    @State private var selectedFace: String? = nil
+    // now holds the selected ProtoAction
+        @State private var selectedFace: SharedOptions.ProtoAction? = nil
     
     var body: some View {
-        
         ScrollView {
+            GlassEffectContainer {
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(faces, id: \.self) { face in
-                    Button(action: {
+                ForEach(faces, id: \.rawValue) { face in
+                    Button {
                         selectedFace = face
                         // Play system haptic (and sound, if available)
                         WKInterfaceDevice.current().play(.start)
                         print("\(face) pressed - sending command...")
                         // Uses  WatchConnectivityManager to send the selected face
-                        let message: [String: Any] = [
-                            "command": "setFace", // Define a command name
-                            "faceValue": face     // Send the specific face emoji
+                        // package up whatever you need to send:
+                        let payload: [String: Any] = [
+                            "command": "setFace",
+                            "faceType": face.isEmoji ? "emoji" : "symbol",
+                            "faceValue": face.rawValue
                         ]
-                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                            print("Set face reply: \(reply)")
-                            // Optional: Update UI based on successful reply
-                        }, errorHandler: { error in
-                            print("Set face error: \(error.localizedDescription)")
-                            // Optional: Show an error to the user
-                        })
-                    }) {
-                        Text(face)
-                            .font(.system(size: 30))
-                    }
-                    .background {
-                        if selectedFace == face {
-                            Rectangle()
-                                .fill(Color.white)
-                        } else {
-                            Rectangle()
-                                .fill(.ultraThinMaterial)
+                        WatchConnectivityManager.shared.sendMessage(payload) { reply in
+                            print("Reply:", reply)
+                        } errorHandler: { error in
+                            print("Error:", error)
                         }
+                    } label: {
+                        faceView(for: face)
+                            .aspectRatio(1, contentMode: .fit)
+                            .font(.system(size: 30))
+                            .foregroundStyle(selectedFace == face ? Color.black : Color.white)
                     }
+                    //.backgroundStyle(.clear)
+                    .glassEffect(.regular.tint(selectedFace == face ? Color.white : Color.clear).interactive(),
+                                 in: RoundedRectangle(cornerRadius: 15),
+                                 isEnabled: true
+                    )
+                    //         .background {
+                    //                Rectangle()
+                    //                .fill(selectedFace == face ? Color.white : Color.black)
+                    //        }
                     .aspectRatio(1, contentMode: .fit)
-                    .cornerRadius(15)
                 }
             }
-            //.backgroundStyle(.ultraThinMaterial)
-            //.padding()
         }
+    }
+    }
+}
+
+@ViewBuilder
+private func faceView(for face: SharedOptions.ProtoAction) -> some View {
+    switch face {
+    case .emoji(let str):
+        Text(str)
+            .font(.system(size: 30))
+    case .symbol(let name):
+        Image(systemName: name)
+            .font(.system(size: 30))
+    }
+}
+
+
+private extension SharedOptions.ProtoAction {
+    // helper to unify sending & comparison
+    var rawValue: String {
+        switch self {
+        case .emoji(let s):  return s
+        case .symbol(let s): return s
+        }
+    }
+    var isEmoji: Bool {
+        if case .emoji = self { return true }
+        else                 { return false }
     }
 }
 
@@ -135,20 +157,23 @@ struct ItemView: View {
                     Text("Reachable: \(connectivityManager.isReachable ? "Yes" : "No")")
                         .foregroundColor(connectivityManager.isReachable ? .green : .orange)
                     
-                    // Display companion device name
-                    if let deviceName = connectivityManager.companionDeviceName {
-                        Text("Device: \(deviceName)")
-                    } else if connectivityManager.connectionStatus == "Connected" || connectivityManager.connectionStatus.starts(with: "Connected"){
-                        // Show placeholder only if actually connected but name not received yet
-                        Text("Device: iPhone (Requesting name...)")
-                            .foregroundColor(.gray)
-                    } else {
-                        Text("Device: N/A") // Show N/A if not connected
-                            .foregroundColor(.gray)
+                    Group {
+                        if let deviceName = connectivityManager.companionDeviceName {
+                            Text("Device: \(deviceName)")
+                                .foregroundColor(.primary)
+                        } else if connectivityManager.connectionStatus == "Connected"
+                                    || connectivityManager.connectionStatus.starts(with: "Connected") {
+                            // Show placeholder only if actually connected but name not received yet
+                            Text("iPhone: Requesting name…")
+                                .foregroundColor(.gray)
+                        } else {
+                            Text("Device: N/A")      // Show N/A if not connected
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 .font(.system(size: 14)) // Adjust font size for watch
-                .padding(.vertical, 10)
+                .padding(.top, 10)
             }
             // Example content – replace with your own controls or info.
             switch item {
@@ -167,22 +192,29 @@ struct ItemView: View {
                         Text("Connect")
                     }
                     .padding(.top, 5)
+                    .glassEffect(.regular.interactive())
                 }
                 // Optional: Add a Disconnect button when connected
                 else if connectivityManager.connectionStatus == "Connected" {
-                    Button("Disconnect") {
-                        print("Disconnect button tapped (action not implemented)")
-                        // Send connect command using the manager
-                        let message = ["command": "connectToDevice"]
-                        print("Watch sending 'connectToDevice' command...")
-                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                            print("Connect command reply: \(reply)")
-                        }, errorHandler: { error in
-                            print("Connect command error: \(error.localizedDescription)")
-                        })
-                    }
-                    .tint(.red) // Make disconnect button red
+                    HStack {
+                        Button("Disconnect") {
+                            print("Disconnect button tapped (action not implemented)")
+                            // Send connect command using the manager
+                            let message = ["command": "connectToDevice"]
+                            print("Watch sending 'connectToDevice' command...")
+                            WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
+                                print("Connect command reply: \(reply)")
+                            }, errorHandler: { error in
+                                print("Connect command error: \(error.localizedDescription)")
+                            })
+                        }
+                        .glassEffect(.regular.tint(.red).interactive())
+                    } // Make disconnect button red
                     //.padding(.top, 5)
+                    Button("Reconnect") {
+                        print("Atempting reconnect...")
+                    }
+                    .glassEffect(.regular.interactive())
                 }
             case .faces:
                 ZStack {
@@ -199,126 +231,133 @@ struct ItemView: View {
                                     .foregroundStyle(.secondary)
                                 CurrentViewGauge()
                             }
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 3)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius:(8)))
+                            .padding()
+                            //.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius:(8)))
+                            .glassEffect()
+                            //.glassEffect(.regular, in: RoundedRectangle(cornerRadius:(8)))
                             Spacer()
+                            
                         }.environment(\.colorScheme, .light)
                             .offset(y: 20)
                     }
-                }
+                }/*
             case .status:
-                VStack {
-                    //Spacer(minLength: 40)
-                    // Nicer watchOS chart for sunshine data
-                    Chart {
-                        ForEach(sunshineData) { data in
-                            // Light fill under the curve
-                            AreaMark(
-                                x: .value("Month", data.date),
-                                y: .value("Sunshine (h)", data.templateTemp)
+                VStack(alignment: .leading, spacing: 6) {
+
+                    Chart(templateSunshineData, id: \.id) { point in
+                        AreaMark(
+                            x: .value("Date", point.date),
+                            y: .value("Temp (°C)", point.temp)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(
+                            .linearGradient(
+                                colors: [Color.blue.opacity(0.25), Color.blue.opacity(0.05)],
+                                startPoint: .bottom,
+                                endPoint: .top
                             )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue.opacity(0.25), Color.blue.opacity(0.05)]),
-                                    startPoint: .bottom,
-                                    endPoint: .top
-                                )
+                        )
+
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Temp (°C)", point.temp)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(.init(lineWidth: 2))
+                        .foregroundStyle(
+                            .linearGradient(
+                                colors: [Color.blue, Color.green],
+                                startPoint: .bottom,
+                                endPoint: .top
                             )
-                            // Crisp line on top
-                            LineMark(
-                                x: .value("Month", data.date),
-                                y: .value("Sunshine (h)", data.templateTemp)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue, Color.green]),
-                                    startPoint: .bottom,
-                                    endPoint: .top
-                                )
-                            )
-                        }
-                        // Highlight the latest point with trailing annotation
-                        if let last = sunshineData.last {
-                            PointMark(
-                                x: .value("Month", last.date),
-                                y: .value("Sunshine (h)", last.templateTemp)
-                            )
-                            .symbolSize(20)
-                            .annotation(position: .trailing) {
-                                Text("\(last.templateTemp.formatted())℃")
-                                    .font(.caption2)
-                            }
-                            .foregroundStyle(.primary)
-                        }
+                        )
                     }
-                    .chartXAxis {
-                       // AxisMarks(values: .stride(by: .month)) { mark in
-                          //  AxisGridLine()
-                          //  AxisValueLabel(format: .dateTime.month(.abbreviated), centered: true)
-                          //      .font(.caption2)
-                       // }
-                    }
+                    .frame(height: 120)
+                    .chartXAxis(.hidden)
                     .chartYAxis {
-                        AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                            AxisGridLine()
-                        }
+                        AxisMarks(values: .automatic(desiredCount: 3)) { _ in AxisGridLine() }
                     }
-                    .chartPlotStyle { plotArea in
-                        plotArea
+                    .chartPlotStyle { plot in
+                        plot
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 15))
                     }
-                    .frame(height: 120)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
+                    .padding(8)
+                    .drawingGroup()
+
                     
                     Text("Temperature ")
                         .font(.caption2)
                         .opacity(0.6)
                 }
+                  */
             case .settings:
                 
                 if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
                     Text("Connect to LumiFur to configure your settings here")
                         .listItemTint(.clear)
                 }
-                List{
-                    Toggle("Auto Brightness", isOn: $autoBrightness)
-                        .onChange(of: !autoBrightness) { newValue, _ in
-                            sendMessage(["autoBrightness": newValue])
+                // Wrap the whole List in a GlassEffectContainer
+                    GlassEffectContainer {
+                        List {
+                            Toggle("Auto Brightness", isOn: $autoBrightness)
+                                .onChange(of: autoBrightness) { newValue, _ in
+                                    sendMessage(["autoBrightness": newValue])
+                                }
+                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .padding(15)
+                                .glassEffect(.regular
+                                    .interactive(),
+                                             isEnabled: true)
+                                .listRowBackground(Color.clear)
+                                
+                            Toggle("Accelerometer", isOn: $accelerometer)
+                                .onChange(of: accelerometer) { newValue, _ in
+                                    sendMessage(["accelerometer": newValue])
+                                }
+                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .padding(15)
+                                .glassEffect(.regular
+                                    .interactive(),
+                                             isEnabled: true)
+                                .listRowBackground(Color.clear)
+
+                            Toggle("Sleep Mode", isOn: $sleepMode)
+                                .onChange(of: sleepMode) { newValue, _ in
+                                    sendMessage(["sleepMode": newValue])
+                                }
+                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .padding(15)
+                                .glassEffect(.regular
+                                    .interactive(),
+                                             isEnabled: true)
+                                .listRowBackground(Color.clear)
+
+                            Toggle("Aroura Mode", isOn: $arouraMode)
+                                .onChange(of: arouraMode) { newValue, _ in
+                                    sendMessage(["arouraMode": newValue])
+                                }
+                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .padding(15)
+                                .glassEffect(.regular
+                                    .interactive(),
+                                             isEnabled: true)
+                                .listRowBackground(Color.clear)
                         }
-                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
-                    Toggle("Accelerometer", isOn: $accelerometer)
-                        .onChange(of: !accelerometer) { newValue, _ in
-                            sendMessage(["accelerometer": newValue])
-                        }
-                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
-                    Toggle("Sleep Mode", isOn: $sleepMode)
-                        .onChange(of: !sleepMode) { newValue, _ in
-                            sendMessage(["sleepMode": newValue])
-                        }
-                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
-                    Toggle("Aroura Mode", isOn: $arouraMode)
-                        .onChange(of: !arouraMode) { newValue, _ in
-                            sendMessage(["arouraMode": newValue])
-                        }
-                        .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
-                }
-                .onAppear {
-                    // Ensure WCSession is activated
-                    _ = WatchConnectivityManager.shared
-                }
-                .listStyle(.carousel)
+                        //.listStyle(.automatic
+                        //.scrollContentBackground(.hidden)
+                    }
+                    .onAppear {
+                        // Activate the session as soon as this view appears
+                        _ = WatchConnectivityManager.shared
+                    }
+                    //.listRowBackground(Color.clear)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.gray.gradient, for: .tabView)
+        //.frame(maxWidth: .infinity, maxHeight: .infinity)
+        //.containerBackground(.gray.gradient, for: .tabView)
         //.border(Color.yellow, width: 1)
-        .containerBackground(.green.gradient, for: .navigation)
+        .containerBackground(statusColor(connectivityManager.connectionStatus).gradient, for: .navigation)
     }
 }
 private func sendMessage(_ message: [String: Any]) {

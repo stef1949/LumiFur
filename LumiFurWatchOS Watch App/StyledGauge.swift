@@ -49,10 +49,10 @@ struct CurrentViewGauge: View {
     @ObservedObject private var connectivityManager = WatchConnectivityManager.shared
     //@State private var selectedView: Int = 1
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 2)
-                .frame(width: 15, height: 15)
             Text("\(connectivityManager.selectedView)")
-        }
+            .foregroundStyle(.black)
+            .padding()
+            .glassEffect(.regular.tint(.white))
+        
     }
 }

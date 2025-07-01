@@ -12,50 +12,57 @@ import SwiftUI
 import Intents
 import Charts
 
-
 // MARK: - Timeline Provider
 struct Provider: TimelineProvider {
-    // Provides a placeholder view for the widget gallery.
     func placeholder(in context: Context) -> LumiFurEntry {
         LumiFurEntry.placeholder
     }
-    
-    // Provides a snapshot entry for transient situations (e.g., gallery preview).
-    func getSnapshot(in context: Context, completion: @escaping (LumiFurEntry) -> ()) {
-        print("Widget Provider: getSnapshot called")
-        let entry = readDataFromUserDefaults()
-        completion(entry)
+
+    func getSnapshot(in context: Context, completion: @escaping (LumiFurEntry) -> Void) {
+        completion(makeEntry())
     }
-    
-    // Provides the timeline (entries with dates) for the widget.
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        let entry = readDataFromUserDefaults()
-        
-        let nextUpdateIntervalMinutes = 15 // Sensible default, adjust as needed
-        let nextUpdateDate = Calendar.current.date(byAdding: .minute, value: nextUpdateIntervalMinutes, to: Date())!
-        print("Widget Provider: Scheduling next timeline reload after \(nextUpdateIntervalMinutes) minutes.")
-        
-        // Create a timeline with the single current entry and the reload policy
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdateDate))
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<LumiFurEntry>) -> Void) {
+        let entry = makeEntry()
+        let nextDate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(nextDate))
         completion(timeline)
     }
     
     // Helper function to read data from shared UserDefaults
-    private func readDataFromUserDefaults() -> LumiFurEntry {
+    // Consolidated read + fallback logic
+        private func makeEntry() -> LumiFurEntry {
         guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
             print("Widget Provider: Cannot access shared defaults.")
             return LumiFurEntry.placeholder // Return placeholder on error
         }
         
         print("Widget Provider: Reading data from shared UserDefaults.")
+                // Connection
         let isConnected = defaults.bool(forKey: SharedDataKeys.isConnected)
-        print(isConnected ? "Widget Provider: Connected\n" : "Widget Provider: Not connected\n")
-        let connectionStatus = defaults.string(forKey: SharedDataKeys.connectionStatus) ?? "Unknown"
-        let controllerName = defaults.string(forKey: SharedDataKeys.controllerName) // Can be nil
-        print(controllerName ?? "No controller name found")
-        let temperature = defaults.string(forKey: SharedDataKeys.temperature) ?? "--°C"
+        let connectionStatus = defaults.string(forKey: SharedDataKeys.connectionStatus) ?? (isConnected ? "Connected" : "Disconnected")
+                
+                // Controller name fallback: primary key, then lastConnectedPeripheral
+        let controllerName = defaults.string(forKey: SharedDataKeys.controllerName)
+        ?? defaults.string(forKey: SharedDataKeys.controllerName)
+                    ?? "Unknown Device"
+            print(controllerName)
+        // Temperature fallback: live string, then lastKnownTemperature
+        let tempString = defaults.string(forKey: SharedDataKeys.temperature)
+                let temperature: String
+                if let t = tempString, !t.isEmpty {
+                    temperature = t
+                } else if let lastTemp = defaults.object(forKey: SharedDataKeys.temperatureHistory) {
+                    temperature = String(format: "%.1f°C", lastTemp as! CVarArg)
+                } else {
+                    temperature = "--°C"
+                }
+        
         let signalStrength = defaults.integer(forKey: SharedDataKeys.signalStrength) // Defaults to 0 if not found
-        let selectedView = defaults.integer(forKey: SharedDataKeys.selectedView) // Defaults to 0
+        
+        // Selected view fallback
+        let sel: Int? = defaults.object(forKey: SharedDataKeys.selectedView) as? Int
+                let selectedView = sel ?? 1
         
         // Handle default values more gracefully
         let finalSignalStrength = defaults.object(forKey: SharedDataKeys.signalStrength) == nil ? -100 : signalStrength
@@ -63,17 +70,17 @@ struct Provider: TimelineProvider {
         
         // 1) Decode your [TemperatureDataPoint]
         var temperatureHistory: [TemperatureData] = [] // Use TemperatureData type
-        if let data = defaults.data(forKey: SharedDataKeys.temperatureHistory) {
+            if let data = defaults.data(forKey: SharedDataKeys.temperatureHistory) {
             do {
                 temperatureHistory = try JSONDecoder().decode([TemperatureData].self, from: data) // Decode TemperatureData
                 print("Widget Provider: Decoded \(temperatureHistory.count) temperature history points.")
             } catch {
                 // Log the specific decoding error!
-                print("🔴 WIDGET DECODING ERROR for \(SharedDataKeys.temperatureHistory): \(error)")
-                temperatureHistory = [] // Fallback to empty on error
+                print("🔴 WIDGET DECODING ERROR for \(SharedDataKeys.temperature): \(error)")
+                    //temperatureHistory = [] // Fallback to empty on error
             }
         } else {
-                print("Widget Provider: No data found for key \(SharedDataKeys.temperatureHistory)")
+                print("Widget Provider: No data found for key \(SharedDataKeys.temperature)")
             }
         
         return LumiFurEntry(
@@ -310,18 +317,17 @@ struct LargeWidgetView: View {
                             x: .value("Time", element.timestamp),
                             y: .value("Temperature", element.temperature)
                         )
-                        //.foregroundStyle(.red) // Change to blue if preferred.
+                        .foregroundStyle(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                            )
                         .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
                     }
                 }
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.blue, Color.orange, Color.orange]),
-                        startPoint: .bottom,
-                        endPoint: .top
-                    )
-                )
                 //.id(accessoryViewModel.temperatureData.count)
                 .animation(.easeInOut(duration: 0.5), value: entry.temperatureHistory)
                 .chartYScale(domain: .automatic) // Adjust the domain to your expected temperature range.
@@ -531,32 +537,16 @@ func signalStrengthColor(rssi: Int) -> Color {
 
 // MARK: - Widget Definition
 struct LumiFur_Widget: Widget {
-    // Unique identifier for this widget kind
-    //static let kind: String = "com.richies3d.LumiFur.statuswidget" // <<< Use a unique string
-    static let kind: String = SharedDataKeys.widgetKind
-    
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind:LumiFur_Widget.kind, provider: Provider()) { entry in
-            LumiFur_WidgetEntryView(entry: entry)
+    static let kind = SharedDataKeys.widgetKind
+        var body: some WidgetConfiguration {
+            StaticConfiguration(kind: Self.kind, provider: Provider()) { entry in
+                LumiFur_WidgetEntryView(entry: entry)
+            }
+            .configurationDisplayName("LumiFur Status")
+            .description("Monitor your LumiFur device connection and status.")
+            .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         }
-        .configurationDisplayName("LumiFur Status")
-        .description("Monitor your LumiFur device connection and status.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge]) // Choose supported sizes
-        //.contentMarginsDisabled() // Potentially better button placement
     }
-}
-
-// MARK: - Widget Bundle (If you have multiple widgets)
-/*
- @main
- struct LumiFurWidgets: WidgetBundle {
- var body: some Widget {
- LumiFurWidget()
- // Add other widgets here if you create more
- // AnotherWidget()
- }
- }
- */
 
 // MARK: - Previews (For SwiftUI Canvas) (Using improved placeholder)
 struct LumiFur_Widget_Previews: PreviewProvider {
@@ -583,3 +573,4 @@ struct LumiFur_Widget_Previews: PreviewProvider {
          */
     }
 }
+

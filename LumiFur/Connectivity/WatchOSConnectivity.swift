@@ -27,6 +27,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     // Use the updated accessory view model.
     @Published var accessoryViewModel = AccessoryViewModel.shared  // Use the shared instance
     
+    @MainActor
     // MARK: - Initialization
     override private init() {
         self.session = WCSession.default
@@ -81,7 +82,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     // MARK: - Helper to Update Accessory Settings from Message
-    private func updateAccessorySettingsFromMessage(_ message: [String: Any]) {
+    @MainActor private func updateAccessorySettingsFromMessage(_ message: [String: Any]) {
         if let autoBrightness = message["autoBrightness"] as? Bool {
             accessoryViewModel.autoBrightness = autoBrightness
             print("iOS: Updated autoBrightness to \(autoBrightness)")
@@ -128,7 +129,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 }
     }
     // MARK: - WCSessionDelegate Methods
-        
+        @MainActor
         func session(_ session: WCSession,
                      activationDidCompleteWith activationState: WCSessionActivationState,
                      error: Error?) {
@@ -160,7 +161,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.isReachable = reachable
         }
     }
-    
+    @MainActor
     func sessionReachabilityDidChange(_ session: WCSession) {
         print("Reachability changed: \(session.isReachable)")
         DispatchQueue.main.async {
@@ -172,7 +173,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             }
         }
     }
-    
+    @MainActor
     // --- Receiving Data ---
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         print("Received message: \(message)")
@@ -182,7 +183,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.messageSubject.send(message)
         }
     }
-    
+    @MainActor
     func session(_ session: WCSession,
                  didReceiveMessage message: [String : Any],
                  replyHandler: @escaping ([String : Any]) -> Void) {
@@ -221,7 +222,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     // MARK: - iOS Specific Delegate Methods (Included because #if os(iOS) is true)
-    
+    @MainActor
     func sessionDidBecomeInactive(_ session: WCSession) {
         print("WCSession did become inactive")
         DispatchQueue.main.async {
@@ -229,7 +230,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.isReachable = false
         }
     }
-    
+    @MainActor
     func sessionDidDeactivate(_ session: WCSession) {
         print("WCSession did deactivate, reactivating...")
         DispatchQueue.main.async {
