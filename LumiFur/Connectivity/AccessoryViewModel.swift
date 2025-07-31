@@ -756,15 +756,21 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         case .poweredOff:
             newState = .bluetoothOff
             _stopScan()
+            // Reset auto-reconnect flag so when BT comes back, it can attempt reconnect
+            didAttemptAutoReconnect = false
         case .unauthorized:
             newState = .unknown
             logger.error("Bluetooth unauthorized.")
+            // Reset flag in case user fixes authorization
+            didAttemptAutoReconnect = false
         case .unsupported:
             newState = .unknown
             logger.error("Bluetooth unsupported.")
         case .resetting:
             newState = .unknown
             logger.warning("Bluetooth resetting.")
+            // Reset flag as the Bluetooth stack is resetting
+            didAttemptAutoReconnect = false
         case .unknown:
             newState = .unknown
             logger.warning("Bluetooth state unknown.")
@@ -800,7 +806,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             if reconnectCopy, let uuid = uuidToTry {
                 self.logger.info("Auto-reconnect to \(uuid)")
                 self.bleQueue.async { [weak self] in
-                    DispatchQueue.main.async {  self?._connectToStoredUUID(uuid)}
+                    self?._connectToStoredUUID(uuid)
                 }
             }
             else if scanCopy, self.connectionState == .disconnected {
@@ -812,7 +818,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private func _connectToStoredUUID(_ uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             logger.error("Invalid UUID string for reconnect: \(uuidString)")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async { 
+                self.connectionState = .disconnected 
+                self._scanForDevices()
+            }
             return
         }
         logger.info("Retrieving peripheral for auto-reconnect: \(uuidString) on bleQueue")
@@ -823,7 +832,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             _connect(to: device)
         } else {
             logger.warning("Peripheral \(uuidString) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async { 
+                self.connectionState = .disconnected
+                self._scanForDevices()
+            }
         }
     }
     
@@ -991,7 +1003,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 // Re-enable auto-reconnect attempt flag if it was specific to one session
                 self.didAttemptAutoReconnect = false
                 bleQueue.async { [uuidToReconnect] in
-                    DispatchQueue.main.async { AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect) }
+                    AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect)
                 }
             } else if !wasManual {
                 self.logger.info("Not auto-reconnecting (either disabled or no last UUID); starting scan.")
@@ -1548,7 +1560,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             _connect(to: device)
         } else {
             logger.warning("Stored peripheral \(uuid) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async { 
+                self.connectionState = .disconnected
+                self._scanForDevices()
+            }
         }
     }
     
