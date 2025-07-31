@@ -29,33 +29,58 @@ let configs = SharedOptions.protoConfigOptions
 @MainActor
 class iOSViewModel: ObservableObject {
     @Published var receivedCommand: String = "None"
+    // We can keep this for debugging, but it's not essential for the core logic anymore.
     @Published var receivedFaceFromWatch: String? = nil
+    // This provides a link to the single source of truth for your app's state.
+    @ObservedObject var accessoryViewModel = AccessoryViewModel.shared
     private var cancellables = Set<AnyCancellable>()
-
+    
+    // ✅ REPLACE YOUR OLD init() WITH THIS ONE
     init() {
-        // Skip WatchConnectivity subscription in SwiftUI previews for faster canvas rendering
-        let isPreview =
-            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-            == "1"
+        // This check is good practice to avoid running connectivity code in SwiftUI Previews.
+        let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         if isPreview { return }
-        // ... (Subscription logic as before) ...
+        
+        // Subscribe to messages from the WatchConnectivityManager
         WatchConnectivityManager.shared.messageSubject
-            .receive(on: DispatchQueue.main)
+            .receive(on: DispatchQueue.main) // Ensure UI updates happen on the main thread
             .sink { [weak self] messageData in
-                // ... (message handling logic as before) ...
-                guard let self = self,
-                    let command = messageData["command"] as? String
-                else { return }
-                self.receivedCommand = command
-                if command == "setFace",
-                    let face = messageData["faceValue"] as? String
-                {
-                    self.receivedFaceFromWatch = face
+                // Use a guard to safely unwrap `self` and avoid retain cycles
+                guard let self = self else { return }
+                
+                // Check if the command is "setFace"
+                if let command = messageData["command"] as? String, command == "setFace" {
+                    self.receivedCommand = command // Update for debugging
+                    
+                    // ✅ Look for the "view" integer key sent from the watch
+                    if let view = messageData["view"] as? Int {
+                        print("iOS ViewModel: Received 'setFace' command from watch for view: \(view)")
+                        
+                        // Call the accessory view model to update the app's state.
+                        // This will update the iOS UI and send the command to the BLE device.
+                        self.accessoryViewModel.setView(view)
+                        
+                        // Clear the old debugging property
+                        self.receivedFaceFromWatch = nil
+                        
+                    } else {
+                        // This block is for backwards compatibility or debugging the old format.
+                        if let face = messageData["faceValue"] as? String {
+                            print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
+                            self.receivedFaceFromWatch = face // For debugging
+                        } else {
+                            print("iOS ViewModel: Received 'setFace' command but 'view' key was missing or not an Int.")
+                        }
+                    }
                 } else {
-                    self.receivedFaceFromWatch = nil  // Clear for other commands or errors
+                    // Handle other potential commands from the watch
+                    if let command = messageData["command"] as? String {
+                        self.receivedCommand = command
+                        print("iOS ViewModel: Received other command: \(command)")
+                    }
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &cancellables) // Store the subscription to keep it alive
     }
 }
 
@@ -233,6 +258,64 @@ struct RootView2: View {
 
 // MARK: ContentView
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var accessoryViewModel = AccessoryViewModel()
+    
+    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
+    @AppStorage("fancyMode") private var fancyMode: Bool = false
+    @AppStorage("autoBrightness") private var autoBrightness = true
+    @AppStorage("accelerometer") private var accelerometer = true
+    @AppStorage("sleepMode") private var sleepMode = true
+    @AppStorage("auroraMode") private var auroraMode = true
+    @AppStorage("customMessage") private var customMessage = false
+    //@AppStorage("charts") var isChartsExpanded = false
+    @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
+    @State var auroraModeEnabled = false
+    @State private var customMessageText: String = ""
+    @State private var showCustomMessagePopup = false
+    
+    @State private var isLedArrayExpanded: Bool = false
+    @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
+
+    @State private var errorMessage: String?
+    
+    @State private var selectedSidebarItem: SidebarItem? = .dashboard
+    @State private var showSplash = true  // Local state to control the splash screen appearance.
+    
+    @Environment(\.colorScheme) var colorScheme  // Colot Scheme
+    var overlayColor: Color {
+        colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
+    }
+    
+    @State private var matrixStyle: MatrixStyle = .array // The real source of truth
+    
+    @Namespace var namespace
+    
+    
+    //Protogen image variables
+    //@State private var yOffset: CGFloat = 0
+    //@State private var animationDuration: Double = 1.0
+    
+    //@State private var selectedConnection: Connection = .bluetooth
+    //@State private var selectedMatrix: SettingsView.Matrixstyle = .array
+
+    fileprivate let twoColumnGrid = [
+        GridItem(.adaptive(minimum: 125, maximum: 250))
+    ]
+    private let twoRowOptionGrid = [
+        GridItem(.adaptive(minimum: 25, maximum: 250))
+    ]
+    @State private var dotMatrices: [[Bool]] = Array(
+        repeating: Array(repeating: false, count: 64),
+        count: 32
+    )
+    
+    //Connectivity Options
+    enum Connection: String, CaseIterable, Identifiable {
+        case bluetooth, wifi, matter, z_wave
+        var id: Self { self }
+    }
+    
     enum SidebarItem: String, CaseIterable, Hashable, Identifiable {
         case dashboard = "Dashboard"
         // Add more cases here, e.g.:
@@ -248,23 +331,10 @@ struct ContentView: View {
             }
         }
     }
-    @State private var selectedSidebarItem: SidebarItem? = .dashboard
-    // Use @AppStorage to persist a flag in UserDefaults.
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
-    @State private var showSplash = true  // Local state to control the splash screen appearance.
-    @AppStorage("fancyMode") private var fancyMode: Bool = false
-
-    @Environment(\.colorScheme) var colorScheme  // Colot Scheme
-    var overlayColor: Color {
-        colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
-    }
-
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var showSignalView = false
-    @State var auroraModeEnabled = false
+    
     // Taptic Engine
     @State private var engine: CHHapticEngine?
-
+    
     // MARK: — Haptics Helpers
     func prepareHaptics() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
@@ -305,38 +375,6 @@ struct ContentView: View {
             print("Haptics play error: \(error.localizedDescription)")
         }
     }
-
-    @State private var isLedArrayExpanded: Bool = false
-    @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
-    @StateObject private var accessoryViewModel = AccessoryViewModel()
-
-    //Connectivity Options
-    enum Connection: String, CaseIterable, Identifiable {
-        case bluetooth, wifi, matter, z_wave
-        var id: Self { self }
-    }
-    //@State private var selectedConnection: Connection = .bluetooth
-    @State private var selectedMatrix: SettingsView.Matrixstyle = .array
-
-    fileprivate let twoColumnGrid = [
-        GridItem(.adaptive(minimum: 125, maximum: 250))
-    ]
-    private let twoRowOptionGrid = [
-        GridItem(.adaptive(minimum: 25, maximum: 250)),
-        GridItem(.adaptive(minimum: 25, maximum: 250)),
-    ]
-    @State private var dotMatrices: [[Bool]] = Array(
-        repeating: Array(repeating: false, count: 64),
-        count: 32
-    )
-    @State private var errorMessage: String?
-
-    //Protogen image variables
-    //@State private var yOffset: CGFloat = 0
-    //@State private var animationDuration: Double = 1.0
-
-    
-    @AppStorage("charts") var isChartsExpanded = false
     
     var body: some View {
         #if os(macOS)
@@ -399,8 +437,7 @@ struct ContentView: View {
                 //Divider()
                 NavigationStack {
                     SettingsView(
-                        bleModel: accessoryViewModel,
-                        selectedMatrix: $selectedMatrix
+                        bleModel: accessoryViewModel, selectedMatrix: $matrixStyle
                     )
                     .navigationTitle("Settings")
                 }
@@ -413,6 +450,7 @@ struct ContentView: View {
                 .tag(SidebarItem.settings)
                 .badge("!")
             }
+            .navigationTransition(.zoom(sourceID: "expand", in: namespace))
             .onAppear {
                 if selectedSidebarItem == .dashboard {
                     prepareHaptics()
@@ -448,54 +486,49 @@ struct ContentView: View {
     
     @ViewBuilder
     private var detailContent: some View {
-        @AppStorage("charts") var isChartsExpanded = false
+        //@AppStorage("charts") var isChartsExpanded = false
+        @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
         ZStack {
             if selectedSidebarItem == .dashboard {
                 VStack {
-                    headerSection
+                    HeaderView(
+                        connectionState: accessoryViewModel.connectionState,
+                        connectionStatus: accessoryViewModel.connectionStatus,
+                        signalStrength: accessoryViewModel.signalStrength
+                    )
+                    optionGridSection
                     ledArraySection
-                        optionGridSection
-                        .zIndex(1)
-                        FaceGridSection(
-                            selectedView: accessoryViewModel.selectedView,
-                            onSetView: { accessoryViewModel.setView($0) },
-                            auroraModeEnabled: auroraModeEnabled,
-                            items: SharedOptions.protoActionOptions3
-                        )
-                        //.geometryGroup()
-                        //.compositingGroup()
-                        .zIndex(0)
-                        // Chart section expands/collapses based on shared state
-                        ChartView(isExpanded: $isChartsExpanded)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                    isChartsExpanded.toggle()
-                                }
-                            }
-                            .glassEffect(
-                                .regular.interactive(),
-                                in: RoundedRectangle(cornerRadius: 32)
-                            )
-                            .frame(maxHeight: isChartsExpanded ? 160 : 40)
-                            //.padding(.horizontal)
-                            .padding()
-                        .animation(
-                            .spring(response: 0.4, dampingFraction: 0.7),
-                               value: isChartsExpanded
-                          )
-    // Only use the inner animation within the ChartView and the onTapGesture. Remove the outer .animation from here to prevent animation conflicts.
+                    //.border(.green)
+                   
+                    
+                    FaceGridSection(
+                        selectedView: accessoryViewModel.selectedView,
+                        onSetView: { accessoryViewModel.setView($0) },
+                        auroraModeEnabled: auroraModeEnabled
+                        //items: SharedOptions.protoActionOptions3
+                    )
+                    
+                    .zIndex(-1)
+                    
+                    ChartView(isExpanded: $isChartsExpanded, accessoryViewModel: accessoryViewModel)
+                        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+                        .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                    // This animation smoothly handles the frame height change.
+                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
                     
                 }
                 .onAppear(perform: prepareHaptics)
                 .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in
                     handleWatchFaceSelection(face: newFace)
                 }
-            } else {
-                Text("Select an item from the sidebar")
-                    .foregroundStyle(.secondary)
-            }
-            
-            if !hasLaunchedBefore && showSplash {
+        } else {
+            Text("Select an item from the sidebar")
+                .foregroundStyle(.secondary)
+        }
+        
+        if !hasLaunchedBefore && showSplash {
                 SplashView(showSplash: $showSplash)
                     .transition(
                         .asymmetric(
@@ -507,36 +540,40 @@ struct ContentView: View {
         }
         //.ignoresSafeArea(.keyboard, edges: .all)
     }
-
+/*
     private var headerSection: some View {
-        HStack {
+        //HStack {
+            /*
             Image("LumiFurFrontBottomSide")
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: 150, maxHeight: 150)
                 .drawingGroup()  // renders once into a bitmap then reuses it
-                .id("static‑background")
-            Spacer()
-            VStack(alignment: .trailing, spacing: 6.0) {
+                */
+        
+            HStack {
                 Text("LumiFur")
                     //.font(.largeTitle)
                     .font(Font.custom("Meloriac", size: 35))
                     .frame(width: 150)
-                    //.fontDesign(.monospaced)
-                    .padding(.top, 5)
-                    .drawingGroup()  // renders once into a bitmap then reuses it
-                    .id("static‑background")
+                    .border(.purple)
+                
+                Spacer()
+                
                 statusSection
             }
-        }
-        .frame(height: 100)
+      //  }
+        //.frame(height: 100)
         .padding(.horizontal)
     }
+    */
+/*
     private var statusSection: some View {
         HStack(spacing: 8) {
             if showSignalView && accessoryViewModel.isConnected {
                 SignalStrengthView(rssi: accessoryViewModel.signalStrength)
-                    .transition(.move(edge: .trailing))
+                    .transition(.move(edge: .trailing).combined(with: .opacity)) // Be explicit
+                        
                     .padding(.leading, 5)
 
             }
@@ -569,6 +606,7 @@ struct ContentView: View {
         }
         .padding(10)
         .glassEffect()
+        //.border(.yellow)
         //.background(.ultraThinMaterial)
 
         /*
@@ -580,8 +618,8 @@ struct ContentView: View {
          )
          .clipShape(RoundedRectangle(cornerRadius: 10))
          */
-
     }
+    */
     private var ledArraySection: some View {
         DisclosureGroup("LED Array", isExpanded: $isLedArrayExpanded) {
             if isLedArrayExpanded {
@@ -600,7 +638,7 @@ struct ContentView: View {
         }
         .padding(.horizontal)
         .accentColor(.gray)
-        .ignoresSafeArea()
+        //.ignoresSafeArea()
         .scrollContentBackground(.hidden)
         //.background(overlayColor)
     }
@@ -615,15 +653,6 @@ struct ContentView: View {
         green: 172.0 / 255,
         blue: 120.0 / 255
     )
-
-    @AppStorage("autoBrightness") private var autoBrightness = true
-    @AppStorage("accelerometer") private var accelerometer = true
-    @AppStorage("sleepMode") private var sleepMode = true
-    @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
-
-    @State private var customMessageText: String = ""
-    @State private var showCustomMessagePopup = false
 
     // Define data structure for options
     struct OptionConfig: Identifiable {
@@ -708,7 +737,6 @@ struct ContentView: View {
                         // For now, I've kept the print and commented viewModel lines in the closures.
                     }
                 }
-
                 // Custom Message Toggle - handled separately due to unique popover logic
                 OptionToggleView(
                     title: "Custom Message",
@@ -737,11 +765,11 @@ struct ContentView: View {
             }
             .padding(.horizontal)  // Apply padding to the HGrid content
         }
-        .frame(maxHeight: 80)
-        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: 80)
+        //.scrollContentBackground(.hidden)
         .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
         // If you want content to extend beyond scroll view bounds, set true.
-        //.ignoresSafeArea(.keyboard, edges: .all)  // Keep this for keyboard behavior
+        .ignoresSafeArea(.keyboard, edges: .all)  // Keep this for keyboard behavior
     }
 
     // Extracted Popover View for clarity
@@ -776,7 +804,7 @@ struct ContentView: View {
         .frame(width: 300, height: 140)  // Slightly increased height for better spacing
         //.glassEffect(.regular.tint(.blue))
     }
-
+    
     // MARK: –––––––––––––––––––––––––––––––––
     // 1) Standalone grid view
     struct FaceGridSection: View {
@@ -784,10 +812,10 @@ struct ContentView: View {
         let selectedView: Int
         let onSetView: (Int) -> Void  // Callback to update the selection
         let auroraModeEnabled: Bool
-        let items: [SharedOptions.ProtoAction]  // Pass the data directly
-
+        //let items: [SharedOptions.ProtoAction]  // Pass the data directly
+        
         @Environment(\.colorScheme) private var colorScheme
-
+        
         // Computed once per body re-evaluation of FaceGridSection
         private var lightColor: Color { colorScheme == .dark ? .white : .black }
         private var darkColor: Color {
@@ -795,74 +823,94 @@ struct ContentView: View {
         }
         // Make grid configuration static so it's not re-created
         private static let twoColumnGrid = [
-            GridItem(.adaptive(minimum: 125, maximum: 250))
+            GridItem(.adaptive(minimum: 100, maximum: 250))
         ]
         
+        /*
         // The tap action now uses the passed-in callback and selectedView
         private func faceTap(_ faceIndex: Int) {
             guard faceIndex != selectedView else { return }
             onSetView(faceIndex)
         }
+        */
+        
+        // Access the static property directly and use .map to convert it.
+        @State private var items: [FaceItem] = SharedOptions.protoActionOptions3.map { FaceItem(content: $0) }
+        
+        
+        // --- The rest of your view remains the same ---
+        @State private var selectedItemID: FaceItem.ID?
         
         @Namespace private var glassNamespace
         
         var body: some View {
+            /*
+             // --- DEBUG TEXT ---
+             Text("Number of items: \(items.count)")
+             .foregroundColor(.red)
+             .font(.headline)
+             .padding()
+             */
             GlassEffectContainer {
-                HStack {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
-                        ForEach(items.indices, id: \.self) { idx in
-                            let item = items[idx]
+                        // 2. ForEach loops over identifiable data, not indices.
+                        ForEach(items) { item in
                             FaceCellView(
-                                action: faceTap,
-                                actionData: item,
-                                index: idx + 1,
-                                isSelected: selectedView == idx + 1,
+                                // 3. Pass the item and selection state cleanly.
+                                item: item,
+                                isSelected: selectedItemID == item.id,
                                 auroraModeEnabled: auroraModeEnabled,
                                 overlayColor: lightColor,
                                 backgroundColor: darkColor,
-                                namespace: glassNamespace
-                            )
-                            .equatable()
-                            .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                                content
-                                    // fade fully when off-screen
-                                    .opacity(phase.isIdentity ? 1 : 0)
-                                    // shrink a bit
-                                    .scaleEffect(phase.isIdentity ? 1 : 0.75)
-                                    // optional blur
-                                    .blur(radius: phase.isIdentity ? 0 : 10)
+                                namespace: glassNamespace,
+                                
+                                // The action now provides the item directly.
+                            ) {tappedItem in
+                                // Update selection state using the stable ID
+                                selectedItemID = tappedItem.id
+                                // 2. Find the 0-based index of the tapped item in our array.
+                                if let index = items.firstIndex(where: { $0.id == tappedItem.id }) {
+                                    
+                                    // 3. Convert to the 1-based command index that the hardware expects.
+                                    let commandIndex = index + 1
+                                    
+                                    // 4. Call the parent's `onSetView` function to send the command.
+                                    onSetView(commandIndex)
+                                    
+                                    // Optional but recommended: Add a print statement for debugging.
+                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")                            }
                             }
-                        
-                            //.ignoresSafeArea(.keyboard, edges: .all)
+                            .equatable() // This is good, keep it!
                         }
                     }
-                    //.ignoresSafeArea(.keyboard, edges: .all)
                     .padding(.horizontal)
+                    //.scrollContentBackground(.hidden)
+                    //.border(.red)
                 }
                 .scrollDismissesKeyboard(.automatic)
-                .scrollClipDisabled(false)
-                .clipped()                     // 2) clip any overflowing cells
-                    //.frame(maxHeight: 400)       // e.g. let it grow only so big
-                    //.layoutPriority(1)           // then claim leftover space
-                .scrollContentBackground(.hidden)
-                    //.frame(maxHeight: .infinity)
-                //.ignoresSafeArea(.keyboard, edges: .all)
-                .border(.red)
+            }
+            // This watches for external changes (e.g., from the watch) and updates the local UI.
+            .onChange(of: selectedView) { _, newViewIndex in
+                let modelIndex = newViewIndex - 1
+                if items.indices.contains(modelIndex) {
+                    selectedItemID = items[modelIndex].id
+                } else {
+                    selectedItemID = nil // Deselect if index is out of bounds
                 }
             }
         }
     }
-
+    
     // MARK: - Helper Functions (Place handleWatchFaceSelection HERE)
-
+    
     /// Handles processing the face selection received from the watch.
     private func handleWatchFaceSelection(face: String?) {  // <--- DEFINITION INSIDE ContentView
         guard let selectedFace = face else {
             print("Watch face selection cleared or invalid.")
             return
         }
-
+        
         // Find the index where the enum's String == selectedFace
         if let index = SharedOptions.protoActionOptions3.firstIndex(where: {
             action in
@@ -1074,112 +1122,6 @@ struct ContentView: View {
      */
 }
 
-struct ChartView: View {
-    @Binding var isExpanded: Bool
-    @StateObject private var accessoryViewModel = AccessoryViewModel()
-    //@Environment(\.tabViewBottomAccessoryPlacement)
-    //var placement
-
-    // 1) Move this up in your View
-    private var downsampledTempData: [TemperatureData] {
-        // cut off 3 minutes ago
-        let cutoff = Date().addingTimeInterval(-3 * 60)
-        // only the recent bits
-        let recent = accessoryViewModel.temperatureData
-            .filter { $0.timestamp >= cutoff }
-        // cap at ~100 points
-        let strideSize = max(1, recent.count / 100)
-        // take every Nth element
-        return recent.enumerated().compactMap { idx, el in
-            idx % strideSize == 0 ? el : nil
-        }
-    }
-
-    @State private var showDetail = false
-
-    @State private var samples: [TemperatureData] = []
-
-    var body: some View {
-        VStack(spacing: 8) {
-            // Header with expand/collapse toggle
-            HStack {
-                Text("Temperature")
-                    .font(.headline)
-                Spacer()
-                Image(systemName: "chevron.up")
-                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                    .animation(.easeInOut, value: isExpanded)
-            }
-            .padding(.horizontal)
-            //.padding(.vertical, 6)
-            //.background(.ultraThinMaterial)
-            //.clipShape(RoundedRectangle(cornerRadius: 16))
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    isExpanded.toggle()
-                }
-            }
-            // Animated chart container
-            VStack {
-                Chart {
-                    ForEach(samples) { element in
-                        LineMark(
-                            x: .value("Time", element.timestamp),
-                            y: .value("℃", element.temperature)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                    }
-                }
-                .chartXScale(
-                    domain: Date().addingTimeInterval(-3 * 60)...Date()
-                )
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .minute)) { value in
-                        AxisValueLabel(format: .dateTime.minute().second())
-                            .font(.caption2)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: .automatic) { axisValue in
-                        AxisValueLabel {
-                            if let temp = axisValue.as(Double.self) {
-                                Text(String(format: "%.0f°C", temp))
-                                    .font(.caption2)
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(maxHeight: isExpanded ? 160 : 0)
-            .clipped()
-            .opacity(isExpanded ? 1 : 0)
-            .animation(
-                .spring(response: 0.4, dampingFraction: 0.7),
-                value: isExpanded
-            )
-        }
-        .padding()
-        .padding(.bottom, 5)
-        .scrollContentBackground(.hidden)
-        // Only update samples when expanded
-        .onReceive(
-            accessoryViewModel.temperatureChartPublisher
-                .throttle(
-                    for: .seconds(1.5),
-                    scheduler: DispatchQueue.main,
-                    latest: true
-                )
-        ) { _ in
-            guard isExpanded else { return }
-            withAnimation(.easeInOut(duration: 1.5)) {
-                self.samples = downsampledTempData
-            }
-        }
-    }
-}
-
 struct ledArraySection: View {
     var body: some View {
         Text("Hello World!")
@@ -1196,70 +1138,80 @@ struct ChartEntryAnimation: ViewModifier {
             .animation(.easeInOut(duration: 0.3), value: isVisible)
     }
 }
-// MARK: – FaceCellView
 
+// MARK: – FaceCellView
 // MARK: –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 // 2) Pure, Equatable cell
 struct FaceCellView: View, Equatable {
-    let action: (Int) -> Void
-    let actionData: SharedOptions.ProtoAction
-    let index: Int
+    // --- PROPERTIES ---
+    // 1. The data model is now a single, immutable object.
+    let item: FaceItem
+    
+    // All other state and configuration properties remain.
     let isSelected: Bool
     let auroraModeEnabled: Bool
     let overlayColor: Color
     let backgroundColor: Color
-    let namespace: Namespace.ID  // <-- inject this from your parent view
-
-    // Haptic feedback generator stored to avoid reinitialization on every tap HEAVY for easy identification when wearing fursuit
-    @State private var feedbackGenerator = UIImpactFeedbackGenerator(
-        style: .heavy
-    )
-
-    // 2a) compare _everything_ that can affect rendering:
+    let namespace: Namespace.ID
+    
+    // 2. The action closure now passes back the entire item. This is more robust.
+    let action: (FaceItem) -> Void
+    
+    
+    // This is well-implemented, no changes needed. It's correctly a @State
+    // property to persist it for the view's lifetime.
+    @State private var feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
+    
+    // --- EQUATABLE CONFORMANCE ---
+    // 3. The comparison is now cleaner and more correct.
+    // It relies on the FaceItem's own Equatable conformance.
     static func == (lhs: FaceCellView, rhs: FaceCellView) -> Bool {
-        return lhs.index == rhs.index
-            && lhs.isSelected == rhs.isSelected
-            && lhs.actionData == rhs.actionData
-            && lhs.auroraModeEnabled == rhs.auroraModeEnabled
-            && lhs.overlayColor == rhs.overlayColor
-            && lhs.backgroundColor == rhs.backgroundColor
+        lhs.item == rhs.item &&
+        lhs.isSelected == rhs.isSelected &&
+        lhs.auroraModeEnabled == rhs.auroraModeEnabled &&
+        lhs.overlayColor == rhs.overlayColor &&
+        lhs.backgroundColor == rhs.backgroundColor
     }
+    
     var body: some View {
         Button {
             // Prepare and trigger haptic feedback
             feedbackGenerator.prepare()
             feedbackGenerator.impactOccurred()
-            // Execute the tap action
-            action(index)
+            
+            // 4. The action now passes back the stable 'item' object, not the fragile 'index'.
+            action(item)
+            
         } label: {
-            switch actionData {
+            // 5. We switch on the item's content, not a separate property.
+            switch item.content {
             case .emoji(let e):
                 Text(e)
                     .font(.system(size: 40))
-                    .multilineTextAlignment(.center)
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        content.blur(radius: phase.isIdentity ? 0 : 5)
+                    }
             case .symbol(let s):
                 Image(systemName: s)
                     .resizable()
                     .scaledToFit()
                     .padding(40)
-                    .multilineTextAlignment(.center)
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        content.blur(radius: phase.isIdentity ? 0 : 5)
+                    }
             }
         }
+        //.aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: 160, maxHeight: 160)
         .aspectRatio(1, contentMode: .fit)
-        .frame(minWidth: 80, maxWidth: 160, minHeight: 80, maxHeight: 160)
-        .aspectRatio(1, contentMode: .fit)
-        .controlSize(.large)  // optional: adjust padding & font
-        //.buttonStyle(.glass)                                 // use Apple’s new Liquid Glass button
+        // 6. CRITICAL: Use the item's stable 'id' for the matched geometry effect.
+        // This ensures animations are always correct, even if the list is reordered.
+        .glassEffectID(item.id, in: namespace)
         .glassEffect(
             .regular.tint(isSelected ? .primary : .clear)
-                .interactive(),
-            in: RoundedRectangle(cornerRadius: 25),
-            isEnabled: true
+            .interactive(),
+            in: RoundedRectangle(cornerRadius: 25)
         )
-        .glassEffectID(index, in: namespace)  // Matched‐geometry ID for animating between selections
-        //.tint(isSelected ? backgroundColor : overlayColor)  // Tint the whole thing (material + content) based on isSelected
-        //.ignoresSafeArea(.keyboard, edges: .all)
-        //.compositingGroup()
     }
 }
 
@@ -1299,1062 +1251,6 @@ struct FaceCellView: View, Equatable {
  return colors.randomElement() ?? .clear
  }
  */
-// MARK: SettingsView
-
-struct SettingsView: View {
-
-    // Using @AppStorage to persist each option's state.
-    @AppStorage("fancyMode") private var fancyMode = false
-    @AppStorage("autoBrightness") var autoBrightness = true
-    @AppStorage("accelerometer") var accelerometer = true
-    @AppStorage("sleepMode") var sleepMode = true
-    @AppStorage("arouraMode") var arouraMode = true
-    @AppStorage("customMessage") var customMessage = false
-
-    @State private var scanButtonTapped = false
-    @State private var fontSize: CGFloat = 15
-    @State private var showLineNumbers = false
-    @State private var showPreview = true
-
-    @ObservedObject var bleModel: AccessoryViewModel
-
-    //ObservedObject var toggledStates: ContentView
-    @State private var showAdvanced = false
-    @State private var selectedUnits: TempUnit = .℃
-    @Binding var selectedMatrix: Matrixstyle
-    @Environment(\.repositoryConfig) private var config  // Still read config here
-
-    @StateObject private var releaseViewModel = ReleaseViewModel()
-
-    // MODIFIED BINDING
-    private var autoBrightnessBindingWithAnimation: Binding<Bool> {
-        Binding(
-            get: { bleModel.autoBrightness },
-            set: { newValue in
-                // Wrap the state change in withAnimation
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    bleModel.autoBrightness = newValue
-                }
-                // The didSet in bleModel.autoBrightness will handle writing to characteristic
-            }
-        )
-    }
-
-    //Connectivity Options
-    enum Connection: String, CaseIterable, Identifiable {
-        case bluetooth, wifi, matter
-        var id: Self { self }
-    }
-    //Matrix Options
-    enum Matrixstyle: String, CaseIterable, Identifiable {
-        case array, dot, wled
-        var id: Self { self }
-    }
-    enum TempUnit: String, CaseIterable, Identifiable {
-        case ℃, ℉
-        var id: Self { self }
-    }
-
-    // State for Scan button animation
-    @State private var isScanningForButton = false  // Separate state for button animation trigger
-    @State private var isConnectingButton = false  // Separate state for button
-    @Environment(\.colorScheme) var colorScheme
-    var overlayColor: Color {
-        colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
-    }
-    @State private var isLedArrayExpanded: Bool = false
-    var body: some View {
-
-        NavigationStack {
-            List {
-
-                Section {
-                    UnifiedConnectionView(
-                        accessoryViewModel:
-                            bleModel /*, overlayColor: overlayColor)*/
-                    )
-                }
-                /*
-                 // Section 1: Connection Status
-                 connectionStatusSection
-                 // Section 2: Device Connection (Dynamic Content)
-                 if bleModel.isConnected {
-                 connectedDeviceSection
-                 } else {
-                 discoveredDevicesSection
-                 if !bleModel.previouslyConnectedDevices.isEmpty {
-                 previouslyConnectedSection
-                 .transition(.opacity.combined(with: .slide))
-                 }
-                 }
-                 */
-                // Section 3: Regional Settings
-                if bleModel.isConnected {
-                    NavigationLink {
-                        OTAUpdateView(viewModel: bleModel)  // Destination view
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.up.circle")
-                            Text("Update Controller")
-                        }
-                    }
-                    // Same styling as other NavLink rows if desired
-                    .listRowInsets(
-                        EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10)
-                    )
-                    .transition(.opacity.combined(with: .slide))
-                }
-                configSection
-                // Section 4: Matrix Configuration
-                matrixSection
-                // Section 5: Advanced Settings
-                advancedSettingsSection
-                // Section 6: More Options
-                aboutSection
-                releaseNotesSection
-            }
-            .animation(.easeInOut, value: bleModel.isConnected)
-            //.animation(.easeInOut, value: bleModel.previouslyConnectedDevices) // Watch array changes
-            .animation(.easeInOut, value: bleModel.discoveredDevices)  // Watch array changes
-            .animation(.easeInOut, value: bleModel.connectingPeripheral)  // Watch connecting state
-            //.listStyle(.insetGrouped)
-            //.listRowBackground(Color.blue)
-            //.background(Color(UIColor.systemGray6))
-            .scrollContentBackground(.hidden)
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.automatic)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    // Consider moving Info link into the About section?
-                    NavigationLink(destination: InfoView()) {
-                        Image(systemName: "info.circle")
-                    }
-                }
-            }
-            /*
-             .toolbar {
-             ToolbarItem(placement: .navigationBarTrailing) {
-             NavigationLink(destination: InfoView()) {
-             Image(systemName: "info.circle")
-             }
-             }
-             }
-             */
-            .alert("Connection Error", isPresented: $bleModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(bleModel.errorMessage)
-            }
-            // Refresh list content when connection state changes
-            .id(bleModel.isConnected)
-            // Start scanning immediately if BT is ready and not connected
-            .task {
-                // Use config directly from environment when calling load methods
-                // Only fetch if needed
-                if releaseViewModel.appReleases.isEmpty
-                    && !releaseViewModel.isLoadingAppReleases
-                {
-                    await releaseViewModel.loadAppReleases(
-                        owner: config.appRepoName,  // Get from config
-                        repo: config.appRepoName  // Get from config
-                    )
-                }
-                if releaseViewModel.controllerReleases.isEmpty
-                    && !releaseViewModel.isLoadingControllerReleases
-                {
-                    await releaseViewModel.loadControllerReleases(
-                        owner: config.controllerRepoOwner,  // Get from config
-                        repo: config.controllerRepoName  // Get from config
-                    )
-                }
-            }
-            .onAppear {
-                if bleModel.isBluetoothReady && !bleModel.isConnected {
-                    // Don't trigger button animation on initial appear scan
-                    bleModel.scanForDevices()
-                }
-            }
-        }
-    }
-    // MARK: - About Section (New)
-    private var aboutSection: some View {
-        Section("About") {
-            HStack {
-                Text("App Version")
-                Spacer()
-                Text(AppInfo.versionDisplay).foregroundColor(.secondary)
-            }
-            // Read directly from environment config here
-            HStack {
-                Text("LumiFur Controller Firmware")
-                Spacer()
-                Text(bleModel.firmwareVersion)
-                    .foregroundColor(.secondary)
-            }
-            .opacity(bleModel.isConnected ? 1 : 0.5)
-        }
-    }
-    // MARK: - Connection Section
-    @State var animateSymbol = false
-    var connectionSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Section {
-                if !bleModel.isConnected {
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            self.scanButtonTapped = true
-                            bleModel.scanForDevices()
-                            animateSymbol.toggle()
-                        }) {
-                            if #available(iOS 18.0, *) {
-                                Label(
-                                    "Scan for Devices",
-                                    systemImage: "arrow.clockwise"
-                                )
-                                .symbolEffect(.rotate, value: animateSymbol)
-                            } else {
-                                Label(
-                                    "Scan for Devices",
-                                    systemImage: "arrow.clockwise"
-                                )
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        onChange(of: bleModel.isScanning) { _, isScanningNow in
-                            if !isScanningNow {
-                                scanButtonTapped = false  // Reset when scanning stops
-                            }
-                        }
-                        .onChange(of: bleModel.isConnected) {
-                            _,
-                            isConnectedNow in
-                            if isConnectedNow {
-                                scanButtonTapped = false  // Reset if connected
-                            }
-                        }
-                        Spacer()
-                    }
-                }
-                deviceList
-            }
-        }
-    }
-
-    var deviceList: some View {
-        Group {
-            if bleModel.isConnected, let device = bleModel.connectedDevice {
-                AnyView(ConnectedDeviceView(peripheral: device))
-            } else {
-                AnyView(
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Discovered Devices Section
-                        ForEach(bleModel.discoveredDevices) { device in
-                            Button(action: {
-                                bleModel.connect(to: device)
-                            }) {
-                                HStack {
-                                    Text(device.name)
-                                    Spacer()
-                                    SignalStrengthView(
-                                        rssi: bleModel.signalStrength
-                                    )
-                                    if bleModel.connectingPeripheral?.id
-                                        == device.id
-                                    {
-                                        ProgressView()
-                                    }
-                                }
-                            }
-                            .disabled(bleModel.isConnecting)
-                        }
-
-                        // Previously Connected Devices Section
-                        if !bleModel.previouslyConnectedDevices.isEmpty {
-                            Text("Previously Connected Devices")
-                                .font(.headline)
-                                .padding(.top)
-
-                            ForEach(bleModel.previouslyConnectedDevices) {
-                                storedDevice in
-                                Button(action: {
-                                    bleModel.connectToStoredPeripheral(
-                                        storedDevice
-                                    )
-                                }) {
-                                    HStack {
-                                        Text(storedDevice.name)
-                                        Spacer()
-                                        Image(
-                                            systemName: "clock.arrow.circlepath"
-                                        )
-                                    }
-                                }
-                                .disabled(bleModel.isConnecting)
-                            }
-                        }
-                    }
-                    .padding()
-                )
-            }
-        }
-    }
-
-    var advancedSettings: some View {
-        Section {
-            Toggle("Show Advanced Settings", isOn: $showAdvanced)
-
-            if showAdvanced {
-                Toggle("Fancy Mode", isOn: $fancyMode)
-                    .toggleStyle(SwitchToggleStyle())
-
-                NavigationLink("Connection Parameters") {
-                    AdvancedSettingsView(bleModel: bleModel)
-                }
-                Button("Reset to Defaults") {
-                    // Handle reset logic here
-                    //resetAdvancedSettings()
-                }
-                .disabled(true)
-            }
-        }
-        // Smoothly animate changes when showAdvanced toggles.
-        .animation(.easeInOut, value: showAdvanced)
-    }
-
-    // MARK: - Connection Status Section
-    var connectionStatusSection: some View {
-        Section("Status") {
-            VStack {
-                Image("bluetooth.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 40)
-                    .padding(.top)
-                    .symbolRenderingMode(.monochrome)
-                    .opacity(0.5)
-
-                Text(
-                    "Connect to your LumiFur Controller accessory to start using this app."
-                )
-                .multilineTextAlignment(.center)
-                .padding()
-                ZStack {
-                    HStack {
-                        Spacer()
-                        bleModel.connectionState.image
-                            .symbolRenderingMode(
-                                bleModel.connectionState == .connected
-                                    ? .multicolor
-                                    : .monochrome
-                            )
-                            .contentTransition(.symbolEffect(.replace))
-                            .animation(
-                                .easeInOut(duration: 0.25),
-                                value: bleModel.connectionState
-                            )
-                            .foregroundColor(bleModel.connectionState.color)
-                            .zIndex(1)
-
-                        Text(bleModel.connectionState.rawValue)
-                            .foregroundColor(bleModel.connectionState.color)
-                            .transition(.opacity)
-                            .animation(
-                                .easeInOut(duration: 0.25),
-                                value: bleModel.connectionState
-                            )
-                            .zIndex(1)
-                        //Spacer()
-                        if bleModel.isConnected {
-                            if #available(iOS 17.0, *) {
-                                SignalStrengthView(
-                                    rssi: bleModel.signalStrength
-                                )
-                                .transition(.symbolEffect(.disappear.down))
-                                .animation(
-                                    .easeInOut(duration: 0.25),
-                                    value: bleModel.signalStrength
-                                )
-                                .zIndex(1)
-                            } else if bleModel.isConnecting
-                                || bleModel.isScanning
-                            {
-                                ProgressView()
-                                    .frame(width: 20, height: 20)
-                                    .transition(.opacity)
-                                    .animation(
-                                        .easeInOut(duration: 0.25),
-                                        value: bleModel.isConnecting
-                                    )
-                                    .zIndex(1)
-                            }
-                            // Implicit else: Disconnected, not connecting/scanning
-                        }
-                        Spacer()
-                    }
-                }
-                //.border(.green)
-            }
-        }
-        .listRowBackground(overlayColor)
-        //.zIndex(1)
-    }
-
-    // MARK: - Connected Device Section
-    @State private var showControllerImage: Bool = false
-    @State var show = false
-    var connectedDeviceSection: some View {
-        Section("Connected Device") {
-            if let device = bleModel.targetPeripheral {  // Use targetPeripheral directly
-                VStack {
-                    HStack {
-                        Image(systemName: "personalhotspot.circle.fill")  // Example icon
-                            .foregroundColor(.blue)
-                        Text(device.name ?? "Unknown Device")
-                        //.font(.semibold)
-                        Spacer()
-                        Button("Disconnect", role: .destructive) {
-                            bleModel.disconnect()
-                        }
-                        //.buttonStyle(.bordered)
-                        .tint(.red)  // Make disconnect button red
-                    }
-                    HStack {
-                        HStack {
-                            Image("mps3")
-                                .resizable()
-                                .scaledToFit()
-                                .padding()
-                                .frame(width: 150, height: 150)
-
-                        }.animation(
-                            .easeInOut(duration: 0.5),
-                            value: bleModel.targetPeripheral
-                        )
-                        .transition(.move(edge: .leading))
-
-                        Spacer()
-                        HStack {
-                            VStack(alignment: .trailing, spacing: 4) {
-                                if let name = device.name, !name.isEmpty {
-                                    //Text("Name")
-                                    //    .font(.title3).bold()
-                                    Text("LF-05082")
-                                        .font(.title).bold()
-                                }
-                                HStack {
-                                    Text("Hardware Version:")
-                                    // Text(device.hardwareVersion)
-                                    Text("2.0.1")
-                                }
-                                HStack {
-                                    Text("Software Version:")
-                                    // Text(device.softwareVersion)
-                                    Text("1.5.0")
-                                }
-                            }
-                            .foregroundStyle(.secondary)
-                            .font(.footnote)
-                        }
-                    }
-                }
-                .transition(.opacity.combined(with: .slide))
-            } else {
-                // This shouldn't ideally happen if isConnected is true, but good fallback
-                Text("Connected (Error fetching name)")
-                    .foregroundColor(.orange)
-            }
-        }
-        //.transition(.opacity.combined(with: .slide))
-        .listRowBackground(overlayColor)
-        //.drawingGroup()
-    }
-
-    // MARK: - Discovered Devices Section
-
-    var discoveredDevicesSection: some View {
-        // let isConnected = bleModel.isConnected
-        // let isScanning = bleModel.isScanning
-        return Section {
-            // Scan Button
-            Button {
-                isScanningForButton.toggle()  // Trigger animation
-                bleModel.scanForDevices()
-            } label: {
-                if !bleModel.isConnected && !bleModel.isScanning {
-
-                    if #available(iOS 18.0, *) {
-                        Label(
-                            "Scan for Devices",
-                            systemImage: "arrow.clockwise"
-                        )
-                        // Apply effect only on iOS 17+
-                        .symbolEffect(
-                            .rotate,
-                            options: .repeating,
-                            value: bleModel.isScanning && isScanningForButton
-                        )
-                    } else {
-                        Label(
-                            "Scan for Devices",
-                            systemImage: "arrow.clockwise"
-                        )
-                    }  // Rotate when scanning AND button triggered it
-                }
-            }
-            //.disabled(!bleModel.isBluetoothReady || bleModel.isConnecting)
-            .frame(maxWidth: .infinity, alignment: .center)  // Center the button
-
-            // Device List
-            if bleModel.discoveredDevices.isEmpty && !bleModel.isScanning {
-                Text(
-                    "No devices found. Ensure your LumiFur Controller is nearby and powered on."
-                )
-                .foregroundColor(.secondary)
-                .padding(.vertical)
-            } else {
-                ForEach(bleModel.discoveredDevices) { device in
-                    Button {
-                        if !bleModel.isConnecting {  // Prevent multiple connection attempts
-                            bleModel.connect(to: device)
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "wave.3.right.circle")  // Example icon
-                                .foregroundColor(.blue)
-                            Text(device.name)
-                                .foregroundColor(.primary)  // Ensure text is default color
-                            Spacer()
-                            if bleModel.connectingPeripheral?.id == device.id {
-                                ProgressView()
-                                    .frame(width: 20, height: 20)
-                            } else {
-                                SignalStrengthView(rssi: device.rssi)  // Use device's discovered RSSI
-                            }
-                        }
-                    }
-                    .disabled(bleModel.isConnecting)  // Disable row if any connection is in progress
-                }
-            }
-        } header: {
-            Text("Discovered Devices")
-        } footer: {
-            if bleModel.isScanning {
-                Text("Scanning...")
-                    .foregroundColor(.secondary)
-            } else if !bleModel.isBluetoothReady {
-                Text("Bluetooth is turned off.")
-                    .foregroundColor(.red)
-            }
-        }
-        .listRowBackground(overlayColor)
-    }
-
-    // MARK: - Previously Connected Section
-    @ViewBuilder  // Use ViewBuilder to conditionally show the section
-    private var previouslyConnectedSection: some View {
-        // Only show this section if not connected AND there are previous devices
-        if !bleModel.isConnected && !bleModel.previouslyConnectedDevices.isEmpty
-        {
-            Section("Previously Connected") {
-                ForEach(bleModel.previouslyConnectedDevices) { storedDevice in
-                    // Avoid showing if already listed in discovered devices
-                    if !bleModel.discoveredDevices.contains(where: {
-                        $0.id.uuidString == storedDevice.id
-                    }) {
-                        Button {
-                            if !bleModel.isConnecting {
-                                bleModel.connectToStoredPeripheral(storedDevice)
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "clock.arrow.circlepath")
-                                    .foregroundColor(.purple)  // Different color for distinction
-                                Text(storedDevice.name)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                if bleModel.connectingPeripheral?.id.uuidString
-                                    == storedDevice.id
-                                {
-                                    ProgressView()
-                                        .frame(width: 20, height: 20)
-                                        .transition(
-                                            .opacity.combined(
-                                                with: .scale(scale: 0.5)
-                                            )
-                                        )
-                                }
-                            }
-                            //.animation(.easeInOut(duration: 0.2), value: bleModel.connectingPeripheral?.id == storedDevice.id)
-                        }
-                        .disabled(bleModel.isConnecting)
-                        .transition(
-                            .move(edge: .leading).combined(with: .opacity)
-                        )
-                    }
-                }
-            }
-            .listRowBackground(overlayColor)
-            // This transition applies to the entire Section when the outer 'if' condition changes its result
-            .transition(.opacity.combined(with: .slide))
-        }
-    }
-
-    struct UnifiedConnectionView: View {
-        @ObservedObject var accessoryViewModel: AccessoryViewModel
-        @State private var animateSymbol = false
-        @State private var scanButtonTapped = false
-
-        var body: some View {
-            ScrollView {
-                VStack(spacing: 24) {
-                    statusAndScanSection
-
-                    ZStack {
-                        // Connected details
-                        if accessoryViewModel.isConnected {
-                            connectedSection
-                                .transition(
-                                    .asymmetric(
-                                        insertion: .move(edge: .bottom)
-                                            .combined(with: .opacity),
-                                        removal: .move(edge: .top).combined(
-                                            with: .opacity
-                                        )
-                                    )
-                                )
-                        } else {
-                            discoveredSection
-                                .transition(
-                                    .asymmetric(
-                                        insertion: .move(edge: .top).combined(
-                                            with: .opacity
-                                        ),
-                                        removal: .move(edge: .bottom).combined(
-                                            with: .opacity
-                                        )
-                                    )
-                                )
-                        }
-                    }
-                    // animate whenever isConnected flips
-                    .animation(
-                        .easeInOut(duration: 0.3),
-                        value: accessoryViewModel.isConnected
-                    )
-                }
-                .padding()
-            }
-            .scrollContentBackground(.hidden)
-        }
-
-        // MARK: - Status + Scan
-        private var statusAndScanSection: some View {
-            VStack(spacing: 12) {
-                accessoryViewModel.connectionState.image
-                    .symbolRenderingMode(
-                        accessoryViewModel.connectionState == .connected
-                            ? .multicolor : .monochrome
-                    )
-                    .font(.system(size: 40))
-                    .contentTransition(.symbolEffect(.replace))
-                    .animation(
-                        .easeInOut(duration: 0.25),
-                        value: accessoryViewModel.connectionState
-                    )
-                    .foregroundColor(accessoryViewModel.connectionState.color)
-
-                Text(accessoryViewModel.connectionState.rawValue)
-                    .contentTransition(.opacity)
-                    .animation(
-                        .easeInOut(duration: 0.25),
-                        value: accessoryViewModel.connectionState
-                    )
-                    .foregroundColor(accessoryViewModel.connectionState.color)
-                    .multilineTextAlignment(.center)
-
-                HStack {
-                    Spacer()
-                    scanButton
-                    Spacer()
-                }
-                .padding(.top, 8)
-                .onChange(of: accessoryViewModel.isScanning) { _, new in
-                    if !new { scanButtonTapped = false }
-                }
-                .onChange(of: accessoryViewModel.isConnected) { _, new in
-                    if new { scanButtonTapped = false }
-                }
-            }
-            .padding()
-        }
-
-        @ViewBuilder
-        private var scanButton: some View {
-            Button(action: toggleScan) {
-                if #available(iOS 18.0, *) {
-                    Label("Scan for Devices", systemImage: "arrow.clockwise")
-                        .symbolEffect(
-                            .rotate,
-                            options: .repeat(.continuous),
-                            isActive: animateSymbol
-                        )
-                        .contentTransition(.symbolEffect(.replace))
-                } else {
-                    Label("Scan for Devices", systemImage: "arrow.clockwise")
-                }
-            }
-            .buttonStyle(BouncingButtonStyle())
-            .disabled(
-                accessoryViewModel.isScanning
-                    || (accessoryViewModel.isConnected && animateSymbol)
-            )
-        }
-
-        // MARK: - Connected Section
-        private var connectedSection: some View {
-            VStack(spacing: 16) {
-                if let device = accessoryViewModel.targetPeripheral {
-                    HStack {
-                        VStack {
-                            Text(device.name ?? "Unknown Device")
-                                .font(.headline).bold()
-                            Image("mps3")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 100)
-                                .border(.green)
-                            Spacer()
-                        }
-                        Spacer()
-                        VStack {
-                            HStack {
-                                Spacer()
-                                SignalStrengthView(
-                                    rssi: accessoryViewModel.signalStrength
-                                )
-                                .frame(width: 20)
-                                Button("Disconnect", role: .destructive) {
-                                    accessoryViewModel.disconnect()
-                                }
-                                .padding(.leading, 8)
-                            }
-                            DeviceInfoView(accessoryViewModel: .shared)
-                            Spacer()
-                        }
-                    }
-                    .padding()
-                    //.background(Color(.systemGroupedBackground))
-                    //.clipShape(RoundedRectangle(cornerRadius: 15))
-                    .glassEffect(
-                        .regular.tint(Color(.systemGroupedBackground)),
-                        in: RoundedRectangle(cornerRadius: 20)
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding()
-        }
-
-        // MARK: - Discovered Section
-        private var discoveredSection: some View {
-            VStack(spacing: 16) {
-                if accessoryViewModel.discoveredDevices.isEmpty
-                    && !accessoryViewModel.isScanning
-                {
-                    Text(
-                        "No devices found. Ensure your LumiFur Controller is nearby and powered on."
-                    )
-                    .foregroundColor(.secondary)
-                } else {
-                    ForEach(accessoryViewModel.discoveredDevices) { device in
-                        deviceRow(name: device.name, rssi: device.rssi) {
-                            accessoryViewModel.connect(to: device)
-                        }
-                    }
-                    .glassEffect()
-                }
-
-                if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
-                    Divider()
-                    Text("Previously Connected")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    ForEach(accessoryViewModel.previouslyConnectedDevices) {
-                        stored in
-                        deviceRow(name: stored.name, rssi: nil) {
-                            accessoryViewModel.connectToStoredPeripheral(stored)
-                        }
-                    }
-                    .glassEffect()
-                }
-            }
-            .padding()
-        }
-
-        // MARK: - Helpers
-        private func toggleScan() {
-            scanButtonTapped = true
-            animateSymbol.toggle()
-            accessoryViewModel.scanForDevices()
-        }
-
-        private func deviceRow(
-            name: String,
-            rssi: Int?,
-            action: @escaping () -> Void
-        ) -> some View {
-            Button(action: action) {
-                HStack {
-                    Text(name)
-                    Spacer()
-                    if let rssi = rssi {
-                        SignalStrengthView(rssi: rssi)
-                    }
-                    if accessoryViewModel.isConnecting {
-                        ProgressView().frame(width: 20, height: 20)
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.bordered)
-            .tint(.blue)
-            .disabled(accessoryViewModel.isConnecting)
-        }
-    }
-
-    // MARK: - Matrix Configuration Section
-    private var matrixSection: some View {
-        DisclosureGroup("LED Configuration", isExpanded: $isLedArrayExpanded) {
-            if isLedArrayExpanded {
-                // Section("Matrix Configuration") {
-                // Example Layout: Could be more sophisticated
-                VStack(alignment: .leading) {
-                    Text("Preview:")  // Add a label for context
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Spacer()
-                        LEDPreview()  // Your custom preview view
-                        Spacer()
-                        // You might add another preview or controls here
-                    }
-                    //.padding(.bottom, 5) // Add some spacing
-
-                    MatrixStylePicker(selectedMatrix: $selectedMatrix)  // Your custom picker
-                }
-            }
-        }
-        .listRowBackground(overlayColor)
-    }
-
-    private var releaseNotesSection: some View {
-        Section("Release Notes") {
-            NavigationLink {
-                ReleaseNotesView()  // Destination view
-            } label: {
-                HStack {
-                    Image(systemName: "list.bullet.clipboard")  // Example icon
-                    Text("App Release Notes")
-                }
-            }
-            // Same styling as other NavLink rows if desired
-            .listRowInsets(
-                EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10)
-            )
-
-            NavigationLink {
-                ReleaseNotesView()  // Destination view
-            } label: {
-                HStack {
-                    Image(systemName: "list.bullet.clipboard")  // Example icon
-                    Text("Controller Release Notes")
-                }
-            }
-            // Same styling as other NavLink rows if desired
-            .listRowInsets(
-                EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10)
-            )
-            // Row for Controller Version
-
-            // .listRowInsets(EdgeInsets(top: 10, leading: 15, bottom: 10, trailing: 15)) // Standard padding
-            .padding(.vertical, 5)  // Add some vertical padding if needed
-        }
-        // Apply .clear background if the section contains custom styled rows
-        //.listRowBackground(Color.clear)
-        // If the App Version row should have default background, remove .listRowBackground from the Section
-        // and apply .listRowBackground(.clear) ONLY to the Release Notes NavLink individually.
-    }
-
-    // MARK: - Advanced Settings Section
-    private var configSection: some View {
-
-        Section(
-            header: Text("Configuration"),
-            footer: Text(
-                "Changes are saved immediately. Please ensure your selections reflect your preferences."
-            )
-        ) {
-            VStack {
-                HStack {
-                    Image(systemName: "thermometer.high")
-                        .symbolRenderingMode(.hierarchical)
-                    Text("Temp Units")
-                    Spacer(minLength: 50)
-                    Picker("Temperature Units", selection: $selectedUnits) {
-                        ForEach(TempUnit.allCases) { TempUnit in
-                            Text(TempUnit.rawValue.capitalized)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(.blue)
-                }
-                BrightnessControls(
-                    bleModel: bleModel,
-                    autoBrightness: autoBrightnessBindingWithAnimation
-                )
-                HStack {
-                    Image(systemName: "rotate.3d.fill")
-                        .symbolRenderingMode(.hierarchical)
-
-                    Toggle("Accelerometer", isOn: $accelerometer)
-                        .toggleStyle(SwitchToggleStyle())
-                        .onChange(of: accelerometer) { oldValue, newValue in
-                            print("Accelerometer changed to \(newValue)")
-                            bleModel.accelerometerEnabled = newValue
-                            bleModel.writeConfigToCharacteristic()
-                        }
-                        .disabled(!bleModel.isConnected)
-                }
-                HStack {
-                    Image(systemName: "moon.fill")
-                        .symbolRenderingMode(.hierarchical)
-                    Toggle("Sleep Mode", isOn: $sleepMode)
-                        .toggleStyle(SwitchToggleStyle())
-                        .onChange(of: sleepMode) { oldValue, newValue in
-                            print("Sleep Mode changed to \(newValue)")
-                            bleModel.sleepModeEnabled = newValue
-                            bleModel.writeConfigToCharacteristic()
-                        }
-
-                        .disabled(!bleModel.isConnected)
-                }
-                HStack {
-                    Image(systemName: "bubbles.and.sparkles.fill")
-                        .symbolRenderingMode(.hierarchical)
-                    Toggle("Aroura Mode", isOn: $arouraMode)
-                        .toggleStyle(
-                            GradientToggleStyle(
-                                gradient: LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.pink, Color.purple, Color.blue,
-                                    ]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                        )
-                        .onChange(of: arouraMode) { oldValue, newValue in
-                            print("Aroura Mode changed to \(newValue)")
-                            bleModel.auroraModeEnabled = newValue
-                            bleModel.writeConfigToCharacteristic()
-                        }
-                        .disabled(!bleModel.isConnected)
-                    //TextField("Custom Message", text: $customMessage)
-                }
-            }
-
-        }
-        .listRowBackground(overlayColor)
-    }
-
-    struct BrightnessControls: View {
-        @ObservedObject var bleModel: AccessoryViewModel
-        @Binding var autoBrightness: Bool  // This binding now comes with animation from the parent
-
-        var body: some View {
-            VStack(alignment: .leading) {  // Added VStack for better layout control of the group
-                HStack {
-                    Image(systemName: "sun.max.fill")
-                        .symbolRenderingMode(.hierarchical)
-
-                    // Animate any subviews that depend on this binding:
-                    Toggle("Auto Brightness", isOn: $autoBrightness)
-
-                        .disabled(!bleModel.isConnected)
-                }
-
-                // This entire Section will insert/remove itself with a slide+fade
-                if !autoBrightness {
-                    VStack {
-                        HStack {
-                            Text("Brightness")
-                            Spacer()
-                            Text("\(Int(bleModel.brightness))")  // Display as Int for cleaner UI
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Slider(
-                            value: Binding(
-                                get: { Double(bleModel.brightness) },
-                                set: { bleModel.brightness = UInt8($0) }
-                            ),
-                            in: 0...255,
-                            step: 1
-                        )
-                    }
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .top).combined(
-                                with: .opacity
-                            ),
-                            removal: .move(edge: .top).combined(with: .opacity)
-                        )
-                    )
-                }
-            }
-            // Apply the animation at the container level where the conditional view exists
-            .animation(.easeInOut(duration: 0.3), value: autoBrightness)
-        }
-    }
-
-    // MARK: - Advanced Settings Section
-    private var advancedSettingsSection: some View {
-        Section("Advanced") {
-            Toggle("Show Advanced Options", isOn: $showAdvanced.animation())  // Animate toggle reveal
-            if showAdvanced {
-                NavigationLink("Connection Parameters") {
-                    // Ensure AdvancedSettingsView is correctly defined
-                    AdvancedSettingsView(bleModel: bleModel)
-                }
-                Button("Reset to Defaults", role: .destructive) {
-                    // Add your reset logic here
-                    print("Resetting to defaults...")
-                }
-                .tint(.red)
-            }
-        }
-        .listRowBackground(overlayColor)
-    }
-}
-
-struct MatrixStylePicker: View {
-    @Binding var selectedMatrix: SettingsView.Matrixstyle
-
-    var body: some View {
-        Picker("Visual Style", selection: $selectedMatrix) {
-            ForEach(SettingsView.Matrixstyle.allCases) { style in
-                Text(style.rawValue.capitalized)
-                    .tag(style)
-            }
-        }
-        .pickerStyle(.segmented)
-
-        Text("Current style: \(selectedMatrix.rawValue.capitalized)")
-            .font(.caption)
-            .foregroundColor(.secondary)
-    }
-}
 
 struct ConnectedDeviceView: View {
     let peripheral: PeripheralDevice
@@ -2700,7 +1596,7 @@ struct InfoView: View {
                     }
 
                 }
-                .drawingGroup()
+                //.drawingGroup()
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
@@ -2733,7 +1629,7 @@ struct InfoView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        .drawingGroup()
+                        //.drawingGroup()
                         .padding(.vertical, 6)
                     }
                 }
@@ -3070,7 +1966,7 @@ struct LEDPreview: View {
                     .aspectRatio(64 / 32, contentMode: .fit)
             } else {
                 // placeholder while first snapshot is generated
-                Color.black
+                Color.white
                     .aspectRatio(64 / 32, contentMode: .fit)
             }
         }
@@ -3462,8 +2358,8 @@ struct LEDPreview: View {
  }
  }
  */
-
-struct infoViewold: View {
+/*
+struct infoViewOld: View {
     var body: some View {
         VStack {
             Image("Logo")
@@ -3476,6 +2372,7 @@ struct infoViewold: View {
         //.background(Color(UIColor.systemBackground))
     }
 }
+ */
 /*
  struct GlassTest: View {
  struct ConfigOption: Identifiable {
@@ -3509,6 +2406,7 @@ struct infoViewold: View {
  }
  }
  */
+/*
 struct VibrantBackground: View {
     var body: some View {
         ZStack {
@@ -3539,18 +2437,25 @@ struct VibrantBackground: View {
         }
     }
 }
-
+*/
 /*
  #Preview("Glass View") {
  GlassTest()
  }
  */
 
-/*
- #Preview("ContentView") {
- ContentView()
- }
- */
+
+#Preview("ContentView") {
+    // 1. Create a @State variable to be the source of truth for this preview.
+    //    This variable only exists for the preview's lifetime.
+    @Previewable @State var previewMatrixStyle: MatrixStyle = .array
+
+    // 2. ContentView now uses this local state. When you use the picker
+    //    in the preview canvas, `previewMatrixStyle` will actually change.
+    //    (Assuming ContentView has an init that accepts these, or default values)
+    return ContentView()
+}
+ 
 #Preview("SplashView") {
     SplashView(showSplash: .constant(true))
 }
@@ -3567,13 +2472,70 @@ struct VibrantBackground: View {
     @Previewable @State var isScanningForButton = true
     SettingsView(
         bleModel: AccessoryViewModel(),
-        selectedMatrix: .constant(SettingsView.Matrixstyle.array)
+        selectedMatrix: .constant(MatrixStyle.array)
     )
 }
 
-#Preview("Release Notes") {
-    ReleaseNotesView()
+#Preview("Release Notes (Populated)") {
+    // --- OPTIMIZATION 1: Create sample data for the preview ---
+    // This allows you to design and test your view with realistic content
+    // without needing to make a network call.
+    let sampleReleases: [GitHubRelease] = [
+        GitHubRelease(
+            id: 1,
+            tagName: "v1.2.0",
+            name: "Major Feature Update",
+            body: """
+            ## New Features
+            
+            - You can now sync your settings across devices using iCloud.
+            - Added support for new **WLED** matrix styles.
+            - The UI has been updated with a fresh, modern look.
+            
+            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+            *   Improved Bluetooth connection stability.
+            *   The battery indicator is now more accurate.
+            """,
+            publishedAt: Date() // Represents "now"
+        ),
+        GitHubRelease(
+            id: 2,
+            tagName: "v1.1.1",
+            name: "Minor Bug Fixes",
+            body: "This update addresses minor bugs and improves performance.",
+            publishedAt: Date().addingTimeInterval(-86400 * 7) // Represents 1 week ago
+        ),
+        GitHubRelease(
+            id: 3,
+            tagName: "v1.1.0",
+            name: nil, // Test how it looks when 'name' is nil
+            body: nil, // Test how it looks when 'body' is nil
+            publishedAt: Date().addingTimeInterval(-86400 * 30) // Represents 1 month ago
+        )
+    ]
+    
+    // --- OPTIMIZATION 2: Preview the view inside a NavigationStack ---
+    // This is crucial for seeing the navigation title correctly.
+    return NavigationStack {
+        ReleaseNotesView(
+            title: "App Releases",
+            releases: sampleReleases // Pass the mock data to the view
+        )
+    }
 }
+
+#Preview("Release Notes (Empty)") {
+    // It's also good practice to preview the empty state.
+    NavigationStack {
+        ReleaseNotesView(
+            title: "Controller Releases",
+            releases: [] // Pass an empty array
+        )
+    }
+}
+
 
 // ——————— Your mock view model at file-scope ———————
 @MainActor

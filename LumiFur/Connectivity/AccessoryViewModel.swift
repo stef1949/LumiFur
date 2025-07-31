@@ -1,18 +1,19 @@
 import SwiftUI
 import Combine
-import CoreBluetooth
+@preconcurrency import CoreBluetooth
 import WidgetKit
 import Foundation
 import os
 #if !targetEnvironment(macCatalyst )
-#if !targetEnvironment(watchOS )
+#if canImport(UIKit)
 import UIKit
 #endif // !targetEnvironment(watchOS )
 import ActivityKit
 import AccessorySetupKit
 #endif // !targetEnvironment(macCatalyst )
 
-// MARK: - REQUIRED DEFINITIONS (Add these before AccessoryViewModel)
+// MARK: - REQUIRED DEFINITIONS
+fileprivate var accessoryVMInstanceCount = 0
 
 // --- Data Structures ---
 struct PeripheralDevice: Identifiable, Hashable {
@@ -77,6 +78,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var brightness: UInt8 = 255 // No didSet, handled by .sink
     private var brightnessCharacteristic: CBCharacteristic?
     
+    
     /// Call this whenever you want to write the new brightness to the device.
     private func writeBrightness(_ newValue: UInt8) {
         guard let peripheral = targetPeripheral,
@@ -97,32 +99,48 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     // 2) Public publisher of a down-sampled, 3-minute sliding window, throttled to 1 Hz
     lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
-        rawTempSubject
-        // build & maintain a 3-minute sliding buffer in place
+        // 1) Turn your connection state into a Bool stream
+        let isConnectedPub = $connectionState
+            .map { $0 == .connected }
+            .removeDuplicates()
+            .share()
+        
+        return rawTempSubject
+        // 2) Pair each TemperatureData with the latest “isConnected” Bool
+            .combineLatest(isConnectedPub)
+        // 3) Only let true-through
+            .filter { _, isConn in isConn }
+        // 4) Extract the raw data
+            .map { reading, _ in reading }
+        // 5) Build & maintain 3-minute buffer
             .scan([TemperatureData]()) { buffer, new in
-                // make a mutable copy
                 var buf = buffer
-                // 2) mutate buffer in place — do NOT return it
                 buf.append(new)
                 let cutoff = Date().addingTimeInterval(-3 * 60)
                 buf.removeAll { $0.timestamp < cutoff }
                 return buf
             }
-        // only emit at most once per second
-            .throttle(for: .seconds(5), scheduler: RunLoop.main, latest: true)
-        // down-sample to ~100 points
+        // 6) Throttle to ~1 Hz
+            .throttle(for: .seconds(1), scheduler: RunLoop.main, latest: true)
+        // 7) Down-sample to ~100 points
             .map { buffer in
-                let strideSize = max(1, buffer.count / 100)
-                return buffer.enumerated().compactMap { idx, el in
-                    idx % strideSize == 0 ? el : nil
+                let stride = max(1, buffer.count / 100)
+                return buffer.enumerated().compactMap { idx, pt in
+                    idx % stride == 0 ? pt : nil
                 }
             }
             .receive(on: RunLoop.main)
             .eraseToAnyPublisher()
     }()
-    // 3) Call this whenever you get a new reading
-    func didReceive(_ point: TemperatureData) {
-        rawTempSubject.send(point)
+    
+    private func didReceive(_ newDataPoint: TemperatureData) {
+        // This is the line that actually triggers the UI update in the chart.
+        temperatureData.append(newDataPoint)
+        
+        // Optional: You might want to prune old data to prevent the array from growing forever.
+        // For example, keep only the last 5 minutes of data.
+        let fiveMinutesAgo = Date().addingTimeInterval(-5 * 60)
+        temperatureData.removeAll { $0.timestamp < fiveMinutesAgo }
     }
     
     @Published var errorMessage: String = ""
@@ -135,14 +153,20 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     // User options - didSet triggers writes + UI updates
     //@Published var selectedView: Int = 1 {
-    @Published private(set) var selectedView: Int = 1
+    @Published var selectedView: Int = 1 { didSet {
+        // Only sync if the value actually changed to prevent loops.
+        if oldValue != selectedView {
+            syncStateToWatch()
+        }
+    }
+    }
     
     // MARK: - OTA State Tracking
     @Published var otaStatusMessage: String = "Idle"
     @Published var otaProgress: Double = 0.0
-    private var totalOTASize: Int = 0
-    private var otaBytesSent: Int = 0
-    private var otaTimer: Timer?
+    @MainActor private var totalOTASize: Int = 0
+    @MainActor private var otaBytesSent: Int = 0
+    @MainActor private var otaTimer: Timer?
     
     /*
      @Published var autoBrightness: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
@@ -151,10 +175,38 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
      @Published var auroraModeEnabled: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
      @Published var customMessage: String = "" { didSet { updateWidgetAndActivityOnMain() /* TODO: Add write if needed */ } }
      */
-    @Published var autoBrightness: Bool = true { didSet { writeConfigToCharacteristic() } }
-    @Published var accelerometerEnabled: Bool = true { didSet { writeConfigToCharacteristic() } }
-    @Published var sleepModeEnabled: Bool = true { didSet { writeConfigToCharacteristic() } }
-    @Published var auroraModeEnabled: Bool = true { didSet { writeConfigToCharacteristic() } }
+    @Published var autoBrightness: Bool = true { didSet {
+        if oldValue != autoBrightness {
+            writeConfigToCharacteristic()
+            syncStateToWatch() // Also sync to watch
+        }
+    }
+    }
+    @Published var accelerometerEnabled: Bool = true {
+        didSet {
+            if oldValue != accelerometerEnabled {
+                writeConfigToCharacteristic()
+                syncStateToWatch()
+            }
+        }
+    }
+    @Published var sleepModeEnabled: Bool = true {
+        didSet {
+            if oldValue != sleepModeEnabled {
+                writeConfigToCharacteristic()
+                syncStateToWatch()
+            }
+        }
+    }
+    
+    @Published var auroraModeEnabled: Bool = true {
+        didSet {
+            if oldValue != auroraModeEnabled {
+                writeConfigToCharacteristic()
+                syncStateToWatch()
+            }
+        }
+    }
     @Published var customMessage: String = "" { didSet { writeConfigToCharacteristic() } }
     
     @Published var firmwareVersion: String = "N/A"
@@ -239,11 +291,18 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     // 2) A subject you’ll send new samples into
     let temperatureSubject = PassthroughSubject<TemperatureData, Never>()
     
+    /// A running count of how many instances are alive
+    private static var _instanceCount = 0
+    static var instanceCount: Int {
+        _instanceCount
+    }
+    
     @MainActor
     // MARK: Initialization
     override init() {
         super.init()
-        
+        accessoryVMInstanceCount += 1
+        logger.warning("🔧 AccessoryViewModel init — now \(accessoryVMInstanceCount) instance(s)")
         temperatureSubject
             .receive(on: DispatchQueue.main)
             .sink { [weak self] sample in
@@ -334,10 +393,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     deinit {
+        accessoryVMInstanceCount -= 1
+        logger.warning("🗑️ AccessoryViewModel deinit — now \(accessoryVMInstanceCount) instance(s)")
+        
+        
         NotificationCenter.default.removeObserver(self)
         rssiUpdateTimer?.invalidate()
         activityStateTask?.cancel()
-        logger.info("AccessoryViewModel deinitialized.")
+        logger.warning("AccessoryViewModel deinitialized.")
     }
     
     // MARK: — APP BACK TO FOREGROUND
@@ -399,7 +462,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         otaTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if offset >= firmwareData.count {
                 timer.invalidate()
-                self.endOTAUpdate()
+                DispatchQueue.main.async {
+                    self.endOTAUpdate()
+                }
                 return
             }
             
@@ -410,12 +475,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             
             peripheral.writeValue(packet, for: characteristic, type: .withResponse)
             offset += chunk.count
-            self.otaBytesSent = offset
-            self.otaProgress = Double(offset) / Double(self.totalOTASize)
-            self.otaStatusMessage = "Uploading... \(Int(self.otaProgress * 100))%"
+            DispatchQueue.main.async {
+                self.otaBytesSent = offset
+                self.otaProgress = Double(offset) / Double(self.totalOTASize)
+                self.otaStatusMessage = "Uploading... \(Int(self.otaProgress * 100))%"
+                
+            }
         }
     }
     
+    @MainActor
     func endOTAUpdate() {
         guard let peripheral = targetPeripheral,
               let characteristic = commandCharacteristic else { return }
@@ -438,7 +507,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func scanForDevices() {
         DispatchQueue.main.async { self._scanForDevices() }
     }
-
+    
     func stopScan() {
         DispatchQueue.main.async { self._stopScan() }
     }
@@ -453,14 +522,15 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         // schedule everything on the BLE queue
         bleQueue.async { [weak self] in
             guard let self = self else { return }
-            
-            // 1) mark this as a manual disconnect (on bleQueue!)
-            self.isManualDisconnect = true
-            
-            // 2) actually cancel the connection
-            if let p = self.targetPeripheral {
-                self.logger.info("Manual disconnect → cancelling on bleQueue.")
-                self.centralManager.cancelPeripheralConnection(p)
+            DispatchQueue.main.async {
+                // 1) mark this as a manual disconnect (on bleQueue!)
+                self.isManualDisconnect = true
+                
+                // 2) actually cancel the connection
+                if let p = self.targetPeripheral {
+                    self.logger.info("Manual disconnect → cancelling on bleQueue.")
+                    self.centralManager.cancelPeripheralConnection(p)
+                }
             }
         }
     }
@@ -470,11 +540,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         guard view >= 1 && view <= 50, view != selectedView else { return }
         logger.info("Setting view to \(view)")
         // Update model
-        selectedView = view
+        self.selectedView = view
         // Send to peripheral immediately
         writeViewToCharacteristic()
         // Debounced widget / LiveActivity update
-        scheduleLiveActivityUpdate()
+        //scheduleLiveActivityUpdate()
     }
     
     // 3) Same for face buttons:
@@ -490,6 +560,16 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     func stopRSSIMonitoring() {
         DispatchQueue.main.async { [weak self] in self?._stopRSSIMonitoring() }
+    }
+    
+    // MARK: - Watch Sync (ADD THIS NEW METHOD)
+    
+    /// The single function that triggers a sync to the watch.
+    func syncStateToWatch() {
+        // Here you can also save to UserDefaults if you want persistence
+        
+        // Pass self to the watch manager to be packaged and sent
+        WatchConnectivityManager.shared.syncStateToWatch(from: self)
     }
     
     // MARK: - Private Methods (Executed on BLE Queue)
@@ -583,19 +663,46 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     /// Internal method to write the selected view, runs on bleQueue
     private func writeViewToCharacteristic() {
-        bleQueue.async { [weak self] in
-            guard let self = self,
-                  let peripheral = self.targetPeripheral,
-                  let characteristic = self.targetCharacteristic
-            else {
-                self?.logger.warning("Cannot write view: peripheral or view characteristic not available.")
-                return
+        // Capture main actor-isolated state safely
+        let block = { [weak self] in
+            guard let self = self else { return }
+            let peripheral = self.targetPeripheral
+            let characteristic = self.targetCharacteristic
+            let selectedView = self.selectedView
+            let logger = self.logger
+            let queue = self.bleQueue  // Capture the queue directly
+
+            queue.async {
+                guard let peripheral = peripheral,
+                      let characteristic = characteristic
+                else {
+                    // Log warning on main actor
+                    DispatchQueue.main.async {
+                        logger.warning("Cannot write view: peripheral or view characteristic not available.")
+                    }
+                    return
+                }
+                
+                let data = Data([UInt8(selectedView)])
+                // Log debug info on main actor
+                DispatchQueue.main.async {
+                    logger.debug("Writing view \(selectedView) to \(characteristic.uuid) on bleQueue")
+                }
+                
+                // Execute write on BLE queue
+                peripheral.writeValue(data, for: characteristic, type: .withResponse)
             }
-            let data = Data([UInt8(self.selectedView)])
-            self.logger.debug("Writing view \(self.selectedView) to \(characteristic.uuid) on bleQueue")
-            peripheral.writeValue(data, for: characteristic, type: .withResponse)
+        }
+        
+        // Execute capture block on main actor
+        if Thread.isMainThread {
+            block()
+        } else {
+            DispatchQueue.main.async(execute: block)
         }
     }
+    
+    
     /// Internal method to write config, runs on bleQueue
     func writeConfigToCharacteristic() {
         bleQueue.async { [weak self] in
@@ -606,16 +713,17 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 self?.logger.warning("Cannot write config: peripheral or config characteristic not available.")
                 return
             }
-            let payload = self.encodedAccessorySettingsPayload(
-                autoBrightness: self.autoBrightness,
-                accelerometerEnabled: self.accelerometerEnabled,
-                sleepModeEnabled: self.sleepModeEnabled,
-                auroraModeEnabled: self.auroraModeEnabled
-            )
-            let payloadHex = payload.map { String(format: "%02x", $0) }.joined(separator: " ")
-            self.logger.debug("Writing config payload to \(characteristic.uuid): \(payloadHex) on bleQueue")
-            peripheral.writeValue(payload, for: characteristic, type: .withResponse)
-        }
+            DispatchQueue.main.async {
+                let payload = self.encodedAccessorySettingsPayload(
+                    autoBrightness: self.autoBrightness,
+                    accelerometerEnabled: self.accelerometerEnabled,
+                    sleepModeEnabled: self.sleepModeEnabled,
+                    auroraModeEnabled: self.auroraModeEnabled
+                )
+                let payloadHex = payload.map { String(format: "%02x", $0) }.joined(separator: " ")
+                self.logger.debug("Writing config payload to \(characteristic.uuid): \(payloadHex) on bleQueue")
+                peripheral.writeValue(payload, for: characteristic, type: .withResponse)
+            }}
     }
     /// Internal method to find characteristic, runs on bleQueue
     private func getCharacteristic(uuid: CBUUID) -> CBCharacteristic? {
@@ -692,7 +800,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             if reconnectCopy, let uuid = uuidToTry {
                 self.logger.info("Auto-reconnect to \(uuid)")
                 self.bleQueue.async { [weak self] in
-                    self?._connectToStoredUUID(uuid)
+                    DispatchQueue.main.async {  self?._connectToStoredUUID(uuid)}
                 }
             }
             else if scanCopy, self.connectionState == .disconnected {
@@ -883,7 +991,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 // Re-enable auto-reconnect attempt flag if it was specific to one session
                 self.didAttemptAutoReconnect = false
                 bleQueue.async { [uuidToReconnect] in
-                    AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect)
+                    DispatchQueue.main.async { AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect) }
                 }
             } else if !wasManual {
                 self.logger.info("Not auto-reconnecting (either disabled or no last UUID); starting scan.")
@@ -1027,7 +1135,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 guard let self = self, !self.isDownloadingHistory  else { return }
                 if !self.isDownloadingHistory { // Check on main thread
                     self.bleQueue.async { // Process on BLE queue
-                        self.handleLiveTemperatureUpdate(data: data)
+                        DispatchQueue.main.async {    self.handleLiveTemperatureUpdate(data: data) }
                     }
                 } else {
                     self.logger.debug("Ignoring live temperature update while history download is in progress.")
@@ -1172,7 +1280,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     // Inside AccessoryViewModel…
-    
+    @MainActor
     private func handleLiveTemperatureUpdate(data: Data) { // Called on bleQueue
         guard let tempString = String(data: data, encoding: .utf8)
         else {
@@ -1238,7 +1346,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 logger.info("All \(totalExpected) history chunks received. Processing...")
                 // Dispatch processing to BLE queue to avoid blocking main thread if it's heavy
                 self.bleQueue.async {
-                    self.processCompletedHistoryDownload()
+                    DispatchQueue.main.async {   self.processCompletedHistoryDownload()}
                 }
             }
         }
@@ -1397,7 +1505,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     // This function now correctly uses the defined StoredPeripheral
-    private func loadStoredPeripherals() -> [StoredPeripheral] { // Can be called from any thread, UserDefaults is thread-safe for reads
+    func loadStoredPeripherals() -> [StoredPeripheral] { // Can be called from any thread, UserDefaults is thread-safe for reads
         guard let data = UserDefaults.standard.data(forKey: "PreviouslyConnectedPeripherals") else {
             logger.info("No previously connected peripherals found in UserDefaults.")
             return []
@@ -1413,7 +1521,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     // This function now correctly uses the defined StoredPeripheral
-    private func saveStoredPeripherals(_ devices: [StoredPeripheral]) { // Can be called from any thread, UserDefaults is thread-safe for writes
+    func saveStoredPeripherals(_ devices: [StoredPeripheral]) { // Can be called from any thread, UserDefaults is thread-safe for writes
         do {
             let data = try JSONEncoder().encode(devices)
             UserDefaults.standard.set(data, forKey: "PreviouslyConnectedPeripherals")
@@ -1700,6 +1808,48 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
+#if DEBUG
+    /// An initializer specifically for creating configured instances for SwiftUI Previews or tests.
+    /// This initializer allows us to set the internal state that our get-only computed properties depend on.
+    convenience init(
+        isConnected: Bool,
+        isScanning: Bool = false,
+        firmwareVersion: String = "N/A",
+        discoveredDevices: [PeripheralDevice] = [], // Assuming PeripheralDevice is your model
+        errorMessage: String? = nil
+    ) {
+        self.init() // Call the main designated initializer of the class.
+        
+        // --- ADAPT THIS SECTION ---
+        // You must change these lines to set the *actual internal properties*
+        // that control your get-only computed properties.
+        
+        if isConnected {
+            // Example: If isConnected depends on a `connectedPeripheral` property,
+            // you would set it to a mock instance here.
+            // You might need to create a static mock device for this.
+            self.targetPeripheral = PeripheralDevice.mock.peripheral
+        }
+        
+        // Example: If isScanning is computed from an internal state variable.
+        // You might need to expose a private property for testing/previews.
+        // For instance, if `isScanning` depends on a private `_isScanning`, set that.
+        
+        // Example: If firmwareVersion is settable, you can set it directly.
+        self.firmwareVersion = firmwareVersion
+        
+        // Example: Set the list of discovered devices.
+        self.discoveredDevices = discoveredDevices
+        
+        // Example: Set an error state.
+        if let errorMessage = errorMessage {
+            self.errorMessage = errorMessage
+            self.showError = true
+        }
+        // --- END ADAPTATION ---
+    }
+#endif
+    
 }// End of AccessoryViewModel
 
 // MARK: - Helper Extensions
@@ -1727,4 +1877,19 @@ func activityStateDescription(_ state: ActivityState) -> String {
  }
  */
 
+#if DEBUG
 
+extension PeripheralDevice {
+    static var mock: PeripheralDevice {
+        PeripheralDevice(
+            id: UUID(),
+            name: "LumiFur-MOCK",
+            rssi: -60,
+            advertisementServiceUUIDs: [],
+            // NOTE: This unsafeBitCast is only for test/mock usage and not used in production.
+            peripheral: unsafeBitCast(0x1234 as UInt, to: CBPeripheral.self)
+        )
+    }
+}
+
+#endif

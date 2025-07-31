@@ -58,7 +58,7 @@ struct BouncingButton<Label: View>: View{
                 .scaleEffect(isPressed ? 0.8 : 1.0)
                 .animation(spring, value: isPressed)
         }
-        .glassEffect(.regular.interactive())
+        //.glassEffect(.regular.interactive())
     }
 }
 

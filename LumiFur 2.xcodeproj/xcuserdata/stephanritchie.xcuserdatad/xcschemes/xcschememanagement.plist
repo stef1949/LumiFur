@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>LumiFur WidgetExtension.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>isShown</key>
+			<true/>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>LumiFur.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>isShown</key>
+			<true/>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+		<key>LumiFurWatchOS Watch App.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>3591DD502D5FB695009A3A94</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3591DD5F2D5FB697009A3A94</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3591DD692D5FB697009A3A94</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>35AE1A492D5D24C600FDD29E</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>35DA3A5B2C8739FB0039D19D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>35DA3A6C2C8739FD0039D19D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>35DA3A762C8739FD0039D19D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>

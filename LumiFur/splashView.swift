@@ -15,6 +15,7 @@ struct SplashView: View {
     @State private var animationDirection: Bool = true // True for moving up, false for moving down
     @Binding var showSplash: Bool
     let animationDuration: Double =  2.0 //Duration for full hover effect
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -43,7 +44,7 @@ struct SplashView: View {
                         //.background(Material.ultraThin)
                             .clipped()
                             .frame(minWidth: 30, maxHeight: .infinity)
-                            .border(.red)
+                            //.border(.red)
                         // MARK: Upper text
                             .overlay(alignment: .topLeading) {
                                 // Hero
@@ -133,7 +134,8 @@ struct SplashView: View {
                                         //Spacer()
                                     }
                                 }
-                                .frame(maxWidth: 300)
+                                
+                                .frame(maxWidth: 250)
                                 .clipped()
                                 .padding()
                                 //                                .background {
@@ -141,12 +143,14 @@ struct SplashView: View {
                                 //                                        .fill(Color.secondary.opacity(0.25))
                                 //                                        .padding(.horizontal, 12)
                                 //                                }
-                                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 25))
-                                .padding()
+                                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 32))
+                                
                             }
+                        
+                        
                         //.mask {RoundedRectangle(cornerRadius: 24, style: .continuous)}
                             .padding()
-                            .mask {RoundedRectangle(cornerRadius: 24, style: .continuous)}
+                            .mask {RoundedRectangle(cornerRadius: 32, style: .continuous)}
                             .shadow(color: Color(.sRGBLinear, red: 0/255, green: 0/255, blue: 0/255).opacity(0.15), radius: 18, x: 0, y: 14)
                     }
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 25))
@@ -164,10 +168,11 @@ struct SplashView: View {
                         }
                         //.buttonStyle(.borderedProminent)
                         .controlSize(.large)
-                        .border (.green)
+                        //.border (.green)
                         .padding(20)
                         .padding(.horizontal, 16)
-                        .glassEffect()
+                        .glassEffect(.regular.interactive())
+                        .foregroundStyle(.background)
                         /// MARK: Splash view button
                         //                        NavigationLink {
                         //                            InfoView()
@@ -180,7 +185,7 @@ struct SplashView: View {
                         
                     }
                     .padding(.horizontal)
-                    .border(.blue)
+                    //.border(.blue)
                     
                     Spacer()
                     
@@ -196,8 +201,8 @@ struct SplashView: View {
                     }
                 }
             }
+            .toolbar(.hidden, for: .tabBar)
         }
-        .toolbar(.hidden, for: .navigationBar)
         //.drawingGroup()
         //.compositingGroup()
     }

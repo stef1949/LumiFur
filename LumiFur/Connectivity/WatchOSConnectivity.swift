@@ -12,7 +12,9 @@ import WatchConnectivity
 import SwiftUI
 import Combine
 
+@MainActor
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+    
     @MainActor static let shared = WatchConnectivityManager()
     
     // MARK: - Published Properties for SwiftUI
@@ -26,6 +28,39 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     private let session: WCSession
     // Use the updated accessory view model.
     @Published var accessoryViewModel = AccessoryViewModel.shared  // Use the shared instance
+    
+    // MARK: - Sending State TO Watch (ADD THIS ENTIRE FUNCTION)
+    /// Packages and sends the current app state to the watch via Application Context.
+    func syncStateToWatch(from viewModel: AccessoryViewModel) {
+        // Ensure the session is ready
+        guard session.isPaired, session.isWatchAppInstalled else {
+            print("Cannot sync: Watch not paired or app not installed.")
+            return
+        }
+        
+        // Create the dictionary with keys the watch expects.
+        // These keys MUST MATCH what your watch-side manager looks for.
+        let context: [String: Any] = [
+            // Face/View Selection
+            "selectedView": viewModel.selectedView,
+            
+            // Accessory Settings
+            "autoBrightness": viewModel.autoBrightness,
+            "accelerometer": viewModel.accelerometerEnabled,
+            "sleepMode": viewModel.sleepModeEnabled,
+            "auroraMode": viewModel.auroraModeEnabled
+            // You can add more data here if needed (e.g., controller name)
+        ]
+        
+        do {
+            // Use updateApplicationContext for state synchronization.
+            // It ensures the watch gets the latest state, even if it's not running.
+            try session.updateApplicationContext(context)
+            print("✅ Successfully synced context to watch: \(context)")
+        } catch {
+            print("❌ Error syncing context to watch: \(error.localizedDescription)")
+        }
+    }
     
     @MainActor
     // MARK: - Initialization

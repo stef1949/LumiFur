@@ -40,8 +40,8 @@ struct TemperatureData: Identifiable, Codable, Equatable {
 }
 
 /// Data structure for CPU usage data.
-struct CPUUsageData: Identifiable {
-    let id = UUID()
+struct CPUUsageData: Identifiable, Codable {
+    var id = UUID()
     let timestamp: Date
     let cpuUsage: Int
 }
@@ -49,7 +49,7 @@ struct CPUUsageData: Identifiable {
 // MARK: - Connection State Enum
 
 /// Enum for connection state (SHARED)
-enum ConnectionState: String {
+enum ConnectionState: String, Codable { // Make it Codable for easy storage
     case disconnected = "Disconnected"
     case scanning = "Scanning..."
     case connecting = "Connecting..."
@@ -95,6 +95,16 @@ enum ConnectionState: String {
             // This one was already good as an SF Symbol
             return "arrow.triangle.2.circlepath.circle" // Good for "in progress", often animated by default
             // Or, keep: "antenna.radiowaves.left.and.right"
+        }
+    }
+    
+    // NEW: Add a computed property to check if the symbol is a custom asset.
+    var isCustomSymbol: Bool {
+        switch self {
+        case .connected:
+            return true // Only our connected state uses a custom image
+        default:
+            return false
         }
     }
 }
@@ -180,7 +190,7 @@ struct SignalStrengthView: View {
             }
         }
         // Flatten into a single layer so the GPU only re-rasterizes one texture
-        .compositingGroup()
-        .drawingGroup()
+        //.compositingGroup()
+        //.drawingGroup()
     }
 }

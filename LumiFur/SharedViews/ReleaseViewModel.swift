@@ -1,101 +1,129 @@
-//
-//  ReleaseViewModel.swift
-//  LumiFur
-//
-//  Created by Stephan Ritchie on 3/31/25.
-//
 import SwiftUI
 
+// MARK: - Release View Model
+
 @MainActor
-class ReleaseViewModel: ObservableObject {
-    // Keep the published state properties
-    @Published var appReleases: [GitHubRelease] = []
-    @Published var controllerReleases: [GitHubRelease] = []
-    @Published var isLoadingAppReleases: Bool = false
-    @Published var isLoadingControllerReleases: Bool = false
-    @Published var appReleaseError: Error?
-    @Published var controllerReleaseError: Error?
+final class ReleaseViewModel: ObservableObject {
+    // MARK: - Published Properties
+    
+    // State properties remain the same, with private setters for safety.
+    @Published private(set) var appReleases: [GitHubRelease] = []
+    @Published private(set) var isLoadingAppReleases: Bool = false
+    @Published private(set) var appReleaseError: NetworkError?
 
-    // Keep the GitHubService instance
-    private let gitHubService = GitHubService()
+    @Published private(set) var controllerReleases: [GitHubRelease] = []
+    @Published private(set) var isLoadingControllerReleases: Bool = false
+    @Published private(set) var controllerReleaseError: NetworkError?
 
-    // No config stored here!
-    // No init needed (or use default init())
+    // MARK: - Private Properties
+    
+    private let appReleaseService: GitHubService
+    private let controllerReleaseService: GitHubService
 
-    // Method now accepts owner/repo parameters
-    func loadAppReleases(owner: String, repo: String) async {
+    // MARK: - Initialization
+
+    init(
+        appReleaseService: GitHubService,
+        controllerReleaseService: GitHubService
+    ) {
+        self.appReleaseService = appReleaseService
+        self.controllerReleaseService = controllerReleaseService
+    }
+    
+    // MARK: - Public Methods
+
+    /// Asynchronously loads releases for the app repository.
+    func loadAppReleases() async {
         isLoadingAppReleases = true
         appReleaseError = nil
-        do {
-            // Use passed-in parameters
-            appReleases = try await gitHubService.fetchReleases()
-        } catch {
-            appReleaseError = error
-            print("Error loading app releases (\(owner)/\(repo)): \(error.localizedDescription)")
+        // defer ensures the loading flag is reset when the function exits.
+        defer { isLoadingAppReleases = false }
+
+        let result = await fetchReleases(from: appReleaseService)
+        
+        switch result {
+        case .success(let releases):
+            self.appReleases = releases
+        case .failure(let error):
+            self.appReleaseError = error
         }
-        isLoadingAppReleases = false
     }
 
-    // Method now accepts owner/repo parameters
-    func loadControllerReleases(owner: String, repo: String) async {
+    /// Asynchronously loads releases for the controller repository.
+    func loadControllerReleases() async {
         isLoadingControllerReleases = true
         controllerReleaseError = nil
-        do {
-            // Use passed-in parameters
-            controllerReleases = try await gitHubService.fetchReleases()
-        } catch {
-            controllerReleaseError = error
-            print("Error loading controller releases (\(owner)/\(repo)): \(error.localizedDescription)")
+        defer { isLoadingControllerReleases = false }
+        
+        let result = await fetchReleases(from: controllerReleaseService)
+
+        switch result {
+        case .success(let releases):
+            self.controllerReleases = releases
+        case .failure(let error):
+            self.controllerReleaseError = error
         }
-        isLoadingControllerReleases = false
+    }
+
+    // MARK: - Private Helper
+
+    /// A generic, reusable function that fetches releases and returns a Result.
+    /// This removes all direct state mutation, fixing the compiler errors.
+    private func fetchReleases(from service: GitHubService) async -> Result<[GitHubRelease], NetworkError> {
+        do {
+            let releases = try await service.fetchReleases()
+            return .success(releases)
+        } catch let networkError as NetworkError {
+            // If it's already a NetworkError, pass it along.
+            return .failure(networkError)
+        } catch {
+            // If it's some other unexpected error, wrap it in our custom type.
+            return .failure(.other(error))
+        }
     }
 }
 
+// MARK: - Reusable SwiftUI Views
+// (These view implementations remain unchanged as they were already well-structured)
+
 @ViewBuilder
- func repositoryLink(repoName: String) -> some View {
-    // Assuming GitHub URLs, adjust base URL if needed
-    let baseURL = "https://github.com/"
-    if let url = URL(string: baseURL + repoName) {
-        Link(repoName, destination: url).lineLimit(1).truncationMode(.middle)
+private func repositoryLink(owner: String, repo: String) -> some View {
+    if let url = URL(string: "https://github.com/\(owner)/\(repo)") {
+        Link("\(owner)/\(repo)", destination: url)
+            .lineLimit(1)
+            .truncationMode(.middle)
     } else {
-        Text(repoName).foregroundColor(.secondary).lineLimit(1).truncationMode(.middle)
+        Text("\(owner)/\(repo)")
+            .foregroundColor(.secondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
     }
 }
 
 @ViewBuilder
- func releaseRow(for release: GitHubRelease) -> some View {
-    VStack(alignment: .leading, spacing: 5) {
-        // Display Release Name/Tag and Date
+private func releaseRow(for release: GitHubRelease) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
         HStack {
             Text(release.displayName)
                 .font(.headline)
-                .lineLimit(1) // Ensure name doesn't wrap excessively
-            Spacer() // Push date to the right
+            Spacer()
             Text(release.publishedAt, style: .date)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         
-        // Display Release Body (Notes)
-        // Use optional chaining and nil-coalescing for the body.
-        // Use .prefix() to limit initial display length.
-        // Use .fixedSize to allow text to wrap correctly within limits.
-        Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200) ?? "No description provided.")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-            .lineLimit(4) // Limit number of lines shown
-            .fixedSize(horizontal: false, vertical: true) // Allows text wrapping
+        Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided.")
+            .font(.body)
+            .foregroundStyle(.secondary)
+            .lineLimit(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
         
-        // --- Optional: Add Read More ---
-        // Show 'Read More' if the body text was truncated
-        // Note: Simple prefix check isn't foolproof for truncation, but gives an idea
-        if let body = release.body?.trimmingCharacters(in: .whitespacesAndNewlines), body.count > 200 {
+        if let body = release.body, body.count > 250 {
             Button("Read More...") {
-                // TODO: Implement showing full body (e.g., navigate, show sheet)
                 print("Show full body for release: \(release.displayName)")
             }
             .font(.caption)
-            .padding(.top, 1)
+            .padding(.top, 2)
         }
     }
 }

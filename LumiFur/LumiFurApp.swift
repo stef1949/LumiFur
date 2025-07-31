@@ -58,7 +58,7 @@ struct RootView: View {
     
     @Environment(\.scenePhase) private var scenePhase
     
-    @State private var showSplash = true
+    //@State private var showSplash = true
     
     var body: some View {
         /*

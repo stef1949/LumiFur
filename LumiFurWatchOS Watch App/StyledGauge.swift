@@ -51,7 +51,7 @@ struct CurrentViewGauge: View {
     var body: some View {
             Text("\(connectivityManager.selectedView)")
             .foregroundStyle(.black)
-            .padding()
+            .padding(.horizontal)
             .glassEffect(.regular.tint(.white))
         
     }
