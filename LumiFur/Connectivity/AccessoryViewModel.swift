@@ -78,6 +78,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var brightness: UInt8 = 255 // No didSet, handled by .sink
     private var brightnessCharacteristic: CBCharacteristic?
     
+    // MARK: – Ambient-light (lux) characteristic
+    @Published var luxValue: UInt16 = 0
     
     /// Call this whenever you want to write the new brightness to the device.
     private func writeBrightness(_ newValue: UInt8) {
@@ -95,41 +97,18 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     // 1) Raw incoming temperature readings
-    private let rawTempSubject = PassthroughSubject<TemperatureData, Never>()
+    //private let rawTempSubject = PassthroughSubject<TemperatureData, Never>()
     
     // 2) Public publisher of a down-sampled, 3-minute sliding window, throttled to 1 Hz
+        // This publisher should be the only temperature data source observed by chart views.
     lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
-        // 1) Turn your connection state into a Bool stream
-        let isConnectedPub = $connectionState
-            .map { $0 == .connected }
-            .removeDuplicates()
-            .share()
-        
-        return rawTempSubject
-        // 2) Pair each TemperatureData with the latest “isConnected” Bool
-            .combineLatest(isConnectedPub)
-        // 3) Only let true-through
-            .filter { _, isConn in isConn }
-        // 4) Extract the raw data
-            .map { reading, _ in reading }
-        // 5) Build & maintain 3-minute buffer
-            .scan([TemperatureData]()) { buffer, new in
-                var buf = buffer
-                buf.append(new)
-                let cutoff = Date().addingTimeInterval(-3 * 60)
-                buf.removeAll { $0.timestamp < cutoff }
-                return buf
-            }
-        // 6) Throttle to ~1 Hz
-            .throttle(for: .seconds(1), scheduler: RunLoop.main, latest: true)
-        // 7) Down-sample to ~100 points
-            .map { buffer in
-                let stride = max(1, buffer.count / 100)
-                return buffer.enumerated().compactMap { idx, pt in
-                    idx % stride == 0 ? pt : nil
-                }
-            }
-            .receive(on: RunLoop.main)
+        // The source of truth is now the @Published property itself.
+        // Its publisher ($temperatureData) emits the entire array whenever it's mutated.
+        return $temperatureData
+            // Throttle updates to prevent the UI from refreshing too frequently.
+            .throttle(for: .seconds(1.5), scheduler: DispatchQueue.main, latest: true)
+            // Ensure the final data is delivered on the main thread, where UI updates must occur.
+            .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }()
     
@@ -256,6 +235,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private var temperatureLogsCharacteristic: CBCharacteristic? // For History
     private var otaCharacteristic: CBCharacteristic? // For OTA Updates
     
+    private var luxCharacteristic: CBCharacteristic?
+    
     private var rssiUpdateTimer: Timer?
     private var isManualDisconnect: Bool = false
     @Published var autoReconnectEnabled: Bool = true
@@ -275,6 +256,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     //private let deviceInfoServiceUUID = CBUUID(string: "cba1d466-344c-4be3-ab3f-189f80dd7518")
     private let deviceInfoCharUUID = CBUUID(string: "cba1d466-344c-4be3-ab3f-189f80dd7599")
     private let otaCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ee")
+    private let luxCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09f0")
+
+        // Threshold to filter insignificant changes
+        private let luxThreshold: UInt16 = 5
+        private var lastLuxValue: UInt16 = 0
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -756,15 +742,21 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         case .poweredOff:
             newState = .bluetoothOff
             _stopScan()
+            // Reset auto-reconnect flag so when BT comes back, it can attempt reconnect
+                        didAttemptAutoReconnect = false
         case .unauthorized:
             newState = .unknown
             logger.error("Bluetooth unauthorized.")
+            // Reset flag in case user fixes authorization
+                        didAttemptAutoReconnect = false
         case .unsupported:
             newState = .unknown
             logger.error("Bluetooth unsupported.")
         case .resetting:
             newState = .unknown
             logger.warning("Bluetooth resetting.")
+            // Reset flag as the Bluetooth stack is resetting
+                      didAttemptAutoReconnect = false
         case .unknown:
             newState = .unknown
             logger.warning("Bluetooth state unknown.")
@@ -800,7 +792,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             if reconnectCopy, let uuid = uuidToTry {
                 self.logger.info("Auto-reconnect to \(uuid)")
                 self.bleQueue.async { [weak self] in
-                    DispatchQueue.main.async {  self?._connectToStoredUUID(uuid)}
+                      self?._connectToStoredUUID(uuid)
                 }
             }
             else if scanCopy, self.connectionState == .disconnected {
@@ -812,7 +804,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private func _connectToStoredUUID(_ uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             logger.error("Invalid UUID string for reconnect: \(uuidString)")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async {
+                           self.connectionState = .disconnected
+                           self._scanForDevices()
+                       }
             return
         }
         logger.info("Retrieving peripheral for auto-reconnect: \(uuidString) on bleQueue")
@@ -823,7 +818,10 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             _connect(to: device)
         } else {
             logger.warning("Peripheral \(uuidString) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async {
+                            self.connectionState = .disconnected
+                            self._scanForDevices()
+                        }
         }
     }
     
@@ -991,7 +989,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 // Re-enable auto-reconnect attempt flag if it was specific to one session
                 self.didAttemptAutoReconnect = false
                 bleQueue.async { [uuidToReconnect] in
-                    DispatchQueue.main.async { AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect) }
+                    AccessoryViewModel.shared._connectToStoredUUID(uuidToReconnect)
                 }
             } else if !wasManual {
                 self.logger.info("Not auto-reconnecting (either disabled or no last UUID); starting scan.")
@@ -1016,7 +1014,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 temperatureLogsCharUUID,
                 brightnessCharUUID,
                 deviceInfoCharUUID,
-                otaCharUUID
+                otaCharUUID,
+                luxCharUUID
             ]
             peripheral.discoverCharacteristics(characteristicsToDiscover, for: service)
             return
@@ -1068,6 +1067,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             case otaCharUUID:
                 otaCharacteristic = characteristic
                 peripheral.setNotifyValue(true, for: characteristic)
+            case luxCharUUID:
+                luxCharacteristic = characteristic
+                // start notifications on the lux char
+                peripheral.setNotifyValue(true, for: characteristic)
+                //logger.info("Subscribed to lux characteristic \(luxCharUUID)")
             default:
                 logger.debug("Ignoring unknown characteristic \(characteristic.uuid)")
             }
@@ -1188,6 +1192,24 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                         self.otaStatusMessage = "OTA Unknown Response"
                     }
                 }
+            }
+            
+        case luxCharUUID:
+            guard let data = characteristic.value, data.count >= 2 else {
+                logger.warning("Lux update: invalid data length \(characteristic.value?.count ?? 0)")
+                return
+            }
+            // little-endian uint16_t
+            let rawLux = UInt16(data[0]) | (UInt16(data[1]) << 8)
+            // threshold filter
+            if abs(Int(rawLux) - Int(lastLuxValue)) >= Int(luxThreshold) {
+                lastLuxValue = rawLux
+                DispatchQueue.main.async { [weak self] in
+                    self?.luxValue = rawLux
+                }
+                logger.debug("🌞 Updated lux: \(rawLux) lx")
+            } else {
+                logger.debug("Lux change (\(rawLux)) < threshold, skipped")
             }
             
         default:
@@ -1548,8 +1570,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             _connect(to: device)
         } else {
             logger.warning("Stored peripheral \(uuid) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async { self.connectionState = .disconnected }; _scanForDevices()
-        }
+            self.connectionState = .disconnected }; _scanForDevices()
+        
     }
     
     // MARK: - Widget & Live Activity Update Helpers (Called on Main Thread)

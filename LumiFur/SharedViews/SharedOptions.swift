@@ -60,7 +60,8 @@ struct SharedOptions {
         .symbol("flame.fill"),
         .emoji("😲"),
         .emoji("🌀"),
-        .emoji("꩜")
+        .emoji("꩜"),
+        .symbol("bubble.and.pencil")
     ]
 }
 

@@ -230,8 +230,18 @@ private struct UnifiedConnectionView: View {
                 HStack {
                     VStack {
                         
-                        
                         SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+                        
+                        Spacer()
+                        
+                        // Controller Image
+                        Image("mps3")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .shadow(radius: 6)
+                            .padding(.bottom, 8)
                     }
                     Spacer()
                     DeviceInfoView(accessoryViewModel: .shared) // Assuming a shared instance or pass bleModel

@@ -34,15 +34,21 @@ extension EnvironmentValues {
 
 @main
 struct LumiFurApp: App {
+    //@StateObject private var bleModel = AccessoryViewModel()
+    //@StateObject private var settings = SettingsStore()
+    
     //@StateObject private var AccessoryViewModel = AccessoryViewModel.shared
     let repositoryConfiguration = RepositoryConfig(
-            appRepoName: "stef1949/LumiFur",          // App Repo
-            controllerRepoName: "stef1949/LumiFur_Controller"  // Controller Repo
-        )
+        appRepoName: "stef1949/LumiFur",          // App Repo
+        controllerRepoName: "stef1949/LumiFur_Controller"  // Controller Repo
+    )
     var body: some Scene {
         WindowGroup {
             RootView()
             //ContentView()
+            
+                //.environmentObject(settings)
+            
                 .environment(\.repositoryConfig, repositoryConfiguration) // <<< CHECK THIS LINE
         }
     }
@@ -58,6 +64,11 @@ struct RootView: View {
     
     @Environment(\.scenePhase) private var scenePhase
     
+    // 1. Create your view model as a @StateObject here. This ties its lifecycle
+    //    to the app's lifecycle, not a specific view. It will be created
+    //    only once. We use the `.shared` instance you've already defined.
+    @StateObject private var accessoryManager = AccessoryViewModel.shared
+    
     //@State private var showSplash = true
     
     var body: some View {
@@ -67,8 +78,8 @@ struct RootView: View {
          SplashView(showSplash: $showSplash)
          }
          */
-       // RootView2()
-        ContentView()
+        // RootView2()
+        ContentView(bleModel: accessoryManager)
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNew()
             }

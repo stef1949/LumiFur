@@ -23,7 +23,7 @@ struct ChartView: View {
     /// The source of truth for connection and sensor data. Passed as an `@ObservedObject`
     /// because this view's lifecycle is managed by its parent.
     @ObservedObject var accessoryViewModel: AccessoryViewModel
-
+    
     // MARK: - State
     
     /// Stores the active data subscription. Kept as state to manage its lifecycle.
@@ -32,60 +32,59 @@ struct ChartView: View {
     /// A downsampled and recent collection of temperature data points for rendering.
     /// Keeping this in `@State` ensures the view updates when the data changes.
     @State private var samples: [TemperatureData] = []
-
+    
+    /// OPTIMIZATION: The Y-axis domain is stored in `@State`. This prevents it from being
+    /// recalculated on every view update, which is inefficient. It's now only calculated
+    /// when new data arrives.
+    @State private var yAxisDomain: ClosedRange<Double> = 20...30
+    
+    // MARK: - Animation State
+    
+    /// The size of the chart's plot area, captured using a GeometryReader.
+    @State private var chartPlotSize: CGSize = .zero
+    
+    /// The completion fraction of the animation, from 0.0 (hidden) to 1.0 (fully visible).
+    @State private var animationEndFraction: CGFloat = 0.0
+    
     // MARK: - Body
     
     var body: some View {
-        // The entire view is a VStack. All modifiers are applied to this container.
         VStack(spacing: 8) {
-            // Header with an interactive title and a chevron to indicate expandability.
             HStack {
                 Text("Temperature")
                     .font(.headline)
                 Spacer()
                 Image(systemName: "chevron.up")
-                    .rotationEffect(.degrees(isExpanded ? 0 : 180)) // Corrected rotation
+                    .rotationEffect(.degrees(isExpanded ? 0 : 180))
             }
-            .contentShape(Rectangle()) // Makes the entire HStack tappable
+            .contentShape(Rectangle())
             .onTapGesture {
-                 isExpanded.toggle() // The parent's @State changes, triggering animation
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    isExpanded.toggle()
+                }
             }
-
-            // The chart is conditionally rendered only when `isExpanded` is true.
+            
             if isExpanded {
-                Chart(samples) { element in
-                    LineMark(
-                        x: .value("Time", element.timestamp),
-                        y: .value("℃", element.temperature)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 2))
-                }
-                .chartXScale(domain: Date().addingTimeInterval(-3 * 60) ... Date())
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .minute)) {
-                        AxisValueLabel(format: .dateTime.minute().second(), centered: true)
-                             .font(.caption2)
+                // CORRECTED: Call the styledChart function with a trailing closure
+                // that provides the chart's content (the marks).
+                styledChart {
+                    // Use ForEach to create marks from the dynamic samples array.
+                    // Note: Your TemperatureData model must conform to Identifiable.
+                    ForEach(samples) { element in
+                        LineMark(
+                            x: .value("Time", element.timestamp),
+                            y: .value("℃", element.temperature)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5))
                     }
                 }
-                .chartYAxis {
-                    AxisMarks { axis in
-                        AxisValueLabel {
-                            if let temp = axis.as(Double.self) {
-                                Text(String(format: "%.0f°C", temp))
-                                    .font(.caption2)
-                            }
-                        }
-                    }
-                }
-                // A fixed height is given to the chart for a stable layout.
-                .frame(height: 100)
-                // A gentle transition for the chart appearing and disappearing.
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.opacity) // Use a simple fade for the container
             }
         }
+        //.scrollClipDisabled()
+        //.backgroundStyle(.clear)
         .padding()
-        // Using .onChange is the modern, correct way to react to state changes.
         .onChange(of: isExpanded) { _, isNowExpanded in
             if isNowExpanded {
                 startSubscription()
@@ -93,8 +92,6 @@ struct ChartView: View {
                 stopSubscription()
             }
         }
-        // These ensure the subscription is correctly handled when the view
-        // appears (already expanded) or disappears from the screen entirely.
         .onAppear {
             if isExpanded {
                 startSubscription()
@@ -102,50 +99,111 @@ struct ChartView: View {
         }
         .onDisappear(perform: stopSubscription)
     }
-
-    // MARK: - Optimization Logic
-
-    /// **Optimization:** Subscribes to the viewModel's temperature data.
-    /// This function is only called when the chart is expanded. It uses `throttle`
-    /// to limit the rate of updates, preventing the UI from updating too frequently.
+    
+    
+    // MARK: - Chart View Builder
+    
+    /// A helper function to build and style the chart.
+    /// It now correctly accepts a closure that returns ChartContent.
+    private func styledChart<Content: ChartContent>(@ChartContentBuilder content: () -> Content) -> some View {
+        // CORRECTED: Create the Chart here and apply modifiers to it.
+        Chart {
+            content() // Render the marks provided by the closure.
+        }
+        .frame(height: 100)
+        .chartXScale(domain: Date().addingTimeInterval(-3 * 60) ... Date())
+        .chartYScale(domain: yAxisDomain)
+        .chartYAxis {
+            AxisMarks(preset: .automatic, position: .leading) { axis in
+                //AxisGridLine()
+                AxisValueLabel {
+                    if let temp = axis.as(Double.self) {
+                        Text(String(format: "%.0f°C", temp))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .minute)) {
+                AxisValueLabel(format: .dateTime.minute().second(), centered: true)
+                    .font(.caption2)
+            }
+        }
+        // Apply animation modifiers
+        .chartPlotStyle { plotArea in
+            plotArea.overlay {
+                GeometryReader { geometry in
+                    Color.clear.onAppear {
+                        self.chartPlotSize = geometry.size
+                    }
+                }
+            }
+        }
+        .mask {
+            Rectangle()
+                .padding(.trailing, (1 - animationEndFraction) * chartPlotSize.width)
+        }
+    }
+    
+    
+    // MARK: - Data and Subscription Logic
+    
+    /// Subscribes to the viewModel's temperature data.
     private func startSubscription() {
         guard dataSubscription == nil else { return }
         print("✅ Starting Temperature data subscription.")
-
-        dataSubscription = accessoryViewModel.temperatureChartPublisher
-            // Throttle ensures we don't receive a flood of updates.
-            .throttle(for: 0.5, scheduler: RunLoop.main, latest: true)
-            .sink { newSamples in
-                // Process and downsample the data for efficient rendering.
-                self.samples = self.processData(from: newSamples)
-            }
         
-        // Immediately populate with existing data on expand
-        self.samples = processData(from: accessoryViewModel.temperatureData)
+        let initialData = processData(from: accessoryViewModel.temperatureData)
+        self.samples = initialData
+        updateYAxisDomain(with: initialData)
+        
+        // Use DispatchQueue to ensure the view has been rendered before animating.
+        DispatchQueue.main.async {
+            withAnimation(.linear(duration: 0.5)) {
+                self.animationEndFraction = 1.0
+            }
+        }
+        
+        dataSubscription = accessoryViewModel.temperatureChartPublisher
+        // Throttle is re-enabled for better performance.
+        //.throttle(for: 1.0, scheduler: RunLoop.main, latest: true)
+            .sink { newSamples in
+                let processed = self.processData(from: newSamples)
+                self.samples = processed
+                self.updateYAxisDomain(with: processed)
+            }
     }
-
-    /// **Optimization:** Cancels the subscription and clears the data.
-    /// This is crucial for performance. It stops all data processing and frees memory
-    /// when the chart is collapsed or no longer on screen.
+    
+    /// Cancels the subscription to stop data processing.
     private func stopSubscription() {
         dataSubscription?.cancel()
         dataSubscription = nil
-        samples = [] // Clear samples to free memory and ensure a clean state on next expand.
+        // Reset the animation state for the next time it opens.
+        animationEndFraction = 0.0
+        // Clear samples so the view is empty on collapse, ready for re-animation.
+        samples = []
         print("🛑 Stopped Temperature data subscription.")
     }
-
-    /// **Optimization:** Downsamples the data to a manageable size (~100 points).
-    /// Rendering thousands of data points is inefficient. This function ensures the chart
-    /// remains visually representative without overloading the rendering engine.
+    
+    /// Downsamples data for rendering efficiency.
     private func processData(from allData: [TemperatureData]) -> [TemperatureData] {
-        let cutoff = Date().addingTimeInterval(-3 * 60) // Only show last 3 minutes
+        let cutoff = Date().addingTimeInterval(-3 * 60) // Last 3 minutes
         let recent = allData.filter { $0.timestamp >= cutoff }
         
-        // If there are more than 100 points, take every Nth point.
         let strideBy = max(1, recent.count / 100)
-        
         return recent.enumerated().compactMap { index, element in
             index.isMultiple(of: strideBy) ? element : nil
+        }
+    }
+    
+    /// Calculates and updates the Y-axis domain based on the current samples.
+    private func updateYAxisDomain(with data: [TemperatureData]) {
+        if !data.isEmpty {
+            let temps = data.map(\.temperature)
+            let minTemp = temps.min() ?? 15
+            let maxTemp = temps.max() ?? 25
+            self.yAxisDomain = (minTemp - 5)...(maxTemp + 5)
         }
     }
 }

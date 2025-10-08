@@ -15,7 +15,8 @@ struct HeaderView: View {
     let connectionState: ConnectionState
     let connectionStatus: String
     let signalStrength: Int
-
+    let luxValue: Double
+    
     // It OWNS and MANAGES the state for its child's animation.
     @State private var showSignalView: Bool = false
     
@@ -34,7 +35,8 @@ struct HeaderView: View {
                 connectionState: self.connectionState,
                 connectionStatus: self.connectionStatus,
                 signalStrength: self.signalStrength,
-                showSignalView: self.showSignalView // It passes its own state down.
+                showSignalView: self.showSignalView, // It passes its own state down.
+                luxValue: self.luxValue
             )
         }
         .padding(.horizontal)

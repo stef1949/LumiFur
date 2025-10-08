@@ -12,6 +12,7 @@
 		35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35197ABE2DA1A17100BE0EE3 /* MarkdownUI */; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
 		352B63222DA31518004E5E74 /* MeshGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63212DA31514004E5E74 /* MeshGradient.swift */; };
+		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
 		354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354069322DF4BB7F00D9040D /* DeviceInfoView.swift */; };
 		354069352DF4D77B00D9040D /* OTAUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354069342DF4D77B00D9040D /* OTAUpdateView.swift */; };
 		354470452DA55F0E0061FD83 /* SharedOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354470442DA55EF70061FD83 /* SharedOptions.swift */; };
@@ -27,6 +28,8 @@
 		358151A92E16D23B003CE8A3 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151A82E16D236003CE8A3 /* ConnectionState.swift */; };
 		358151AB2E16FF48003CE8A3 /* AccessoryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151AA2E16FF48003CE8A3 /* AccessoryViewModelTests.swift */; };
 		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
+		358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */; };
+		358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */; };
 		3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */; };
 		35A391A22DD77A6300F60E47 /* GitHubRelease.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D1A10F2D9A1C8A00AEC573 /* GitHubRelease.swift */; };
@@ -135,6 +138,7 @@
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
 		352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionToggleView.swift; sourceTree = "<group>"; };
 		352B63212DA31514004E5E74 /* MeshGradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshGradient.swift; sourceTree = "<group>"; };
+		35382F512E4CC7DD0087A8BE /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		354069322DF4BB7F00D9040D /* DeviceInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoView.swift; sourceTree = "<group>"; };
 		354069342DF4D77B00D9040D /* OTAUpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTAUpdateView.swift; sourceTree = "<group>"; };
 		354470442DA55EF70061FD83 /* SharedOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedOptions.swift; sourceTree = "<group>"; };
@@ -149,6 +153,8 @@
 		358151A82E16D236003CE8A3 /* ConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionState.swift; sourceTree = "<group>"; };
 		358151AA2E16FF48003CE8A3 /* AccessoryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModelTests.swift; sourceTree = "<group>"; };
 		3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cpuUsageData.swift; sourceTree = "<group>"; };
+		358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceGridSection.swift; sourceTree = "<group>"; };
+		358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceCellView.swift; sourceTree = "<group>"; };
 		3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LumiFurWatchOS Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LumiFurWatchOS Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LumiFurWatchOS Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -332,6 +338,7 @@
 				35D1A10D2D9A18D700AEC573 /* ReleaseNotes.txt */,
 				350811AD2C8B49160071C68C /* ViewExtensions.swift */,
 				354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */,
+				35382F512E4CC7DD0087A8BE /* SettingsStore.swift */,
 			);
 			path = SharedViews;
 			sourceTree = "<group>";
@@ -385,6 +392,8 @@
 				35E4D4032DF88E38004EB85E /* WhatsNew.swift */,
 				35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
+				358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */,
+				358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */,
 				3580941E2E2BF0A0005DB779 /* ChartView.swift */,
 				357EEA682E0EE00A0085E438 /* CustomLedView.swift */,
 				35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */,
@@ -747,11 +756,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */,
+				358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
+				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
 				35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */,
 				35E93AB02E17EDD600E9D52F /* AboutSectionView.swift in Sources */,
 				3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */,
+				358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */,
 				35CD1DBC2E15AE1B0028A6C9 /* StatusSectionView.swift in Sources */,
 				35E4D4062DF88E78004EB85E /* ReleaseNotesView.swift in Sources */,
 				354069352DF4D77B00D9040D /* OTAUpdateView.swift in Sources */,
@@ -1071,7 +1083,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3.1.1;
+				CURRENT_PROJECT_VERSION = 4.0.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1102,7 +1114,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 7.2;
+				MARKETING_VERSION = 8.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1153,7 +1165,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3.1.1;
+				CURRENT_PROJECT_VERSION = 4.0.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1176,7 +1188,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 7.2;
+				MARKETING_VERSION = 8.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

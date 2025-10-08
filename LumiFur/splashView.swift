@@ -40,8 +40,6 @@ struct SplashView: View {
                                 }
                             }
                             .aspectRatio(contentMode: .fill)
-                        //.opacity(0.5)
-                        //.background(Material.ultraThin)
                             .clipped()
                             .frame(minWidth: 30, maxHeight: .infinity)
                             //.border(.red)
@@ -134,21 +132,11 @@ struct SplashView: View {
                                         //Spacer()
                                     }
                                 }
-                                
                                 .frame(maxWidth: 250)
                                 .clipped()
                                 .padding()
-                                //                                .background {
-                                //                                    RoundedRectangle(cornerRadius: 15)
-                                //                                        .fill(Color.secondary.opacity(0.25))
-                                //                                        .padding(.horizontal, 12)
-                                //                                }
                                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 32))
-                                
                             }
-                        
-                        
-                        //.mask {RoundedRectangle(cornerRadius: 24, style: .continuous)}
                             .padding()
                             .mask {RoundedRectangle(cornerRadius: 32, style: .continuous)}
                             .shadow(color: Color(.sRGBLinear, red: 0/255, green: 0/255, blue: 0/255).opacity(0.15), radius: 18, x: 0, y: 14)
@@ -166,35 +154,20 @@ struct SplashView: View {
                                 showSplash = false
                             }
                         }
-                        //.buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         //.border (.green)
                         .padding(20)
                         .padding(.horizontal, 16)
                         .glassEffect(.regular.interactive())
-                        .foregroundStyle(.background)
-                        /// MARK: Splash view button
-                        //                        NavigationLink {
-                        //                            InfoView()
-                        //                        } label: {
-                        //                            Label("About", systemImage: "info.circle")
-                        //                        }
-                        //                        .padding(.top)
-                        //                        .foregroundStyle(.secondary)
-                        //                        .font(.subheadline)
-                        
+                        .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
-                    //.border(.blue)
-                    
                     Spacer()
-                    
                 }
             }
             .background(Color.white)
-            
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     // Consider moving Info link into the About section?
                     NavigationLink(destination: InfoView()) {
                         Image(systemName: "info.circle")

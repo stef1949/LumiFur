@@ -248,7 +248,7 @@ struct LumiFur_WidgetLiveActivity: Widget {
                          */
                         Spacer()
                         mps3Image(namespace: animationNamespace)
-                            .offset(x: 10)
+                            //.offset(x: 10)
                     }
                     
                     //Image cannot exceed 4kb

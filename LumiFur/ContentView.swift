@@ -248,18 +248,27 @@ struct AppInfo {
  }
  }
  }
+ }
+ }
+ }
  */
 
+/*
 struct RootView2: View {
     var body: some View {
-        ContentView()
+        ContentView(bleModel: bleModel)
     }
 }
+*/
 
 // MARK: ContentView
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var accessoryViewModel = AccessoryViewModel()
+    //@StateObject private var accessoryViewModel = AccessoryViewModel()
+    
+    // 1. Declare this as an @ObservedObject. It will receive the instance
+        //    created in the App struct.
+        @ObservedObject var bleModel: AccessoryViewModel
     
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
@@ -281,6 +290,8 @@ struct ContentView: View {
     
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
     @State private var showSplash = true  // Local state to control the splash screen appearance.
+    
+    @State private var drawProgress: CGFloat = 1.0
     
     @Environment(\.colorScheme) var colorScheme  // Colot Scheme
     var overlayColor: Color {
@@ -437,7 +448,7 @@ struct ContentView: View {
                 //Divider()
                 NavigationStack {
                     SettingsView(
-                        bleModel: accessoryViewModel, selectedMatrix: $matrixStyle
+                        bleModel: bleModel, selectedMatrix: $matrixStyle
                     )
                     .navigationTitle("Settings")
                 }
@@ -488,29 +499,31 @@ struct ContentView: View {
     private var detailContent: some View {
         //@AppStorage("charts") var isChartsExpanded = false
         @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
+        
         ZStack {
             if selectedSidebarItem == .dashboard {
                 VStack {
-                    HeaderView(
-                        connectionState: accessoryViewModel.connectionState,
-                        connectionStatus: accessoryViewModel.connectionStatus,
-                        signalStrength: accessoryViewModel.signalStrength
-                    )
+                    HStack{
+                        HeaderView(
+                            connectionState: bleModel.connectionState,
+                            connectionStatus: bleModel.connectionStatus,
+                            signalStrength: bleModel.signalStrength,
+                            luxValue: Double(bleModel.luxValue)
+                        )
+                    }
                     optionGridSection
                     ledArraySection
                     //.border(.green)
-                   
                     
                     FaceGridSection(
-                        selectedView: accessoryViewModel.selectedView,
-                        onSetView: { accessoryViewModel.setView($0) },
+                        selectedView: bleModel.selectedView,
+                        onSetView: { bleModel.setView($0) },
                         auroraModeEnabled: auroraModeEnabled
                         //items: SharedOptions.protoActionOptions3
                     )
-                    
                     .zIndex(-1)
                     
-                    ChartView(isExpanded: $isChartsExpanded, accessoryViewModel: accessoryViewModel)
+                    ChartView(isExpanded: $isChartsExpanded, accessoryViewModel: bleModel)
                         .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
                         .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
                         .padding(.horizontal)
@@ -819,7 +832,7 @@ struct ContentView: View {
         // Computed once per body re-evaluation of FaceGridSection
         private var lightColor: Color { colorScheme == .dark ? .white : .black }
         private var darkColor: Color {
-            colorScheme == .dark ? .clear : .init(UIColor.systemGray5)
+            colorScheme == .dark ? .black : .init(UIColor.systemGray5)
         }
         // Make grid configuration static so it's not re-created
         private static let twoColumnGrid = [
@@ -841,7 +854,7 @@ struct ContentView: View {
         // --- The rest of your view remains the same ---
         @State private var selectedItemID: FaceItem.ID?
         
-        @Namespace private var glassNamespace
+        //@Namespace private var glassNamespace
         
         var body: some View {
             /*
@@ -851,7 +864,7 @@ struct ContentView: View {
              .font(.headline)
              .padding()
              */
-            GlassEffectContainer {
+           // GlassEffectContainer {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
                         // 2. ForEach loops over identifiable data, not indices.
@@ -862,8 +875,8 @@ struct ContentView: View {
                                 isSelected: selectedItemID == item.id,
                                 auroraModeEnabled: auroraModeEnabled,
                                 overlayColor: lightColor,
-                                backgroundColor: darkColor,
-                                namespace: glassNamespace,
+                                backgroundColor: darkColor
+                                //namespace: glassNamespace,
                                 
                                 // The action now provides the item directly.
                             ) {tappedItem in
@@ -871,25 +884,23 @@ struct ContentView: View {
                                 selectedItemID = tappedItem.id
                                 // 2. Find the 0-based index of the tapped item in our array.
                                 if let index = items.firstIndex(where: { $0.id == tappedItem.id }) {
-                                    
                                     // 3. Convert to the 1-based command index that the hardware expects.
                                     let commandIndex = index + 1
-                                    
                                     // 4. Call the parent's `onSetView` function to send the command.
                                     onSetView(commandIndex)
-                                    
                                     // Optional but recommended: Add a print statement for debugging.
-                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")                            }
+                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")
+                                }
                             }
                             .equatable() // This is good, keep it!
                         }
                     }
                     .padding(.horizontal)
                     //.scrollContentBackground(.hidden)
-                    //.border(.red)
                 }
+                .scrollClipDisabled()
                 .scrollDismissesKeyboard(.automatic)
-            }
+                //.border(.red)
             // This watches for external changes (e.g., from the watch) and updates the local UI.
             .onChange(of: selectedView) { _, newViewIndex in
                 let modelIndex = newViewIndex - 1
@@ -923,7 +934,7 @@ struct ContentView: View {
             print(
                 "Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet)."
             )
-            accessoryViewModel.setView(viewToSet)
+            bleModel.setView(viewToSet)
         } else {
             print(
                 "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions3."
@@ -1136,82 +1147,6 @@ struct ChartEntryAnimation: ViewModifier {
             .opacity(isVisible ? 1 : 0)
             .offset(y: isVisible ? 0 : 20)
             .animation(.easeInOut(duration: 0.3), value: isVisible)
-    }
-}
-
-// MARK: – FaceCellView
-// MARK: –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-// 2) Pure, Equatable cell
-struct FaceCellView: View, Equatable {
-    // --- PROPERTIES ---
-    // 1. The data model is now a single, immutable object.
-    let item: FaceItem
-    
-    // All other state and configuration properties remain.
-    let isSelected: Bool
-    let auroraModeEnabled: Bool
-    let overlayColor: Color
-    let backgroundColor: Color
-    let namespace: Namespace.ID
-    
-    // 2. The action closure now passes back the entire item. This is more robust.
-    let action: (FaceItem) -> Void
-    
-    
-    // This is well-implemented, no changes needed. It's correctly a @State
-    // property to persist it for the view's lifetime.
-    @State private var feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-    
-    // --- EQUATABLE CONFORMANCE ---
-    // 3. The comparison is now cleaner and more correct.
-    // It relies on the FaceItem's own Equatable conformance.
-    static func == (lhs: FaceCellView, rhs: FaceCellView) -> Bool {
-        lhs.item == rhs.item &&
-        lhs.isSelected == rhs.isSelected &&
-        lhs.auroraModeEnabled == rhs.auroraModeEnabled &&
-        lhs.overlayColor == rhs.overlayColor &&
-        lhs.backgroundColor == rhs.backgroundColor
-    }
-    
-    var body: some View {
-        Button {
-            // Prepare and trigger haptic feedback
-            feedbackGenerator.prepare()
-            feedbackGenerator.impactOccurred()
-            
-            // 4. The action now passes back the stable 'item' object, not the fragile 'index'.
-            action(item)
-            
-        } label: {
-            // 5. We switch on the item's content, not a separate property.
-            switch item.content {
-            case .emoji(let e):
-                Text(e)
-                    .font(.system(size: 40))
-                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                        content.blur(radius: phase.isIdentity ? 0 : 5)
-                    }
-            case .symbol(let s):
-                Image(systemName: s)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(40)
-                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                        content.blur(radius: phase.isIdentity ? 0 : 5)
-                    }
-            }
-        }
-        //.aspectRatio(1, contentMode: .fit)
-        .frame(maxWidth: 160, maxHeight: 160)
-        .aspectRatio(1, contentMode: .fit)
-        // 6. CRITICAL: Use the item's stable 'id' for the matched geometry effect.
-        // This ensures animations are always correct, even if the list is reordered.
-        .glassEffectID(item.id, in: namespace)
-        .glassEffect(
-            .regular.tint(isSelected ? .primary : .clear)
-            .interactive(),
-            in: RoundedRectangle(cornerRadius: 25)
-        )
     }
 }
 
@@ -2453,7 +2388,7 @@ struct VibrantBackground: View {
     // 2. ContentView now uses this local state. When you use the picker
     //    in the preview canvas, `previewMatrixStyle` will actually change.
     //    (Assuming ContentView has an init that accepts these, or default values)
-    return ContentView()
+    ContentView(bleModel: AccessoryViewModel())
 }
  
 #Preview("SplashView") {
@@ -2563,5 +2498,7 @@ class MockViewModel: AccessoryViewModel {
  @Previewable @StateObject var accessoryViewModel = MockViewModel(state: .connecting, rssi: -70)
  ContentView(accessoryViewModel: accessoryViewModel)
  }
+ }
  */
+
 

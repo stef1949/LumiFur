@@ -13,21 +13,41 @@ struct ConnectionStateIconView: View {
     let state: ConnectionState
 
     var body: some View {
-        // The Group allows us to apply modifiers to the conditional content within.
         Group {
             if state.isAnimated {
-                // View for animated states (.connecting, .scanning, etc.)
-                Image(systemName: state.imageName)
+                imageView()
                     .symbolEffect(.variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeat(.continuous))
             } else {
-                // View for static states (.connected, .disconnected, etc.)
-                Image(systemName: state.imageName)
+                imageView()
                     .symbolRenderingMode(state == .connected ? .multicolor : .monochrome)
                     .opacity(state == .connected ? 1.0 : 0.7)
             }
         }
-        .foregroundStyle(state.statecolor) // Applies color to monochrome and animated symbols
-        // Use a smooth symbol-to-symbol animation when the state changes.
+        .foregroundStyle(state.statecolor)
         .contentTransition(.symbolEffect(.replace))
+    }
+
+    @ViewBuilder
+    private func imageView() -> some View {
+        if usesSystemSymbol(state.imageName) {
+            Image(systemName: state.imageName)
+        } else {
+            Image(state.imageName) // custom asset from asset catalog
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+        }
+    }
+
+    /// Determines if a symbol name is an SF Symbol or a custom asset.
+    private func usesSystemSymbol(_ name: String) -> Bool {
+        switch name {
+        case "antenna.radiowaves.left.and.right",
+             "wifi.slash",
+             "wifi.exclamationmark":
+            return true
+        default:
+            return false // Treat "bluetooth.fill" as a custom symbol
+        }
     }
 }
