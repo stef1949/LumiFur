@@ -134,7 +134,7 @@ struct LumiFur_WidgetAttributes: ActivityAttributes {
     var name: String
     
 }
-#endif
+#endif // canImport(ActivityKit)
 
 private struct SignalBar: View, Equatable {
     let filled: Bool

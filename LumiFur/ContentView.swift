@@ -512,7 +512,7 @@ struct ContentView: View {
                         )
                     }
                     optionGridSection
-                    ledArraySection
+                    //ledArraySection
                     //.border(.green)
                     
                     FaceGridSection(
@@ -530,7 +530,6 @@ struct ContentView: View {
                         .padding(.bottom)
                     // This animation smoothly handles the frame height change.
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
-                    
                 }
                 .onAppear(perform: prepareHaptics)
                 .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in
@@ -551,7 +550,6 @@ struct ContentView: View {
                     )
             }
         }
-        //.ignoresSafeArea(.keyboard, edges: .all)
     }
 /*
     private var headerSection: some View {
@@ -655,7 +653,6 @@ struct ContentView: View {
         .scrollContentBackground(.hidden)
         //.background(overlayColor)
     }
-    
     static let gradientStart = Color(
         red: 0 / 255,
         green: 0 / 255,
@@ -666,7 +663,6 @@ struct ContentView: View {
         green: 172.0 / 255,
         blue: 120.0 / 255
     )
-
     // Define data structure for options
     struct OptionConfig: Identifiable {
         let id = UUID()
@@ -688,7 +684,6 @@ struct ContentView: View {
             self.action = action
         }
     }
-
     // Data source for the grid (excluding custom message initially, as it has unique behavior)
     private var standardOptions: [OptionConfig] {
         [
@@ -730,7 +725,6 @@ struct ContentView: View {
             },
         ]
     }
-
     private var optionGridSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {  // Added showsIndicators: false
             LazyHGrid(rows: twoRowOptionGrid) {

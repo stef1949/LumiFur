@@ -760,8 +760,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         case .unknown:
             newState = .unknown
             logger.warning("Bluetooth state unknown.")
-            
-            /*@unknown */ default:
+        /*@unknown*/ default:
             newState = .unknown
             logger.warning("Bluetooth state @unknown default.")
         }
@@ -1842,35 +1841,19 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     ) {
         self.init() // Call the main designated initializer of the class.
         
-        // --- ADAPT THIS SECTION ---
-        // You must change these lines to set the *actual internal properties*
-        // that control your get-only computed properties.
-        
         if isConnected {
-            // Example: If isConnected depends on a `connectedPeripheral` property,
-            // you would set it to a mock instance here.
-            // You might need to create a static mock device for this.
             self.targetPeripheral = PeripheralDevice.mock.peripheral
         }
         
-        // Example: If isScanning is computed from an internal state variable.
-        // You might need to expose a private property for testing/previews.
-        // For instance, if `isScanning` depends on a private `_isScanning`, set that.
-        
-        // Example: If firmwareVersion is settable, you can set it directly.
         self.firmwareVersion = firmwareVersion
-        
-        // Example: Set the list of discovered devices.
         self.discoveredDevices = discoveredDevices
         
-        // Example: Set an error state.
         if let errorMessage = errorMessage {
             self.errorMessage = errorMessage
             self.showError = true
         }
-        // --- END ADAPTATION ---
     }
-#endif
+#endif // DEBUG
     
 }// End of AccessoryViewModel
 
@@ -1915,3 +1898,4 @@ extension PeripheralDevice {
 }
 
 #endif
+
