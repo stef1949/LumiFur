@@ -57,7 +57,7 @@ Contributions to LumiFur are welcome! Please feel free to submit pull requests, 
 
 ## License
 
-[Pending]
+[BSD-3-Clause]
 
 ## Acknowledgments
 
