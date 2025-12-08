@@ -4,10 +4,4 @@
    <FileRef
       location = "self:">
    </FileRef>
-   <FileRef
-      location = "group:AccessoryViewModelTests.swift">
-   </FileRef>
-   <FileRef
-      location = "group:GitHubServiceTests.swift">
-   </FileRef>
 </Workspace>

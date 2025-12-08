@@ -289,93 +289,91 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         super.init()
         accessoryVMInstanceCount += 1
         logger.warning("🔧 AccessoryViewModel init — now \(accessoryVMInstanceCount) instance(s)")
+
+        centralManager = CBCentralManager(delegate: self, queue: bleQueue)
+
+        configureCombinePipelines()
+
+        previouslyConnectedDevices = loadStoredPeripherals()
+        logger.info("Initialized previouslyConnectedDevices with \(self.previouslyConnectedDevices.count) items: \(self.previouslyConnectedDevices.map { $0.name })") // ADD THIS
+        lastConnectedPeripheralUUID = UserDefaults.standard.string(forKey: "LastConnectedPeripheralUUID")
+
+        configureTargetPeripheralPublisher()
+        registerNotificationObservers()
+        setupWidgetAndActivityDebounce()
+
+        Task { @MainActor in
+            self.updateWidgetAndActivity()
+        }
+        Task { await endAllLumiFurActivities() }
+    }
+
+    // MARK: Setup Helpers
+    private func configureCombinePipelines() {
         temperatureSubject
             .receive(on: DispatchQueue.main)
             .sink { [weak self] sample in
                 self?.temperatureData.append(sample)
             }
             .store(in: &cancellables)
-        
-        // Whenever `brightness` changes, send it over BLE
+
         $brightness
-            .dropFirst() // ignore initial value
-            .debounce(for: .milliseconds(5), scheduler: RunLoop.main) // ADDED: Debounce UI changes
+            .dropFirst()
+            .debounce(for: .milliseconds(5), scheduler: RunLoop.main)
             .sink { [weak self] newVal in
                 guard let self = self else { return }
-                // ADDED: Only write if the change didn't come from the peripheral
                 if !self.updateFromPeripheral {
                     self.writeBrightness(newVal)
                 }
             }
             .store(in: &cancellables)
-        
-        centralManager = CBCentralManager(delegate: self, queue: bleQueue)
-        
-        self.previouslyConnectedDevices = loadStoredPeripherals()
-        logger.info("Initialized previouslyConnectedDevices with \(self.previouslyConnectedDevices.count) items: \(self.previouslyConnectedDevices.map { $0.name })") // ADD THIS
-        self.lastConnectedPeripheralUUID = UserDefaults.standard.string(forKey: "LastConnectedPeripheralUUID")
-        
+    }
+
+    private func configureTargetPeripheralPublisher() {
         $targetPeripheral
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    self.updateWidgetAndActivity()
-                }
+                self?.updateWidgetAndActivity()
             }
-        
             .store(in: &cancellables)
-        
-        DispatchQueue.main.async {
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(self.handleChangeViewIntent(_:)),
-                name: .changeViewIntentTriggered,
-                object: nil
-            )
-        }
-        
-        // 2) ALSO listen for “app became active”
+    }
+
+    private func registerNotificationObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleChangeViewIntent(_:)),
+            name: .changeViewIntentTriggered,
+            object: nil
+        )
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(appDidBecomeActive),
             name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
-        
-        // ————————————————————————————————————————————————
-        // Batch all widget/LiveActivity updates into one debounce:
-        //Publishers.MergeMany(
-        // 1) Build an array of AnyPublisher<Void,Never>:
+    }
+
+    private func setupWidgetAndActivityDebounce() {
         let uiUpdateTriggers: [AnyPublisher<Void, Never>] = [
-            $connectionState.map    { _ in () }.eraseToAnyPublisher(),
-            $temperature.map        { _ in () }.eraseToAnyPublisher(),
-            $temperatureData.map    { _ in () }.eraseToAnyPublisher(),
-            $signalStrength.map     { _ in () }.eraseToAnyPublisher(),
-            $autoBrightness.map     { _ in () }.eraseToAnyPublisher(),
+            $connectionState.map { _ in () }.eraseToAnyPublisher(),
+            $temperature.map { _ in () }.eraseToAnyPublisher(),
+            $temperatureData.map { _ in () }.eraseToAnyPublisher(),
+            $signalStrength.map { _ in () }.eraseToAnyPublisher(),
+            $autoBrightness.map { _ in () }.eraseToAnyPublisher(),
             $accelerometerEnabled.map { _ in () }.eraseToAnyPublisher(),
-            $sleepModeEnabled.map     { _ in () }.eraseToAnyPublisher(),
-            $auroraModeEnabled.map    { _ in () }.eraseToAnyPublisher(),
-            $selectedView.map         { _ in () }.eraseToAnyPublisher(),
-            $customMessage.map        { _ in () }.eraseToAnyPublisher()
+            $sleepModeEnabled.map { _ in () }.eraseToAnyPublisher(),
+            $auroraModeEnabled.map { _ in () }.eraseToAnyPublisher(),
+            $selectedView.map { _ in () }.eraseToAnyPublisher(),
+            $customMessage.map { _ in () }.eraseToAnyPublisher()
         ]
-        
-        // 2) Merge them, debounce, and sink:
+
         Publishers.MergeMany(uiUpdateTriggers)
             .debounce(for: .milliseconds(200), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    self.updateWidgetAndActivity()
-                }
+                self?.updateWidgetAndActivity()
             }
             .store(in: &cancellables)
-        // ————————————————————————————————————————————————
-        
-        Task { @MainActor in
-            self.updateWidgetAndActivity()
-        }
-        Task { await endAllLumiFurActivities() }
     }
     
     deinit {
@@ -691,25 +689,26 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     /// Internal method to write config, runs on bleQueue
     func writeConfigToCharacteristic() {
+        let payload = encodedAccessorySettingsPayload(
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled
+        )
+        let payloadHex = payload.map { String(format: "%02x", $0) }.joined(separator: " ")
+        let peripheral = targetPeripheral
+        let characteristic = configCharacteristic
+
         bleQueue.async { [weak self] in
             guard let self = self,
-                  let peripheral = self.targetPeripheral,
-                  let characteristic = self.configCharacteristic
-            else {
+                  let peripheral = peripheral,
+                  let characteristic = characteristic else {
                 self?.logger.warning("Cannot write config: peripheral or config characteristic not available.")
                 return
             }
-            DispatchQueue.main.async {
-                let payload = self.encodedAccessorySettingsPayload(
-                    autoBrightness: self.autoBrightness,
-                    accelerometerEnabled: self.accelerometerEnabled,
-                    sleepModeEnabled: self.sleepModeEnabled,
-                    auroraModeEnabled: self.auroraModeEnabled
-                )
-                let payloadHex = payload.map { String(format: "%02x", $0) }.joined(separator: " ")
-                self.logger.debug("Writing config payload to \(characteristic.uuid): \(payloadHex) on bleQueue")
-                peripheral.writeValue(payload, for: characteristic, type: .withResponse)
-            }}
+            self.logger.debug("Writing config payload to \(characteristic.uuid): \(payloadHex) on bleQueue")
+            peripheral.writeValue(payload, for: characteristic, type: .withResponse)
+        }
     }
     /// Internal method to find characteristic, runs on bleQueue
     private func getCharacteristic(uuid: CBUUID) -> CBCharacteristic? {
@@ -861,12 +860,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         )
         
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            if let idx = self.discoveredDevices.firstIndex(where: { $0.id == device.id }) {
-                self.discoveredDevices[idx] = device
-            } else {
-                self.discoveredDevices.append(device)
-            }
+            self?.upsertDiscoveredDevice(device)
         }
     }
     
@@ -890,7 +884,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             self.connectingPeripheral = nil
             self.startRSSIMonitoring()
             self.didAttemptAutoReconnect = false // Reset for next BT cycle
-            self.startRSSIMonitoring() // This internally dispatches to main for timer setup
             // ——————— Live Activity handling ———————
             if let activity = self.currentActivity,
                activity.activityState == .active {
@@ -904,10 +897,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             }
             // Use PeripheralDevice initializer
             let device = PeripheralDevice(id: peripheral.identifier, name: name, rssi: self.signalStrength, advertisementServiceUUIDs: nil, peripheral: peripheral)
-            if let index =
-                self.discoveredDevices.firstIndex(where: { $0.id == device.id }) { self.discoveredDevices[index] = device
-            } else { self.discoveredDevices.append(device)
-            }
+            self.upsertDiscoveredDevice(device)
         }
     }
     
@@ -1135,14 +1125,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         case tempCharUUID:
             // Check isDownloadingHistory on the main thread before dispatching to bleQueue
             DispatchQueue.main.async { [weak self] in
-                guard let self = self, !self.isDownloadingHistory  else { return }
-                if !self.isDownloadingHistory { // Check on main thread
-                    self.bleQueue.async { // Process on BLE queue
-                        DispatchQueue.main.async {    self.handleLiveTemperatureUpdate(data: data) }
-                    }
-                } else {
-                    self.logger.debug("Ignoring live temperature update while history download is in progress.")
-                }
+                guard let self = self, !self.isDownloadingHistory else { return }
+                self.handleLiveTemperatureUpdate(data: data)
             }
         case temperatureLogsCharUUID:
             handleHistoryChunk(data: data)
@@ -1488,6 +1472,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     // MARK: - State Update Helpers (Called on Main Thread)
+    private func upsertDiscoveredDevice(_ device: PeripheralDevice) {
+        if let index = discoveredDevices.firstIndex(where: { $0.id == device.id }) {
+            discoveredDevices[index] = device
+        } else {
+            discoveredDevices.append(device)
+        }
+    }
+
     private func resetHistoryDownloadState() {
         
         isDownloadingHistory = false
@@ -1569,7 +1561,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             _connect(to: device)
         } else {
             logger.warning("Stored peripheral \(uuid) not found by retrievePeripherals. Starting scan.")
-            self.connectionState = .disconnected }; _scanForDevices()
+            DispatchQueue.main.async { [weak self] in
+                self?.connectionState = .disconnected
+            }
+            _scanForDevices()
+        }
         
     }
     
@@ -1583,7 +1579,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private func updateWidgetData() { // Called on Main Thread
         
         guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
-            print("❌ Couldn’t open shared defaults")
+            logger.error("❌ Couldn’t open shared defaults")
             return
         }
         
@@ -1788,7 +1784,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private func endLiveActivity(finalContent: LumiFur_WidgetAttributes.ContentState? = nil, dismissalPolicy: ActivityUIDismissalPolicy = .default) async {
         guard let activity = currentActivity else { return }
         
-        logger.info("Ending Live Activity \(activity.id) policy: \(ActivityUIDismissalPolicy.self)") // Use helper
+        logger.info("Ending Live Activity \(activity.id) policy: \(String(describing: dismissalPolicy))") // Use helper
         
         activityStateTask?.cancel() // Stop monitoring its state
         activityStateTask = nil
@@ -1898,4 +1894,3 @@ extension PeripheralDevice {
 }
 
 #endif
-
