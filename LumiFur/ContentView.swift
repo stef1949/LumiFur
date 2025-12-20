@@ -32,11 +32,12 @@ class iOSViewModel: ObservableObject {
     // We can keep this for debugging, but it's not essential for the core logic anymore.
     @Published var receivedFaceFromWatch: String? = nil
     // This provides a link to the single source of truth for your app's state.
-    @ObservedObject var accessoryViewModel = AccessoryViewModel.shared
+    let accessoryViewModel: AccessoryViewModel
     private var cancellables = Set<AnyCancellable>()
     
     // ✅ REPLACE YOUR OLD init() WITH THIS ONE
-    init() {
+    init(accessoryViewModel: AccessoryViewModel = .shared) {
+        self.accessoryViewModel = accessoryViewModel
         // This check is good practice to avoid running connectivity code in SwiftUI Previews.
         let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         if isPreview { return }
@@ -263,40 +264,13 @@ struct RootView2: View {
 
 // MARK: ContentView
 struct ContentView: View {
-    @Environment(\.scenePhase) private var scenePhase
     //@StateObject private var accessoryViewModel = AccessoryViewModel()
     
     // 1. Declare this as an @ObservedObject. It will receive the instance
         //    created in the App struct.
-        @ObservedObject var bleModel: AccessoryViewModel
-    
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
-    @AppStorage("fancyMode") private var fancyMode: Bool = false
-    @AppStorage("autoBrightness") private var autoBrightness = true
-    @AppStorage("accelerometer") private var accelerometer = true
-    @AppStorage("sleepMode") private var sleepMode = true
-    @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
-    //@AppStorage("charts") var isChartsExpanded = false
-    @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
-    @State var auroraModeEnabled = false
-    @State private var customMessageText: String = ""
-    @State private var showCustomMessagePopup = false
-    
-    @State private var isLedArrayExpanded: Bool = false
-    @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
-
-    @State private var errorMessage: String?
+        let bleModel: AccessoryViewModel
     
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
-    @State private var showSplash = true  // Local state to control the splash screen appearance.
-    
-    @State private var drawProgress: CGFloat = 1.0
-    
-    @Environment(\.colorScheme) var colorScheme  // Colot Scheme
-    var overlayColor: Color {
-        colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
-    }
     
     @State private var matrixStyle: MatrixStyle = .array // The real source of truth
     
@@ -310,17 +284,6 @@ struct ContentView: View {
     //@State private var selectedConnection: Connection = .bluetooth
     //@State private var selectedMatrix: SettingsView.Matrixstyle = .array
 
-    fileprivate let twoColumnGrid = [
-        GridItem(.adaptive(minimum: 125, maximum: 250))
-    ]
-    private let twoRowOptionGrid = [
-        GridItem(.adaptive(minimum: 25, maximum: 250))
-    ]
-    @State private var dotMatrices: [[Bool]] = Array(
-        repeating: Array(repeating: false, count: 64),
-        count: 32
-    )
-    
     //Connectivity Options
     enum Connection: String, CaseIterable, Identifiable {
         case bluetooth, wifi, matter, z_wave
@@ -497,57 +460,12 @@ struct ContentView: View {
     
     @ViewBuilder
     private var detailContent: some View {
-        //@AppStorage("charts") var isChartsExpanded = false
-        @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
-        
         ZStack {
             if selectedSidebarItem == .dashboard {
-                VStack {
-                    HStack{
-                        HeaderView(
-                            connectionState: bleModel.connectionState,
-                            connectionStatus: bleModel.connectionStatus,
-                            signalStrength: bleModel.signalStrength,
-                            luxValue: Double(bleModel.luxValue)
-                        )
-                    }
-                    optionGridSection
-                    //ledArraySection
-                    //.border(.green)
-                    
-                    FaceGridSection(
-                        selectedView: bleModel.selectedView,
-                        onSetView: { bleModel.setView($0) },
-                        auroraModeEnabled: auroraModeEnabled
-                        //items: SharedOptions.protoActionOptions3
-                    )
-                    .zIndex(-1)
-                    
-                    ChartView(isExpanded: $isChartsExpanded, accessoryViewModel: bleModel)
-                        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                        .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    // This animation smoothly handles the frame height change.
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
-                }
-                .onAppear(perform: prepareHaptics)
-                .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in
-                    handleWatchFaceSelection(face: newFace)
-                }
-        } else {
-            Text("Select an item from the sidebar")
-                .foregroundStyle(.secondary)
-        }
-        
-        if !hasLaunchedBefore && showSplash {
-                SplashView(showSplash: $showSplash)
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: .scale(scale: 0.8).combined(with: .opacity)
-                        )
-                    )
+                DashboardView(bleModel: bleModel)
+            } else {
+                Text("Select an item from the sidebar")
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -631,323 +549,6 @@ struct ContentView: View {
          */
     }
     */
-    private var ledArraySection: some View {
-        DisclosureGroup("LED Array", isExpanded: $isLedArrayExpanded) {
-            if isLedArrayExpanded {
-                HStack {
-                    Spacer()
-                    LEDPreview()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    LEDPreview()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    Spacer()
-                }
-                .frame(maxHeight: 100)
-            }
-        }
-        .padding(.horizontal)
-        .accentColor(.gray)
-        //.ignoresSafeArea()
-        .scrollContentBackground(.hidden)
-        //.background(overlayColor)
-    }
-    static let gradientStart = Color(
-        red: 0 / 255,
-        green: 0 / 255,
-        blue: 0 / 255
-    )
-    static let gradientEnd = Color(
-        red: 239.0 / 255,
-        green: 172.0 / 255,
-        blue: 120.0 / 255
-    )
-    // Define data structure for options
-    struct OptionConfig: Identifiable {
-        let id = UUID()
-        let title: String
-        let binding: Binding<Bool>
-        let type: OptionType
-        let action: ((Bool) -> Void)?  // Optional action for generic toggles
-
-        // Initializer for standard options
-        init(
-            title: String,
-            binding: Binding<Bool>,
-            type: OptionType,
-            action: ((Bool) -> Void)? = nil
-        ) {
-            self.title = title
-            self.binding = binding
-            self.type = type
-            self.action = action
-        }
-    }
-    // Data source for the grid (excluding custom message initially, as it has unique behavior)
-    private var standardOptions: [OptionConfig] {
-        [
-            OptionConfig(
-                title: "Auto Brightness",
-                binding: $autoBrightness,
-                type: .autoBrightness
-            ) { newValue in
-                print("Auto brightness changed to \(newValue)")
-                // accessoryViewModel.autoBrightness = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
-            OptionConfig(
-                title: "Accelerometer",
-                binding: $accelerometer,
-                type: .accelerometer
-            ) { newValue in
-                print("Accelerometer changed to \(newValue)")
-                // accessoryViewModel.accelerometerEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
-            OptionConfig(
-                title: "Sleep Mode",
-                binding: $sleepMode,
-                type: .sleepMode
-            ) { newValue in
-                print("Sleep mode changed to \(newValue)")
-                // accessoryViewModel.sleepModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
-            OptionConfig(
-                title: "Aurora Mode",
-                binding: $auroraMode,
-                type: .auroraMode
-            ) { newValue in  // Fixed typo "Aroura"
-                print("Aurora Mode changed to \(newValue)")
-                // accessoryViewModel.auroraModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
-        ]
-    }
-    private var optionGridSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {  // Added showsIndicators: false
-            LazyHGrid(rows: twoRowOptionGrid) {
-                ForEach(standardOptions) { option in
-                    OptionToggleView(
-                        title: option.title,
-                        isOn: option.binding,
-                        optionType: option.type
-                    )
-                    .onChange(of: option.binding.wrappedValue) {
-                        oldValue,
-                        newValue in
-                        option.action?(newValue)
-                        // If accessoryViewModel actions are always the same,
-                        // you might simplify the `action` closure further or move
-                        // `writeConfigToCharacteristic` here.
-                        // For now, I've kept the print and commented viewModel lines in the closures.
-                    }
-                }
-                // Custom Message Toggle - handled separately due to unique popover logic
-                OptionToggleView(
-                    title: "Custom Message",
-                    isOn: $customMessage,
-                    optionType: .customMessage
-                )
-                .onChange(of: customMessage) { oldValue, newValue in  // Correct onChange signature
-                    if newValue {  // Use newValue for clarity
-                        showCustomMessagePopup = true
-                    } else {
-                        // Optionally handle if customMessage is turned OFF by means other than Cancel button
-                        // For example, if customMessageText should be cleared.
-                        // customMessageText = "" // If desired
-                    }
-                }
-                .popover(
-                    isPresented: $showCustomMessagePopup,
-                    attachmentAnchor: .rect(.bounds),
-                    arrowEdge: .top
-                ) {
-                    customMessagePopoverView
-                        .presentationBackground(.clear)
-                        .presentationCompactAdaptation(.popover)
-                        .padding()
-                }
-            }
-            .padding(.horizontal)  // Apply padding to the HGrid content
-        }
-        .frame(maxWidth: .infinity, maxHeight: 80)
-        //.scrollContentBackground(.hidden)
-        .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
-        // If you want content to extend beyond scroll view bounds, set true.
-        .ignoresSafeArea(.keyboard, edges: .all)  // Keep this for keyboard behavior
-    }
-
-    // Extracted Popover View for clarity
-    private var customMessagePopoverView: some View {
-        VStack(spacing: 12) {
-            Text("Custom Message")
-                .font(.headline)
-            TextField("Type…", text: $customMessageText)
-                //.textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled(true)
-            HStack {
-                Spacer()
-                Button("Cancel") {
-                    customMessage = false  // Turn off the toggle
-                    showCustomMessagePopup = false
-                    // customMessageText = "" // Optionally clear text on cancel
-                }
-                Button("OK") {
-                    showCustomMessagePopup = false
-                    // Here you would typically use customMessageText
-                    // e.g., accessoryViewModel.customMessageText = customMessageText
-                    // accessoryViewModel.customMessageEnabled = customMessage // which is true
-                    // accessoryViewModel.writeConfigToCharacteristic()
-                    print("Custom message set: \(customMessageText)")
-                    if customMessageText.isEmpty {  // If OK is pressed with no text, maybe turn off the feature?
-                        // customMessage = false // Or provide feedback to user
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .frame(width: 300, height: 140)  // Slightly increased height for better spacing
-        //.glassEffect(.regular.tint(.blue))
-    }
-    
-    // MARK: –––––––––––––––––––––––––––––––––
-    // 1) Standalone grid view
-    struct FaceGridSection: View {
-        // No longer observing the whole VM, but taking specific values/callbacks
-        let selectedView: Int
-        let onSetView: (Int) -> Void  // Callback to update the selection
-        let auroraModeEnabled: Bool
-        //let items: [SharedOptions.ProtoAction]  // Pass the data directly
-        
-        @Environment(\.colorScheme) private var colorScheme
-        
-        // Computed once per body re-evaluation of FaceGridSection
-        private var lightColor: Color { colorScheme == .dark ? .white : .black }
-        private var darkColor: Color {
-            colorScheme == .dark ? .black : .init(UIColor.systemGray5)
-        }
-        // Make grid configuration static so it's not re-created
-        private static let twoColumnGrid = [
-            GridItem(.adaptive(minimum: 100, maximum: 250))
-        ]
-        
-        /*
-        // The tap action now uses the passed-in callback and selectedView
-        private func faceTap(_ faceIndex: Int) {
-            guard faceIndex != selectedView else { return }
-            onSetView(faceIndex)
-        }
-        */
-        
-        // Access the static property directly and use .map to convert it.
-        @State private var items: [FaceItem] = SharedOptions.protoActionOptions3.map { FaceItem(content: $0) }
-        
-        
-        // --- The rest of your view remains the same ---
-        @State private var selectedItemID: FaceItem.ID?
-        
-        //@Namespace private var glassNamespace
-        
-        var body: some View {
-            /*
-             // --- DEBUG TEXT ---
-             Text("Number of items: \(items.count)")
-             .foregroundColor(.red)
-             .font(.headline)
-             .padding()
-             */
-           // GlassEffectContainer {
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
-                        // 2. ForEach loops over identifiable data, not indices.
-                        ForEach(items) { item in
-                            FaceCellView(
-                                // 3. Pass the item and selection state cleanly.
-                                item: item,
-                                isSelected: selectedItemID == item.id,
-                                auroraModeEnabled: auroraModeEnabled,
-                                overlayColor: lightColor,
-                                backgroundColor: darkColor
-                                //namespace: glassNamespace,
-                                
-                                // The action now provides the item directly.
-                            ) {tappedItem in
-                                // Update selection state using the stable ID
-                                selectedItemID = tappedItem.id
-                                // 2. Find the 0-based index of the tapped item in our array.
-                                if let index = items.firstIndex(where: { $0.id == tappedItem.id }) {
-                                    // 3. Convert to the 1-based command index that the hardware expects.
-                                    let commandIndex = index + 1
-                                    // 4. Call the parent's `onSetView` function to send the command.
-                                    onSetView(commandIndex)
-                                    // Optional but recommended: Add a print statement for debugging.
-                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")
-                                }
-                            }
-                            .equatable() // This is good, keep it!
-                        }
-                    }
-                    .padding(.horizontal)
-                    //.scrollContentBackground(.hidden)
-                }
-                .scrollClipDisabled()
-                .scrollDismissesKeyboard(.automatic)
-                //.border(.red)
-            // This watches for external changes (e.g., from the watch) and updates the local UI.
-            .onChange(of: selectedView) { _, newViewIndex in
-                let modelIndex = newViewIndex - 1
-                if items.indices.contains(modelIndex) {
-                    selectedItemID = items[modelIndex].id
-                } else {
-                    selectedItemID = nil // Deselect if index is out of bounds
-                }
-            }
-        }
-    }
-    
-    // MARK: - Helper Functions (Place handleWatchFaceSelection HERE)
-    
-    /// Handles processing the face selection received from the watch.
-    private func handleWatchFaceSelection(face: String?) {  // <--- DEFINITION INSIDE ContentView
-        guard let selectedFace = face else {
-            print("Watch face selection cleared or invalid.")
-            return
-        }
-        
-        // Find the index where the enum's String == selectedFace
-        if let index = SharedOptions.protoActionOptions3.firstIndex(where: {
-            action in
-            switch action {
-            case .emoji(let e): return e == selectedFace
-            case .symbol(let s): return s == selectedFace
-            }
-        }) {
-            let viewToSet = index + 1
-            print(
-                "Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet)."
-            )
-            bleModel.setView(viewToSet)
-        } else {
-            print(
-                "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions3."
-            )
-        }
-    }
-
-    /// Given a numeric “view” (1…n), return the matching emoji or symbol-string,
-    /// so you can show it back in your SwiftUI view or send it to the watch.
-    private func getFaceForView(_ view: Int) -> String {
-        let idx = view - 1
-        guard SharedOptions.protoActionOptions3.indices.contains(idx) else {
-            return "❓"
-        }
-        switch SharedOptions.protoActionOptions3[idx] {
-        case .emoji(let e): return e
-        case .symbol(let s): return s
-        }
-    }
 
     /*
      // 1) Move this up in your View
@@ -2494,5 +2095,3 @@ class MockViewModel: AccessoryViewModel {
  }
  }
  */
-
-

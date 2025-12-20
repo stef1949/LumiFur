@@ -8,7 +8,7 @@ import SwiftUI
 
 
 // Place this struct outside of ContentView
-struct HeaderView: View {
+struct HeaderView: View, Equatable {
     
     // MARK: - Properties
     // It receives the core data from ContentView.
@@ -52,5 +52,12 @@ struct HeaderView: View {
             // This ensures the view has the correct state when it first appears.
             self.showSignalView = (connectionState == .connected)
         }
+    }
+
+    static func == (lhs: HeaderView, rhs: HeaderView) -> Bool {
+        lhs.connectionState == rhs.connectionState
+            && lhs.connectionStatus == rhs.connectionStatus
+            && lhs.signalStrength == rhs.signalStrength
+            && lhs.luxValue == rhs.luxValue
     }
 }

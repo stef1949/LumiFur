@@ -6,9 +6,8 @@
 //
 import SwiftUI
 
-struct StatusSectionView: View {
+struct StatusSectionView: View, Equatable {
     @State private var animatedLuxProgress: Double = 0.0
-    @State var shouldShowLux = false
     @Namespace private var namespace
     
     // MARK: - Properties
@@ -32,8 +31,6 @@ struct StatusSectionView: View {
         let logValue = log10(clamped)
         return (logValue - logMin) / (logMax - logMin)
     }
-    
-    let gradient = Gradient(colors: [.clear, .yellow])
     
     // MARK: - Body
     var body: some View {
@@ -107,5 +104,13 @@ struct StatusSectionView: View {
         //.animation(.bouncy(duration: 0.4), value: connectionState)
         //.padding(10)
         //.glassEffect()
+    }
+
+    static func == (lhs: StatusSectionView, rhs: StatusSectionView) -> Bool {
+        lhs.connectionState == rhs.connectionState
+            && lhs.connectionStatus == rhs.connectionStatus
+            && lhs.signalStrength == rhs.signalStrength
+            && lhs.showSignalView == rhs.showSignalView
+            && lhs.luxValue == rhs.luxValue
     }
 }

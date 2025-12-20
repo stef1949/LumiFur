@@ -6,18 +6,9 @@
 //
 
 
-import AVKit
-import Charts
-import Combine
-import CoreBluetooth
-import CoreHaptics
-import CoreImage
-import MarkdownUI
 import SwiftUI
-import UniformTypeIdentifiers
-import os
 
-struct FaceGridSection: View {
+struct FaceGridSection: View, Equatable {
         // No longer observing the whole VM, but taking specific values/callbacks
         let selectedView: Int
         let onSetView: (Int) -> Void  // Callback to update the selection
@@ -46,8 +37,9 @@ struct FaceGridSection: View {
         }
         */
         
-        // Access the static property directly and use .map to convert it.
-        @State private var items: [FaceItem] = SharedOptions.protoActionOptions3.map { FaceItem(content: $0) }
+        private static let items: [FaceItem] = SharedOptions.protoActionOptions3.map {
+            FaceItem(content: $0)
+        }
         
         
         // --- The rest of your view remains the same ---
@@ -67,7 +59,7 @@ struct FaceGridSection: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
                         // 2. ForEach loops over identifiable data, not indices.
-                        ForEach(items) { item in
+                        ForEach(Self.items) { item in
                             FaceCellView(
                                 // 3. Pass the item and selection state cleanly.
                                 item: item,
@@ -80,9 +72,10 @@ struct FaceGridSection: View {
                                 // The action now provides the item directly.
                             ) {tappedItem in
                                 // Update selection state using the stable ID
+                                guard selectedItemID != tappedItem.id else { return }
                                 selectedItemID = tappedItem.id
                                 // 2. Find the 0-based index of the tapped item in our array.
-                                if let index = items.firstIndex(where: { $0.id == tappedItem.id }) {
+                                if let index = Self.items.firstIndex(where: { $0.id == tappedItem.id }) {
                                     // 3. Convert to the 1-based command index that the hardware expects.
                                     let commandIndex = index + 1
                                     // 4. Call the parent's `onSetView` function to send the command.
@@ -103,11 +96,22 @@ struct FaceGridSection: View {
             // This watches for external changes (e.g., from the watch) and updates the local UI.
             .onChange(of: selectedView) { _, newViewIndex in
                 let modelIndex = newViewIndex - 1
-                if items.indices.contains(modelIndex) {
-                    selectedItemID = items[modelIndex].id
+                if Self.items.indices.contains(modelIndex) {
+                    selectedItemID = Self.items[modelIndex].id
                 } else {
                     selectedItemID = nil // Deselect if index is out of bounds
                 }
             }
+            .onAppear {
+                let modelIndex = selectedView - 1
+                if Self.items.indices.contains(modelIndex) {
+                    selectedItemID = Self.items[modelIndex].id
+                }
+            }
         }
+    }
+
+    static func == (lhs: FaceGridSection, rhs: FaceGridSection) -> Bool {
+        lhs.selectedView == rhs.selectedView
+            && lhs.auroraModeEnabled == rhs.auroraModeEnabled
     }
