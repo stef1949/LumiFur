@@ -16,9 +16,9 @@ struct HeaderView: View {
     let connectionStatus: String
     let signalStrength: Int
     let luxValue: Double
-    
-    // It OWNS and MANAGES the state for its child's animation.
-    @State private var showSignalView: Bool = false
+    private var showSignalView: Bool {
+        connectionState == .connected
+    }
     
     // MARK: - Body
     var body: some View {
@@ -35,22 +35,11 @@ struct HeaderView: View {
                 connectionState: self.connectionState,
                 connectionStatus: self.connectionStatus,
                 signalStrength: self.signalStrength,
-                showSignalView: self.showSignalView, // It passes its own state down.
+                showSignalView: showSignalView, // It passes the derived state down.
                 luxValue: self.luxValue
             )
+            .equatable()
         }
         .padding(.horizontal)
-        // The logic for CHANGING the state lives here.
-        .onChange(of: connectionState) { _, newValue in
-            withAnimation {
-                // When the connectionState from the parent changes,
-                // this view updates its local @State property.
-                self.showSignalView = (newValue == .connected)
-            }
-        }
-        .onAppear {
-            // This ensures the view has the correct state when it first appears.
-            self.showSignalView = (connectionState == .connected)
-        }
     }
 }

@@ -6,9 +6,8 @@
 //
 import SwiftUI
 
-struct StatusSectionView: View {
+struct StatusSectionView: View, Equatable {
     @State private var animatedLuxProgress: Double = 0.0
-    @State var shouldShowLux = false
     @Namespace private var namespace
     
     // MARK: - Properties
@@ -19,21 +18,27 @@ struct StatusSectionView: View {
     let luxValue: Double
     
     // Define your min/max lux values here or pass them in
-    let minLux: Double = 1
-    let maxLux: Double = 4097 // max value
+    private static let minLux: Double = 1
+    private static let maxLux: Double = 4097 // max value
     
     // Normalize to 0…1 on a log scale
     private var luxProgress: Double {
         // clamp to avoid log(0)
-        let clamped = min(max(luxValue, minLux), maxLux)
+        let clamped = min(max(luxValue, Self.minLux), Self.maxLux)
         // compute logs (base-10 here, but natural log works too)
-        let logMin   = log10(minLux)
-        let logMax   = log10(maxLux)
+        let logMin   = log10(Self.minLux)
+        let logMax   = log10(Self.maxLux)
         let logValue = log10(clamped)
         return (logValue - logMin) / (logMax - logMin)
     }
-    
-    let gradient = Gradient(colors: [.clear, .yellow])
+
+    static func == (lhs: StatusSectionView, rhs: StatusSectionView) -> Bool {
+        lhs.connectionState == rhs.connectionState &&
+        lhs.connectionStatus == rhs.connectionStatus &&
+        lhs.signalStrength == rhs.signalStrength &&
+        lhs.showSignalView == rhs.showSignalView &&
+        lhs.luxValue == rhs.luxValue
+    }
     
     // MARK: - Body
     var body: some View {
