@@ -6,11 +6,12 @@
 //
 
 import Foundation
-#if canImport(WatchConnectivity)
-import WatchConnectivity
-#endif
 import SwiftUI
 import Combine
+
+#if canImport(WatchConnectivity) && os(iOS) && !targetEnvironment(macCatalyst)
+import WatchConnectivity
+import UIKit
 
 @MainActor
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
@@ -40,7 +41,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         
         // Create the dictionary with keys the watch expects.
         // These keys MUST MATCH what your watch-side manager looks for.
-        let context: [String: Any] = [
+        var context: [String: Any] = [
+            // Phone / Companion info
+            "deviceName": UIDevice.current.name,
+            
             // Face/View Selection
             "selectedView": viewModel.selectedView,
             
@@ -48,9 +52,21 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             "autoBrightness": viewModel.autoBrightness,
             "accelerometer": viewModel.accelerometerEnabled,
             "sleepMode": viewModel.sleepModeEnabled,
-            "auroraMode": viewModel.auroraModeEnabled
-            // You can add more data here if needed (e.g., controller name)
+            "auroraMode": viewModel.auroraModeEnabled,
+            
+            // Controller status
+            "controllerConnectionStatus": viewModel.connectionStatus,
+            // Send an empty string so the watch can clear stale names.
+            "controllerName": viewModel.connectedDeviceName ?? "",
+            
+            // Temperature
+            "temperatureText": viewModel.temperature
         ]
+        
+        if let latest = viewModel.temperatureData.last {
+            context["temperatureC"] = latest.temperature
+            context["temperatureTimestamp"] = latest.timestamp
+        }
         
         do {
             // Use updateApplicationContext for state synchronization.
@@ -140,57 +156,57 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         }
         
         // Update AppStorage via UserDefaults so that SwiftUI views bound to these keys update.
-                let defaults = UserDefaults.standard
-                if let autoBrightness = message["autoBrightness"] as? Bool {
-                    defaults.set(autoBrightness, forKey: "autoBrightness")
-                    print("iOS: AppStorage autoBrightness updated to \(autoBrightness)")
-                }
-                if let accelerometer = message["accelerometer"] as? Bool {
-                    defaults.set(accelerometer, forKey: "accelerometer")
-                    print("iOS: AppStorage accelerometer updated to \(accelerometer)")
-                }
-                if let sleepMode = message["sleepMode"] as? Bool {
-                    defaults.set(sleepMode, forKey: "sleepMode")
-                    print("iOS: AppStorage sleepMode updated to \(sleepMode)")
-                }
-                if let auroraMode = message["auroraMode"] as? Bool {
-                    // Note: The AppStorage key is "arouraMode" per your snippet.
-                    defaults.set(auroraMode, forKey: "arouraMode")
-                    print("iOS: AppStorage arouraMode updated to \(auroraMode)")
-                }
-                if let customMessage = message["customMessage"] as? String {
-                    defaults.set(customMessage, forKey: "customMessage")
-                    print("iOS: AppStorage customMessage updated to \"\(customMessage)\"")
-                }
+        let defaults = UserDefaults.standard
+        if let autoBrightness = message["autoBrightness"] as? Bool {
+            defaults.set(autoBrightness, forKey: "autoBrightness")
+            print("iOS: AppStorage autoBrightness updated to \(autoBrightness)")
+        }
+        if let accelerometer = message["accelerometer"] as? Bool {
+            defaults.set(accelerometer, forKey: "accelerometer")
+            print("iOS: AppStorage accelerometer updated to \(accelerometer)")
+        }
+        if let sleepMode = message["sleepMode"] as? Bool {
+            defaults.set(sleepMode, forKey: "sleepMode")
+            print("iOS: AppStorage sleepMode updated to \(sleepMode)")
+        }
+        if let auroraMode = message["auroraMode"] as? Bool {
+            // Note: The AppStorage key is "arouraMode" per your snippet.
+            defaults.set(auroraMode, forKey: "arouraMode")
+            print("iOS: AppStorage arouraMode updated to \(auroraMode)")
+        }
+        if let customMessage = message["customMessage"] as? String {
+            defaults.set(customMessage, forKey: "customMessage")
+            print("iOS: AppStorage customMessage updated to \"\(customMessage)\"")
+        }
     }
     // MARK: - WCSessionDelegate Methods
-        @MainActor
-        func session(_ session: WCSession,
-                     activationDidCompleteWith activationState: WCSessionActivationState,
-                     error: Error?) {
-            let statusText: String
-            var reachable = false
-            
-            switch activationState {
-            case .activated:
-                statusText = "Connected"
-                reachable = session.isReachable
-                print("iOS: WCSession activated successfully.")
-            case .inactive:
-                statusText = "Inactive"
-                print("iOS: WCSession inactive.")
-            case .notActivated:
-                statusText = "Not Activated"
-                print("iOS: WCSession not activated.")
-            @unknown default:
-                statusText = "Unknown State"
-                print("iOS: WCSession activation state unknown.")
-            }
-            
-            if let error = error {
-                print("iOS: WCSession activation error: \(error.localizedDescription)")
-            }
+    @MainActor
+    func session(_ session: WCSession,
+                 activationDidCompleteWith activationState: WCSessionActivationState,
+                 error: Error?) {
+        let statusText: String
+        var reachable = false
         
+        switch activationState {
+        case .activated:
+            statusText = "Connected"
+            reachable = session.isReachable
+            print("iOS: WCSession activated successfully.")
+        case .inactive:
+            statusText = "Inactive"
+            print("iOS: WCSession inactive.")
+        case .notActivated:
+            statusText = "Not Activated"
+            print("iOS: WCSession not activated.")
+        @unknown default:
+            statusText = "Unknown State"
+            print("iOS: WCSession activation state unknown.")
+        }
+        
+        if let error = error {
+            print("iOS: WCSession activation error: \(error.localizedDescription)")
+        }
+    
         DispatchQueue.main.async {
             self.connectionStatus = statusText
             self.isReachable = reachable
@@ -229,12 +245,21 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             let vm = self.accessoryViewModel
             replyData = [
                 "timestamp": Date(),
+                "deviceName": UIDevice.current.name,
                 "autoBrightness": vm.autoBrightness,
                 "accelerometer": vm.accelerometerEnabled,
                 "sleepMode": vm.sleepModeEnabled,
                 "auroraMode": vm.auroraModeEnabled,
-                "customMessage": vm.customMessage
+                "customMessage": vm.customMessage,
+                "controllerConnectionStatus": vm.connectionStatus,
+                "controllerName": vm.connectedDeviceName ?? "",
+                "temperatureText": vm.temperature
             ]
+            
+            if let latest = vm.temperatureData.last {
+                replyData["temperatureC"] = latest.temperature
+                replyData["temperatureTimestamp"] = latest.timestamp
+            }
             print("iOS: Responding with current accessory settings: \(replyData)")
         } else {
             self.updateAccessorySettingsFromMessage(message)
@@ -288,6 +313,34 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
 // Helper extension (Included on both)
 extension WCError {
     init(_ code: WCError.Code) {
-        self.init(code, userInfo: [:])
+        self = WCError(_nsError: NSError(domain: WCError.errorDomain, code: code.rawValue, userInfo: [:]))
     }
 }
+#else
+
+@MainActor
+final class WatchConnectivityManager: NSObject, ObservableObject {
+    static let shared = WatchConnectivityManager()
+
+    @Published var connectionStatus: String = "Not Supported"
+    @Published var isReachable: Bool = false
+
+    let messageSubject = PassthroughSubject<[String: Any], Never>()
+
+    @Published var accessoryViewModel = AccessoryViewModel.shared
+
+    private override init() { super.init() }
+
+    func syncStateToWatch(from viewModel: AccessoryViewModel) { /* no-op */ }
+
+    func sendMessage(_ message: [String: Any],
+                     replyHandler: (([String: Any]) -> Void)? = nil,
+                     errorHandler: ((Error) -> Void)? = nil) {
+        // Not supported; surface a basic error if a handler is provided
+        replyHandler?([:])
+    }
+
+    func updateApplicationContext(_ context: [String: Any]) { /* no-op */ }
+}
+
+#endif

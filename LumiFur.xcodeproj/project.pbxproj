@@ -21,13 +21,16 @@
 		354B00D82DD26E4000825147 /* GlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D12DD269F900825147 /* GlassView.swift */; };
 		354B00D92DD26E4500825147 /* GlassLazyHGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */; };
 		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; platformFilter = ios; };
+		355853602EF47AF1001666E6 /* LEDPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3558535F2EF47AF1001666E6 /* LEDPreview.swift */; };
+		355853622EF47B67001666E6 /* LEDPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853612EF47B67001666E6 /* LEDPreview.swift */; };
+		355853662EF483E2001666E6 /* LEDPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853652EF483E2001666E6 /* LEDPreviewModel.swift */; };
+		355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853682EF4BAD4001666E6 /* ConnectionUI.swift */; };
 		356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D04CA62DB29DAA00199C5D /* SharedKeys.swift */; };
 		357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357EEA682E0EE00A0085E438 /* CustomLedView.swift */; };
 		3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3580941E2E2BF0A0005DB779 /* ChartView.swift */; };
 		358151A52E16D155003CE8A3 /* ConnectionStateIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151A42E16D155003CE8A3 /* ConnectionStateIconView.swift */; };
 		358151A92E16D23B003CE8A3 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151A82E16D236003CE8A3 /* ConnectionState.swift */; };
 		358151AB2E16FF48003CE8A3 /* AccessoryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151AA2E16FF48003CE8A3 /* AccessoryViewModelTests.swift */; };
-		3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3584279B2C8CEFE80096B1D0 /* cpuUsageData.swift */; };
 		358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */; };
 		358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */; };
 		3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -55,7 +58,6 @@
 		35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E4D4012DF88DE4004EB85E /* splashView.swift */; };
 		35E4D4042DF88E38004EB85E /* WhatsNew.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E4D4032DF88E38004EB85E /* WhatsNew.swift */; };
 		35E4D4062DF88E78004EB85E /* ReleaseNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E4D4052DF88E78004EB85E /* ReleaseNotesView.swift */; };
-		35E82D132E37E2E100E2A5A7 /* example.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E82D122E37E2E100E2A5A7 /* example.swift */; };
 		35E93AB02E17EDD600E9D52F /* AboutSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E93AAF2E17EDD600E9D52F /* AboutSectionView.swift */; };
 		35E93AB22E17EDF600E9D52F /* DeviceListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E93AB12E17EDF600E9D52F /* DeviceListView.swift */; };
 		35E93AB62E17F0A700E9D52F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E93AB52E17F0A700E9D52F /* SettingsView.swift */; };
@@ -146,6 +148,10 @@
 		354B00D12DD269F900825147 /* GlassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassView.swift; sourceTree = "<group>"; };
 		354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassLazyHGrid.swift; sourceTree = "<group>"; };
 		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		3558535F2EF47AF1001666E6 /* LEDPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreview.swift; sourceTree = "<group>"; };
+		355853612EF47B67001666E6 /* LEDPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreview.swift; sourceTree = "<group>"; };
+		355853652EF483E2001666E6 /* LEDPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewModel.swift; sourceTree = "<group>"; };
+		355853682EF4BAD4001666E6 /* ConnectionUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionUI.swift; sourceTree = "<group>"; };
 		356B4B822E117322005D1A31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		357EEA682E0EE00A0085E438 /* CustomLedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomLedView.swift; sourceTree = "<group>"; };
 		3580941E2E2BF0A0005DB779 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
@@ -184,7 +190,6 @@
 		35E4D4012DF88DE4004EB85E /* splashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = splashView.swift; sourceTree = "<group>"; };
 		35E4D4032DF88E38004EB85E /* WhatsNew.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNew.swift; sourceTree = "<group>"; };
 		35E4D4052DF88E78004EB85E /* ReleaseNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseNotesView.swift; sourceTree = "<group>"; };
-		35E82D122E37E2E100E2A5A7 /* example.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = example.swift; sourceTree = "<group>"; };
 		35E93AAF2E17EDD600E9D52F /* AboutSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSectionView.swift; sourceTree = "<group>"; };
 		35E93AB12E17EDF600E9D52F /* DeviceListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListView.swift; sourceTree = "<group>"; };
 		35E93AB52E17F0A700E9D52F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -303,6 +308,14 @@
 			path = "New Group";
 			sourceTree = "<group>";
 		};
+		355853672EF4BAC9001666E6 /* connection view */ = {
+			isa = PBXGroup;
+			children = (
+				355853682EF4BAD4001666E6 /* ConnectionUI.swift */,
+			);
+			path = "connection view";
+			sourceTree = "<group>";
+		};
 		358427A02C8CF5590096B1D0 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -366,6 +379,7 @@
 				35AE1A4B2D5D24C600FDD29E /* Frameworks */,
 				35DA3A5D2C8739FB0039D19D /* Products */,
 				356B4B822E117322005D1A31 /* Info.plist */,
+				3558535F2EF47AF1001666E6 /* LEDPreview.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -386,19 +400,20 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
-				35E82D122E37E2E100E2A5A7 /* example.swift */,
 				35D1A1062D98FE7F00AEC573 /* LumiFurRelease.entitlements */,
+				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
+				35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */,
 				35E4D4012DF88DE4004EB85E /* splashView.swift */,
 				35E4D4032DF88E38004EB85E /* WhatsNew.swift */,
 				35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
+				355853612EF47B67001666E6 /* LEDPreview.swift */,
+				355853652EF483E2001666E6 /* LEDPreviewModel.swift */,
 				358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */,
 				358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */,
 				3580941E2E2BF0A0005DB779 /* ChartView.swift */,
 				357EEA682E0EE00A0085E438 /* CustomLedView.swift */,
-				35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */,
 				35AE1A442D5D207F00FDD29E /* liveActivity.swift */,
-				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				35E93AB42E17EF0400E9D52F /* SettingsPage */,
 				358427A32C8CF57F0096B1D0 /* Connectivity */,
 				358427A42C8CF59B0096B1D0 /* SharedViews */,
@@ -437,6 +452,7 @@
 		35E93AB42E17EF0400E9D52F /* SettingsPage */ = {
 			isa = PBXGroup;
 			children = (
+				355853672EF4BAC9001666E6 /* connection view */,
 				35E93AB52E17F0A700E9D52F /* SettingsView.swift */,
 				35E93AB72E17F17A00E9D52F /* MatrixStylePicker.swift */,
 				35E93AB12E17EDF600E9D52F /* DeviceListView.swift */,
@@ -605,7 +621,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					3591DD502D5FB695009A3A94 = {
 						CreatedOnToolsVersion = 16.2;
@@ -748,6 +764,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */,
+				355853602EF47AF1001666E6 /* LEDPreview.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,7 +779,6 @@
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
 				35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */,
 				35E93AB02E17EDD600E9D52F /* AboutSectionView.swift in Sources */,
-				3584279C2C8CEFE80096B1D0 /* cpuUsageData.swift in Sources */,
 				358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */,
 				35CD1DBC2E15AE1B0028A6C9 /* StatusSectionView.swift in Sources */,
 				35E4D4062DF88E78004EB85E /* ReleaseNotesView.swift in Sources */,
@@ -775,6 +791,8 @@
 				35E4D4042DF88E38004EB85E /* WhatsNew.swift in Sources */,
 				35D04CA72DB29DAA00199C5D /* SharedKeys.swift in Sources */,
 				354B00D72DD26E3A00825147 /* GlassPane.swift in Sources */,
+				355853622EF47B67001666E6 /* LEDPreview.swift in Sources */,
+				355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */,
 				354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */,
 				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
@@ -782,13 +800,13 @@
 				354470452DA55F0E0061FD83 /* SharedOptions.swift in Sources */,
 				3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */,
 				35E93AB62E17F0A700E9D52F /* SettingsView.swift in Sources */,
+				355853662EF483E2001666E6 /* LEDPreviewModel.swift in Sources */,
 				35CD1DBE2E15AE390028A6C9 /* HeaderView.swift in Sources */,
 				358151A52E16D155003CE8A3 /* ConnectionStateIconView.swift in Sources */,
 				354B00D92DD26E4500825147 /* GlassLazyHGrid.swift in Sources */,
 				35E93AB22E17EDF600E9D52F /* DeviceListView.swift in Sources */,
 				35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */,
 				35A391A82DD7A17B00F60E47 /* BouncingButtonStyle.swift in Sources */,
-				35E82D132E37E2E100E2A5A7 /* example.swift in Sources */,
 				354B00D82DD26E4000825147 /* GlassView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1083,7 +1101,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4.0.0;
+				CURRENT_PROJECT_VERSION = 5.1.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1092,6 +1110,7 @@
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu23;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1114,7 +1133,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 8.0;
+				MARKETING_VERSION = 9.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1165,7 +1184,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4.0.0;
+				CURRENT_PROJECT_VERSION = 5.1.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1173,6 +1192,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu23;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1188,7 +1208,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 8.0;
+				MARKETING_VERSION = 9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

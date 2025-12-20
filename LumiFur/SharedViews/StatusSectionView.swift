@@ -70,41 +70,46 @@ struct StatusSectionView: View {
                         animatedLuxProgress = newProgress
                     }
                 }
-                
                     if showSignalView {
                         HStack(spacing: 4) {
-                            
                             SignalStrengthView(rssi: signalStrength)
                                 .transition(.move(edge: .trailing).combined(with: .opacity))
                             
+                             ConnectionStateIconView(state: connectionState)
+                             .id(connectionState)
+                             
+                        }
+                        .padding()
+                        //.padding(.leading, 10)
+                        .glassEffect()
+                        .glassEffectUnion(id: "connectionGroup", namespace: namespace)
+                    } else {
+                        HStack(spacing: 4){
+                            Text(connectionStatus)
+                                .font(.caption)
+                                .foregroundStyle(connectionState.color) // Get the color directly from the extension on ConnectionState.
+                                .id(connectionStatus)
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                                .padding(.vertical)
+                                
                             ConnectionStateIconView(state: connectionState)
                                 .id(connectionState)
                         }
-                        //.padding()
-                        .padding(.leading, 10)
-                        .glassEffect()
-                        .glassEffectUnion(id: "connectionGroup", namespace: namespace)
-                    }
-                    
-                    Text(connectionStatus)
-                        .font(.caption)
-                        .foregroundStyle(connectionState.color) // Get the color directly from the extension on ConnectionState.
-                        .id(connectionStatus)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .padding(.vertical)
                         .padding(.horizontal)
                         .glassEffect()
                         .glassEffectUnion(id: "connectionGroup", namespace: namespace)
+                        
+                    }
             }
     }
         // The .animation modifier on the container animates all changes within it,
         // including the icon replacement and text transitions.
-        //.animation(.bouncy(duration: 0.4), value: connectionState)
+        .animation(.bouncy(duration: 0.4), value: connectionState)
         //.padding(10)
         //.glassEffect()
     }

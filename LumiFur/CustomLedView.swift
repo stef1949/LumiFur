@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CustomLedView: View {
     var body: some View {
-        Text("Create a custom face for your protogen")
+        Text("Custom Face views coming soon!")
         ledArraySection()
     }
 }

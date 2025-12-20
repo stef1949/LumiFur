@@ -75,10 +75,10 @@ struct WhatsNew: View {
                                 .font(.headline)
                                 .padding()
                                 .frame(maxWidth: .infinity)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
+                                //.background(Color.blue)
+                                //.foregroundColor(.white)
                                 .cornerRadius(20)
-                                .padding(.horizontal)
+                                //.padding(.horizontal)
                         }
                         .padding()
                         Spacer()

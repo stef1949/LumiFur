@@ -18,15 +18,18 @@ struct ReleaseNotesView: View {
 
     var body: some View {
             // We can use a ScrollView for better presentation of long notes.
-            ScrollView {
+            List {
                 LazyVStack(alignment: .leading, spacing: 24, pinnedViews: []) {
+                    Section {
                     ForEach(releases) { release in
                         // Use a more detailed row for this view.
-                        releaseDetailCard(for: release)
+                            releaseDetailCard(for: release)
+                        }
                     }
                 }
-                .padding()
+                .padding(.horizontal)
             }
+            .listSectionSeparator(.hidden)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
         }
