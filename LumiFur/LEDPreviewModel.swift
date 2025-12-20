@@ -1,3 +1,11 @@
+//
+//  LEDPreviewModel.swift
+//  LumiFur
+//
+//  Created by Stephan Ritchie on 12/18/25.
+//
+
+
 import SwiftUI
 import Combine
 

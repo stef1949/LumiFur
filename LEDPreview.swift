@@ -1,3 +1,12 @@
+//
+//  LEDPreview.swift
+//  LumiFur
+//
+//  Created by Stephan Ritchie on 12/18/25.
+//
+import SwiftUI
+
+
 struct LEDPreview: View {
     // Your 64×32 LED state
     @State private var ledStates: [[Color]] = Array(

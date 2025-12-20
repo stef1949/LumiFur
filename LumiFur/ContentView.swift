@@ -251,6 +251,8 @@ struct AppInfo {
  }
  }
  }
+ }
+ }
  */
 
 /*
@@ -263,6 +265,7 @@ struct RootView2: View {
 
 // MARK: ContentView
 struct ContentView: View {
+    @StateObject private var ledModel = LEDPreviewModel()
     @Environment(\.scenePhase) private var scenePhase
     //@StateObject private var accessoryViewModel = AccessoryViewModel()
     
@@ -283,7 +286,13 @@ struct ContentView: View {
     @State private var customMessageText: String = ""
     @State private var showCustomMessagePopup = false
     
+    // LEDPreview Valiables
     @State private var isLedArrayExpanded: Bool = false
+    @State private var ledStates: [[Color]] = Array(
+            repeating: Array(repeating: .black, count: 32),
+            count: 64
+        )
+    
     @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
 
     @State private var errorMessage: String?
@@ -301,7 +310,6 @@ struct ContentView: View {
     @State private var matrixStyle: MatrixStyle = .array // The real source of truth
     
     @Namespace var namespace
-    
     
     //Protogen image variables
     //@State private var yOffset: CGFloat = 0
@@ -494,12 +502,18 @@ struct ContentView: View {
          */
         
     }
-    
+    @AppStorage("tempUnit") private var tempUnitRaw: String = TempUnit.celsius.rawValue
+    private var selectedUnitsBinding: Binding<TempUnit> {
+        Binding(
+            get: { TempUnit(rawValue: tempUnitRaw) ?? .celsius },
+            set: { tempUnitRaw = $0.rawValue }
+        )
+    }
     @ViewBuilder
     private var detailContent: some View {
         //@AppStorage("charts") var isChartsExpanded = false
         @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
-        
+
         ZStack {
             if selectedSidebarItem == .dashboard {
                 VStack {
@@ -523,11 +537,20 @@ struct ContentView: View {
                     )
                     .zIndex(-1)
                     
-                    ChartView(isExpanded: $isChartsExpanded, accessoryViewModel: bleModel)
-                        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                        .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
-                        .padding(.horizontal)
-                        .padding(.bottom)
+                    ChartView(
+                        isExpanded: $isChartsExpanded,
+                        accessoryViewModel: bleModel,
+                        selectedUnits: selectedUnitsBinding
+                    )
+                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+                    .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
+                    .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                isChartsExpanded.toggle()
+                            }
+                        }
+                    .padding(.horizontal)
+                    .padding(.bottom)
                     // This animation smoothly handles the frame height change.
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
                 }
@@ -636,10 +659,10 @@ struct ContentView: View {
             if isLedArrayExpanded {
                 HStack {
                     Spacer()
-                    LEDPreview()
+                    LEDPreview(model: ledModel)
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
-                    LEDPreview()
+                    LEDPreview(model: ledModel)
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     Spacer()
@@ -801,9 +824,25 @@ struct ContentView: View {
                     // accessoryViewModel.customMessageEnabled = customMessage // which is true
                     // accessoryViewModel.writeConfigToCharacteristic()
                     print("Custom message set: \(customMessageText)")
+                    bleModel.customMessage = customMessageText
+                    bleModel.sendScrollText(customMessageText)
+                    // Optionally set a default speed on first send; comment out if not desired
+                    // bleModel.sendScrollSpeed(50)
                     if customMessageText.isEmpty {  // If OK is pressed with no text, maybe turn off the feature?
                         // customMessage = false // Or provide feedback to user
                     }
+                }
+            }
+            HStack(spacing: 12) {
+                Text("Speed")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach([100, 150, 200, 250], id: \.self) { s in
+                    Button("\(s)") {
+                        bleModel.sendScrollSpeed(UInt8(s))
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!bleModel.isConnected)
                 }
             }
         }
@@ -1128,8 +1167,16 @@ struct ContentView: View {
 }
 
 struct ledArraySection: View {
+    @StateObject private var ledModel = LEDPreviewModel()
+    @State private var ledStates: [[Color]] = Array(
+            repeating: Array(repeating: .black, count: 32),
+            count: 64
+        )
+    
     var body: some View {
         Text("Hello World!")
+        LEDPreview(model: ledModel)
+        
     }
 }
 
@@ -1254,12 +1301,13 @@ struct AdvancedSettingsView: View {
                 )
             ) {
                 Toggle("Enable RSSI Monitoring", isOn: $rssiMonitoringEnabled)
-                    .onChange(of: rssiMonitoringEnabled) { oldValue, newValue in
-                        if newValue {
-                            bleModel.startRSSIMonitoring()
-                        } else {
-                            // If you have a method to stop monitoring, you can call it here.
-                            print("RSSI monitoring disabled")
+                    .onChange(of: rssiMonitoringEnabled) { _, newValue in
+                        Task { @MainActor in
+                            if newValue {
+                                bleModel.startRSSIMonitoring()
+                            } else {
+                                bleModel.stopRSSIMonitoring()
+                            }
                         }
                     }
                 if rssiMonitoringEnabled {
@@ -1877,54 +1925,7 @@ struct InfoView: View {
  }
  }
  */
-struct LEDPreview: View {
-    // Your 64×32 LED state
-    @State private var ledStates: [[Color]] = Array(
-        repeating: Array(repeating: .black, count: 32),
-        count: 64
-    )
 
-    // Snapshot image, updated only when ledStates changes
-    @State private var snapshot: Image?
-
-    var body: some View {
-        Group {
-            if let snapshot {
-                snapshot
-                    .resizable()
-                    .aspectRatio(64 / 32, contentMode: .fit)
-            } else {
-                // placeholder while first snapshot is generated
-                Color.white
-                    .aspectRatio(64 / 32, contentMode: .fit)
-            }
-        }
-        .onAppear { updateSnapshot() }
-        // whenever ledStates changes, re‑rasterize
-        .onChange(of: ledStates) { oldStates, newStates in
-            updateSnapshot()
-        }
-        .padding(10)
-    }
-
-    private func updateSnapshot() {
-        // Render into a tiny 64×32 bitmap
-        let width = 64
-        let height = 32
-        let renderer = UIGraphicsImageRenderer(
-            size: CGSize(width: width, height: height)
-        )
-        let uiImage = renderer.image { ctx in
-            for x in 0..<width {
-                for y in 0..<height {
-                    ctx.cgContext.setFillColor(UIColor(ledStates[x][y]).cgColor)
-                    ctx.cgContext.fill(CGRect(x: x, y: y, width: 1, height: 1))
-                }
-            }
-        }
-        snapshot = Image(uiImage: uiImage).renderingMode(.original)
-    }
-}
 
 // MARK: Old GPU Accelerated LED Preview
 /*

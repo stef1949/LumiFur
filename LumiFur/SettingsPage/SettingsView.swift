@@ -15,9 +15,23 @@ enum MatrixStyle: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
-enum TempUnit: String, CaseIterable, Identifiable {
-    case ℃, ℉
-    var id: Self { self }
+enum TempUnit: String, CaseIterable, Identifiable, Codable {
+    case celsius, fahrenheit
+    var id: String { rawValue }
+
+    var unit: UnitTemperature {
+        switch self {
+        case .celsius: return .celsius
+        case .fahrenheit: return .fahrenheit
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .celsius: return "°C"
+        case .fahrenheit: return "°F"
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -37,7 +51,16 @@ struct SettingsView: View {
     
     // Local UI state.
     @State private var showAdvanced = false
-    @State private var selectedUnits: TempUnit = .℃
+    
+    //@State private var selectedUnits: TempUnit = .℃
+    private var selectedUnitsBinding: Binding<TempUnit> {
+        Binding(
+            get: { TempUnit(rawValue: tempUnitRaw) ?? .celsius },
+            set: { tempUnitRaw = $0.rawValue }
+        )
+    }
+    @AppStorage("tempUnit") private var tempUnitRaw: String = TempUnit.celsius.rawValue
+    
     @State private var isLedArrayExpanded: Bool = false
     
     // Bindings passed from a parent view.
@@ -70,12 +93,22 @@ struct SettingsView: View {
                 // Connection view is a self-contained component.
                 Section { // The List needs a Section to host the view
                         UnifiedConnectionView(accessoryViewModel: bleModel)
+                        //.scrollContentBackground(.hidden)
                     }
-                    .listRowInsets(EdgeInsets()) // Optional: remove padding if needed
+                .listRowBackground(Color.blue.opacity(0.0))
+                    //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
+                    //.scrollContentBackground(.hidden)
                 
                 // OTA Update link appears conditionally.
                 if bleModel.isConnected {
                     otaUpdateLink
+                        .sheet(isPresented: $showOTAUpdate) {
+                            OTAUpdateView(viewModel: bleModel)
+                                .presentationDetents([.medium, .large])
+                                .presentationDragIndicator(.visible)
+                                .presentationCornerRadius(46)
+                                //.padding()
+                        }
                 }
                 
                 // Each section is now its own lightweight struct.
@@ -85,13 +118,14 @@ struct SettingsView: View {
                     accelerometer: $accelerometer,
                     sleepMode: $sleepMode,
                     auroraMode: $auroraMode,
-                    selectedUnits: $selectedUnits
+                    selectedUnits: selectedUnitsBinding
                 )
                 
                 MatrixSection(
                     isExpanded: $isLedArrayExpanded,
                     selectedMatrix: $selectedMatrix
                 )
+                .disabled(true)
                 
                 AdvancedSettingsSection(
                     bleModel: bleModel,
@@ -109,7 +143,7 @@ struct SettingsView: View {
                     controllerReleases: releaseViewModel.controllerReleases
                 )
             }
-            .scrollContentBackground(.hidden)
+            //.scrollContentBackground(.hidden)
             .navigationTitle("Settings")
             .toolbar {
                 ToolbarItem(placement: .navigation) {
@@ -140,20 +174,54 @@ struct SettingsView: View {
         }
     }
     
+    @State private var showOTAUpdate = false
+    
     // --- OPTIMIZATION 4: Computed Property for Simple Views ---
     // For a very simple, single view like this, a computed property is acceptable
     // and avoids the overhead of a new struct.
     private var otaUpdateLink: some View {
-        NavigationLink {
-            OTAUpdateView(viewModel: bleModel)
+        Button {
+            showOTAUpdate = true
         } label: {
             HStack {
                 Image(systemName: "arrow.up.circle")
                 Text("Update Controller")
+                Spacer()
             }
         }
         .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
-        .transition(.opacity.combined(with: .slide))
+    }
+
+}
+
+
+ struct DeviceRowButton: View {
+    let leadingIcon: String?
+    let title: String
+    let rssi: Int?
+    let isConnecting: Bool
+    let isDisabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                if let leadingIcon {
+                    Image(systemName: leadingIcon)
+                        .foregroundStyle(.secondary)
+                }
+                Text(title)
+                    .lineLimit(1)
+                Spacer()
+                if isConnecting {
+                    ProgressView()
+                } else if let rssi {
+                    SignalStrengthView(rssi: rssi)
+                }
+            }
+        }
+        .disabled(isDisabled)
+        .connectionRow(interactive: true)
     }
 }
 
@@ -162,163 +230,130 @@ struct SettingsView: View {
 /// A self-contained view that displays connection status, scan buttons,
 /// and lists of discovered or connected devices.
 private struct UnifiedConnectionView: View {
-    // This view receives the view model it depends on.
     @ObservedObject var accessoryViewModel: AccessoryViewModel
 
-    // Local state for UI animations.
-    @State private var scanButtonTapped = false
-
     var body: some View {
-        // --- OPTIMIZATION: Main body is simple ---
-        // It composes smaller, more focused child views.
         VStack(spacing: 16) {
             statusAndScanSection
-                .padding()
-            // The ZStack manages the animated transition between the
-            // "discovered" and "connected" states.
+                .connectionCard()
+                //.padding(.horizontal)
+
             ZStack {
                 if accessoryViewModel.isConnected {
                     connectedSection
                         .transition(.asymmetric(
                             insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .move(edge: .top).combined(with: .opacity))
-                        )
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        ))
                 } else {
                     discoveredSection
                         .transition(.asymmetric(
                             insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .move(edge: .bottom).combined(with: .opacity))
-                        )
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        ))
                 }
             }
-            // Animate the transition whenever isConnected changes.
             .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         }
         .padding(.vertical)
     }
-    
-    // MARK: - Child Views (Computed Properties)
 
-    /// Displays the main status icon/text and the scan button.
     private var statusAndScanSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             ConnectionStateIconView(state: accessoryViewModel.connectionState)
-                .font(.system(size: 60))
+                .font(.system(size: accessoryViewModel.isConnected ? 72 : 56, weight: .regular))
+                .animation(.easeInOut(duration: 0.25), value: accessoryViewModel.isConnected)
+
             Text(accessoryViewModel.connectionStatus)
-                .font(.caption)
-                .foregroundStyle(accessoryViewModel.connectionState.color)
-                .backgroundStyle(accessoryViewModel.connectionState.color)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                //.backgroundStyle(accessoryViewModel.connectionState.color)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .foregroundStyle(.primary)
+                .background(accessoryViewModel.connectionState.color.opacity(0.18),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
             if !accessoryViewModel.isConnected {
                 Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
-                    .buttonStyle(.bordered)
-                    .padding(.top, 8)
+                    .buttonStyle(.glassProminent)
+                    .padding(.top, 6)
             }
         }
         .animation(.easeInOut, value: accessoryViewModel.connectionState)
     }
-    
-    /// Displays details for the currently connected peripheral.
+
     @ViewBuilder
     private var connectedSection: some View {
         if let device = accessoryViewModel.targetPeripheral {
             VStack(spacing: 12) {
                 Text(device.name ?? "LumiFur Controller")
-                    .font(.headline.bold())
-                
-                HStack {
-                    VStack {
-                        
+                    .font(.headline.weight(.semibold))
+
+                HStack() {
+                    VStack() {
                         SignalStrengthView(rssi: accessoryViewModel.signalStrength)
-                        
-                        Spacer()
-                        
-                        // Controller Image
+
                         Image("mps3")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 120, height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .frame(width: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .shadow(radius: 6)
-                            .padding(.bottom, 8)
                     }
+                    
                     Spacer()
-                    DeviceInfoView(accessoryViewModel: .shared) // Assuming a shared instance or pass bleModel
+
+                    DeviceInfoView(accessoryViewModel: .shared)
+                        .frame(maxWidth: 320)
                 }
-                
+
                 Button("Disconnect", role: .destructive, action: accessoryViewModel.disconnect)
                     .buttonStyle(.glassProminent)
             }
-            .padding()
-            //.background(Color(.secondarySystemGroupedBackground))
-            //.clipShape(RoundedRectangle(cornerRadius: 15))
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 15))
+            .connectionCard()
             .padding(.horizontal)
         }
     }
-    
-    /// Displays lists of discovered and previously connected devices.
+
     private var discoveredSection: some View {
         VStack(spacing: 12) {
             if accessoryViewModel.discoveredDevices.isEmpty && !accessoryViewModel.isScanning {
                 Text("No devices found.")
                     .foregroundStyle(.secondary)
-                    .padding()
+                    .connectionRow(interactive: false)
             } else {
                 ForEach(accessoryViewModel.discoveredDevices) { device in
-                    deviceRow(for: device)
+                    DeviceRowButton(
+                        leadingIcon: "antenna.radiowaves.left.and.right",
+                        title: device.name,
+                        rssi: device.rssi,
+                        isConnecting: accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id,
+                        isDisabled: accessoryViewModel.isConnecting,
+                        action: { accessoryViewModel.connect(to: device) }
+                    )
                 }
             }
-            
-            if !accessoryViewModel.previouslyConnectedDevices.isEmpty && !accessoryViewModel.discoveredDevices.contains(where: { dev in accessoryViewModel.previouslyConnectedDevices.contains(where: {$0.id == dev.id.uuidString}) }) {
-                Text("Previously Connected").font(.headline).padding(.top)
-                ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
-                    previousDeviceRow(for: storedDevice)
-                }
-            }
-        }
-        //.padding()
-        //.glassEffect()
-    }
-    
-    // MARK: - Reusable Row Helpers
 
-    /// A button row for a discovered device.
-    private func deviceRow(for device: PeripheralDevice) -> some View {
-        Button(action: { accessoryViewModel.connect(to: device) }) {
-            HStack {
-                Text(device.name)
-                Spacer()
-                if accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id {
-                    ProgressView()
-                } else {
-                    SignalStrengthView(rssi: device.rssi)
+            if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
+                Text("Previously Connected")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 6)
+                    .padding(.horizontal)
+
+                ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
+                    DeviceRowButton(
+                        leadingIcon: "clock.arrow.circlepath",
+                        title: storedDevice.name,
+                        rssi: nil,
+                        isConnecting: accessoryViewModel.isConnecting &&
+                                     accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
+                        isDisabled: accessoryViewModel.isConnecting,
+                        action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }
+                    )
                 }
             }
         }
-        .padding()
-        //.padding(.vertical)
-        .glassEffect(.regular.interactive())
-        //.buttonStyle(.bordered)
-        .disabled(accessoryViewModel.isConnecting)
-    }
-    
-    /// A button row for a previously connected (stored) device.
-    private func previousDeviceRow(for storedDevice: StoredPeripheral) -> some View {
-        Button(action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }) {
-            HStack {
-                Image(systemName: "clock.arrow.circlepath")
-                Text(storedDevice.name)
-                Spacer()
-                if accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id {
-                    ProgressView()
-                }
-            }
-        }
-        .buttonStyle(.bordered)
-        .tint(.secondary)
-        .disabled(accessoryViewModel.isConnecting)
+        .padding(.horizontal)
     }
 }
 // MARK: - Subviews as Structs (MAJOR OPTIMIZATION)
@@ -373,8 +408,13 @@ private struct ReleaseNotesSection: View {
 }
 
 private struct MatrixSection: View {
+    @StateObject private var ledModel = LEDPreviewModel()
     @Binding var isExpanded: Bool
     @Binding var selectedMatrix: MatrixStyle
+    @State private var ledStates: [[Color]] = Array(
+            repeating: Array(repeating: .black, count: 32),
+            count: 64
+        )
     
     var body: some View {
         DisclosureGroup("LED Configuration", isExpanded: $isExpanded) {
@@ -382,12 +422,13 @@ private struct MatrixSection: View {
                 Text("Preview:").font(.caption).foregroundStyle(.secondary)
                 HStack {
                     Spacer()
-                    LEDPreview()
+                    LEDPreview(model: ledModel)
                     Spacer()
                 }
                 MatrixStylePicker(selectedMatrix: $selectedMatrix)
             }
         }
+        .disabled(true)
     }
 }
 
@@ -422,12 +463,11 @@ private struct ConfigSection: View {
                 Spacer(minLength: 50)
                 Picker("Temperature Units", selection: $selectedUnits) {
                     ForEach(TempUnit.allCases) { unit in
-                        Text(unit.rawValue.capitalized)
+                        Text(unit.shortLabel).tag(unit)   // FIX: Changed to shortlist
                     }
                 }
                 .pickerStyle(.segmented)
             }
-            
             BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
             
             Toggle(isOn: $accelerometer) {
@@ -600,3 +640,4 @@ private extension AccessoryViewModel {
     )
 }
 */
+

@@ -13,6 +13,13 @@ import Combine
 import SwiftUI
 import WatchKit
 
+struct TemperatureSample: Identifiable, Equatable {
+    let timestamp: Date
+    let temperatureC: Double
+
+    var id: Date { timestamp }
+}
+
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @MainActor static let shared = WatchConnectivityManager()  // Singleton
     
@@ -21,6 +28,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     @Published var isReachable: Bool = false
     @Published var companionDeviceName: String? = nil      // Received iPhone name
     @Published var connectedControllerName: String? = nil    // Received BLE Controller name
+    @Published var controllerConnectionStatus: String = "Disconnected"
+    @Published var temperatureText: String = "--"
+    @Published var temperatureC: Double? = nil
+    @Published var temperatureTimestamp: Date? = nil
+    @Published var temperatureHistory: [TemperatureSample] = []
     
     // State properties for your settings view
     @Published var selectedView: Int = 1
@@ -117,6 +129,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             // Response handler is on a background thread,
             // so you must dispatch to the main thread to update the UI state.
             DispatchQueue.main.async {
+                self.updateCompanionInfo(from: response)
                 self.updateAccessorySettings(from: response)
             }
         }, errorHandler: { error in
@@ -228,9 +241,13 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             print("WatchOS: Updated companion device name: \(name)")
         }
         
-        if let controllerName = context["controllerName"] as? String, self.connectedControllerName != controllerName {
-            self.connectedControllerName = controllerName
-            print("WatchOS: Updated connected controller name: \(controllerName)")
+        if let controllerName = context["controllerName"] as? String {
+            let trimmed = controllerName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let nextValue: String? = trimmed.isEmpty ? nil : trimmed
+            if self.connectedControllerName != nextValue {
+                self.connectedControllerName = nextValue
+                print("WatchOS: Updated connected controller name: \(nextValue ?? "nil")")
+            }
         }
     }
     
@@ -261,6 +278,58 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.customMessage = customMessage
             print("WatchOS: Updated customMessage: \(customMessage)")
         }
+
+        if let status = data["controllerConnectionStatus"] as? String, status != self.controllerConnectionStatus {
+            self.controllerConnectionStatus = status
+            print("WatchOS: Updated controllerConnectionStatus: \(status)")
+
+            if status == "Disconnected" || status == "Failed to connect" || status == "Bluetooth is off" {
+                clearTemperatureCacheIfNeeded()
+            }
+        }
+
+        if let tempText = data["temperatureText"] as? String, tempText != self.temperatureText {
+            self.temperatureText = tempText
+            print("WatchOS: Updated temperatureText: \(tempText)")
+            if tempText == "--" {
+                clearTemperatureCacheIfNeeded()
+            }
+        }
+
+        if let tempC = data["temperatureC"] as? Double {
+            if self.temperatureC != tempC {
+                self.temperatureC = tempC
+                print("WatchOS: Updated temperatureC: \(tempC)")
+            }
+
+            let timestamp = (data["temperatureTimestamp"] as? Date) ?? Date()
+            if self.temperatureTimestamp != timestamp {
+                self.temperatureTimestamp = timestamp
+            }
+
+            appendTemperatureSampleIfNeeded(tempC: tempC, timestamp: timestamp)
+        }
+    }
+
+    @MainActor
+    private func appendTemperatureSampleIfNeeded(tempC: Double, timestamp: Date) {
+        // Avoid duplicates (syncs can resend the latest sample).
+        if temperatureHistory.last?.timestamp == timestamp { return }
+
+        temperatureHistory.append(.init(timestamp: timestamp, temperatureC: tempC))
+
+        // Keep a small in-memory window for charts.
+        let cutoff = Date().addingTimeInterval(-5 * 60)
+        temperatureHistory.removeAll { $0.timestamp < cutoff }
+    }
+
+    @MainActor
+    private func clearTemperatureCacheIfNeeded() {
+        guard temperatureC != nil || temperatureTimestamp != nil || !temperatureHistory.isEmpty || temperatureText != "--" else { return }
+        temperatureText = "--"
+        temperatureC = nil
+        temperatureTimestamp = nil
+        temperatureHistory.removeAll()
     }
     
     // MARK: - App Lifecycle Integration

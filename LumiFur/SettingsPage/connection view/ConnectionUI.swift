@@ -1,3 +1,11 @@
+//
+//  ConnectionUI.swift
+//  LumiFur
+//
+//  Created by Stephan Ritchie on 12/18/25.
+//
+
+
 import SwiftUI
 
 // MARK: - Shared Connection UI Styles
@@ -9,7 +17,7 @@ private enum ConnectionUI {
     static let rowPadding: CGFloat  = 14
 }
 
-private struct ConnectionCard: ViewModifier {
+ struct ConnectionCard: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(ConnectionUI.cardPadding)
@@ -17,7 +25,7 @@ private struct ConnectionCard: ViewModifier {
     }
 }
 
-private struct ConnectionRow: ViewModifier {
+ struct ConnectionRow: ViewModifier {
     let interactive: Bool
     func body(content: Content) -> some View {
         if interactive {
@@ -32,7 +40,7 @@ private struct ConnectionRow: ViewModifier {
     }
 }
 
-private extension View {
+ extension View {
     func connectionCard() -> some View { modifier(ConnectionCard()) }
     func connectionRow(interactive: Bool = true) -> some View { modifier(ConnectionRow(interactive: interactive)) }
 }
