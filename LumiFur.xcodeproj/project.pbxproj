@@ -8,10 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		35062EA82E107A590012AC60 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35062EA72E107A590012AC60 /* MarkdownUI */; };
-		350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
 		35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35197ABE2DA1A17100BE0EE3 /* MarkdownUI */; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
-		352B63222DA31518004E5E74 /* MeshGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63212DA31514004E5E74 /* MeshGradient.swift */; };
 		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
 		354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354069322DF4BB7F00D9040D /* DeviceInfoView.swift */; };
 		354069352DF4D77B00D9040D /* OTAUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354069342DF4D77B00D9040D /* OTAUpdateView.swift */; };
@@ -21,10 +19,17 @@
 		354B00D82DD26E4000825147 /* GlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D12DD269F900825147 /* GlassView.swift */; };
 		354B00D92DD26E4500825147 /* GlassLazyHGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */; };
 		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; platformFilter = ios; };
-		355853602EF47AF1001666E6 /* LEDPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3558535F2EF47AF1001666E6 /* LEDPreview.swift */; };
-		355853622EF47B67001666E6 /* LEDPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853612EF47B67001666E6 /* LEDPreview.swift */; };
+		355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */; };
 		355853662EF483E2001666E6 /* LEDPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853652EF483E2001666E6 /* LEDPreviewModel.swift */; };
 		355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853682EF4BAD4001666E6 /* ConnectionUI.swift */; };
+		355853DA2EF716FB001666E6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
+		355853DC2EF71D3E001666E6 /* MeshGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63212DA31514004E5E74 /* MeshGradient.swift */; };
+		355853DD2EF71D48001666E6 /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350811AD2C8B49160071C68C /* ViewExtensions.swift */; };
+		355853DF2EF71DAC001666E6 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853DE2EF71DAC001666E6 /* InfoView.swift */; };
+		355853E12EF71DDA001666E6 /* SocialLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E02EF71DDA001666E6 /* SocialLink.swift */; };
+		355853E52EFE4E31001666E6 /* LEDPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E32EFE4828001666E6 /* LEDPreview.swift */; };
+		355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E72EFE5C3C001666E6 /* LEDArraySection.swift */; };
+		355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E92EFF7302001666E6 /* IconPickerView.swift */; };
 		356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D04CA62DB29DAA00199C5D /* SharedKeys.swift */; };
 		357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357EEA682E0EE00A0085E438 /* CustomLedView.swift */; };
 		3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3580941E2E2BF0A0005DB779 /* ChartView.swift */; };
@@ -36,9 +41,6 @@
 		3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */; };
 		35A391A22DD77A6300F60E47 /* GitHubRelease.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D1A10F2D9A1C8A00AEC573 /* GitHubRelease.swift */; };
-		35A391A42DD784BD00F60E47 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
-		35A391A52DD784BD00F60E47 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
-		35A391A82DD7A17B00F60E47 /* BouncingButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */; };
 		35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35239A242CCFE06300DD483B /* AccessoryViewModel.swift */; };
 		35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */; };
 		35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */; };
@@ -148,10 +150,14 @@
 		354B00D12DD269F900825147 /* GlassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassView.swift; sourceTree = "<group>"; };
 		354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassLazyHGrid.swift; sourceTree = "<group>"; };
 		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
-		3558535F2EF47AF1001666E6 /* LEDPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreview.swift; sourceTree = "<group>"; };
-		355853612EF47B67001666E6 /* LEDPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreview.swift; sourceTree = "<group>"; };
+		3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewOLD.swift; sourceTree = "<group>"; };
 		355853652EF483E2001666E6 /* LEDPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewModel.swift; sourceTree = "<group>"; };
 		355853682EF4BAD4001666E6 /* ConnectionUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionUI.swift; sourceTree = "<group>"; };
+		355853DE2EF71DAC001666E6 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
+		355853E02EF71DDA001666E6 /* SocialLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialLink.swift; sourceTree = "<group>"; };
+		355853E32EFE4828001666E6 /* LEDPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreview.swift; sourceTree = "<group>"; };
+		355853E72EFE5C3C001666E6 /* LEDArraySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDArraySection.swift; sourceTree = "<group>"; };
+		355853E92EFF7302001666E6 /* IconPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconPickerView.swift; sourceTree = "<group>"; };
 		356B4B822E117322005D1A31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		357EEA682E0EE00A0085E438 /* CustomLedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomLedView.swift; sourceTree = "<group>"; };
 		3580941E2E2BF0A0005DB779 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
@@ -198,6 +204,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		355853EB2EFF8068001666E6 /* Exceptions for "LumiFurWatchOS Watch App" folder in "LumiFurWatchOS Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Preview Content/Preview Assets.xcassets",
+			);
+			target = 3591DD502D5FB695009A3A94 /* LumiFurWatchOS Watch App */;
+		};
 		35AE1A612D5D24C700FDD29E /* Exceptions for "LumiFur Widget" folder in "LumiFur WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -217,6 +230,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				355853EB2EFF8068001666E6 /* Exceptions for "LumiFurWatchOS Watch App" folder in "LumiFurWatchOS Watch App" target */,
+			);
 			path = "LumiFurWatchOS Watch App";
 			sourceTree = "<group>";
 		};
@@ -316,6 +332,26 @@
 			path = "connection view";
 			sourceTree = "<group>";
 		};
+		355853E22EF71DEE001666E6 /* About Page */ = {
+			isa = PBXGroup;
+			children = (
+				355853E02EF71DDA001666E6 /* SocialLink.swift */,
+				355853DE2EF71DAC001666E6 /* InfoView.swift */,
+			);
+			path = "About Page";
+			sourceTree = "<group>";
+		};
+		355853E62EFE4E5C001666E6 /* LEDViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				355853E32EFE4828001666E6 /* LEDPreview.swift */,
+				355853652EF483E2001666E6 /* LEDPreviewModel.swift */,
+				357EEA682E0EE00A0085E438 /* CustomLedView.swift */,
+				355853E72EFE5C3C001666E6 /* LEDArraySection.swift */,
+			);
+			path = LEDViewModel;
+			sourceTree = "<group>";
+		};
 		358427A02C8CF5590096B1D0 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -379,7 +415,7 @@
 				35AE1A4B2D5D24C600FDD29E /* Frameworks */,
 				35DA3A5D2C8739FB0039D19D /* Products */,
 				356B4B822E117322005D1A31 /* Info.plist */,
-				3558535F2EF47AF1001666E6 /* LEDPreview.swift */,
+				3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -400,6 +436,7 @@
 		35DA3A5E2C8739FB0039D19D /* LumiFur */ = {
 			isa = PBXGroup;
 			children = (
+				355853E62EFE4E5C001666E6 /* LEDViewModel */,
 				35D1A1062D98FE7F00AEC573 /* LumiFurRelease.entitlements */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */,
@@ -407,13 +444,11 @@
 				35E4D4032DF88E38004EB85E /* WhatsNew.swift */,
 				35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
-				355853612EF47B67001666E6 /* LEDPreview.swift */,
-				355853652EF483E2001666E6 /* LEDPreviewModel.swift */,
 				358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */,
 				358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */,
 				3580941E2E2BF0A0005DB779 /* ChartView.swift */,
-				357EEA682E0EE00A0085E438 /* CustomLedView.swift */,
 				35AE1A442D5D207F00FDD29E /* liveActivity.swift */,
+				355853E22EF71DEE001666E6 /* About Page */,
 				35E93AB42E17EF0400E9D52F /* SettingsPage */,
 				358427A32C8CF57F0096B1D0 /* Connectivity */,
 				358427A42C8CF59B0096B1D0 /* SharedViews */,
@@ -452,6 +487,7 @@
 		35E93AB42E17EF0400E9D52F /* SettingsPage */ = {
 			isa = PBXGroup;
 			children = (
+				355853E92EFF7302001666E6 /* IconPickerView.swift */,
 				355853672EF4BAC9001666E6 /* connection view */,
 				35E93AB52E17F0A700E9D52F /* SettingsView.swift */,
 				35E93AB72E17F17A00E9D52F /* MatrixStylePicker.swift */,
@@ -682,7 +718,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				35A391A42DD784BD00F60E47 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -713,7 +748,7 @@
 			files = (
 				35F936F42DBC808D00A45B64 /* Meloriac.ttf in Resources */,
 				354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */,
-				35A391A52DD784BD00F60E47 /* Assets.xcassets in Resources */,
+				355853DA2EF716FB001666E6 /* Assets.xcassets in Resources */,
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -764,7 +799,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */,
-				355853602EF47AF1001666E6 /* LEDPreview.swift in Sources */,
+				355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -774,6 +809,7 @@
 			files = (
 				3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */,
 				358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */,
+				355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
@@ -782,19 +818,22 @@
 				358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */,
 				35CD1DBC2E15AE1B0028A6C9 /* StatusSectionView.swift in Sources */,
 				35E4D4062DF88E78004EB85E /* ReleaseNotesView.swift in Sources */,
+				355853E12EF71DDA001666E6 /* SocialLink.swift in Sources */,
 				354069352DF4D77B00D9040D /* OTAUpdateView.swift in Sources */,
 				35E93AB82E17F17A00E9D52F /* MatrixStylePicker.swift in Sources */,
-				352B63222DA31518004E5E74 /* MeshGradient.swift in Sources */,
 				35D1A1102D9A1C8A00AEC573 /* GitHubRelease.swift in Sources */,
+				355853E52EFE4E31001666E6 /* LEDPreview.swift in Sources */,
+				355853DF2EF71DAC001666E6 /* InfoView.swift in Sources */,
 				357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */,
 				358151A92E16D23B003CE8A3 /* ConnectionState.swift in Sources */,
 				35E4D4042DF88E38004EB85E /* WhatsNew.swift in Sources */,
 				35D04CA72DB29DAA00199C5D /* SharedKeys.swift in Sources */,
 				354B00D72DD26E3A00825147 /* GlassPane.swift in Sources */,
-				355853622EF47B67001666E6 /* LEDPreview.swift in Sources */,
+				355853DC2EF71D3E001666E6 /* MeshGradient.swift in Sources */,
 				355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */,
 				354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */,
-				350811AE2C8B49160071C68C /* ViewExtensions.swift in Sources */,
+				355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */,
+				355853DD2EF71D48001666E6 /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
 				352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */,
 				354470452DA55F0E0061FD83 /* SharedOptions.swift in Sources */,
@@ -806,7 +845,6 @@
 				354B00D92DD26E4500825147 /* GlassLazyHGrid.swift in Sources */,
 				35E93AB22E17EDF600E9D52F /* DeviceListView.swift in Sources */,
 				35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */,
-				35A391A82DD7A17B00F60E47 /* BouncingButtonStyle.swift in Sources */,
 				354B00D82DD26E4000825147 /* GlassView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1101,7 +1139,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5.1.0;
+				CURRENT_PROJECT_VERSION = 6.2.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1133,7 +1171,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 9.0;
+				MARKETING_VERSION = 10.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1184,7 +1222,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5.1.0;
+				CURRENT_PROJECT_VERSION = 6.2.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1208,7 +1246,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 9.0;
+				MARKETING_VERSION = 10.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -1223,8 +1261,10 @@
 		35DA3A822C8739FD0039D19D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
@@ -1281,8 +1321,10 @@
 		35DA3A832C8739FD0039D19D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFurRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

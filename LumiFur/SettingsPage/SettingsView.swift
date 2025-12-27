@@ -51,6 +51,7 @@ struct SettingsView: View {
     
     // Local UI state.
     @State private var showAdvanced = false
+    @State private var selectedIcon: String? = UIApplication.shared.alternateIconName
     
     //@State private var selectedUnits: TempUnit = .℃
     private var selectedUnitsBinding: Binding<TempUnit> {
@@ -95,7 +96,7 @@ struct SettingsView: View {
                         UnifiedConnectionView(accessoryViewModel: bleModel)
                         //.scrollContentBackground(.hidden)
                     }
-                .listRowBackground(Color.blue.opacity(0.0))
+                //.listRowBackground(Color.blue.opacity(0.0))
                     //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
                     //.scrollContentBackground(.hidden)
                 
@@ -125,7 +126,7 @@ struct SettingsView: View {
                     isExpanded: $isLedArrayExpanded,
                     selectedMatrix: $selectedMatrix
                 )
-                .disabled(true)
+                //.disabled(true)
                 
                 AdvancedSettingsSection(
                     bleModel: bleModel,
@@ -142,6 +143,8 @@ struct SettingsView: View {
                     appReleases: releaseViewModel.appReleases,
                     controllerReleases: releaseViewModel.controllerReleases
                 )
+                
+                AppIconPickerSection()
             }
             //.scrollContentBackground(.hidden)
             .navigationTitle("Settings")
@@ -407,10 +410,59 @@ private struct ReleaseNotesSection: View {
     }
 }
 
+private struct AppIconPickerSection: View{
+    @State private var shownIconName: String? = UIApplication.shared.alternateIconName
+    var body: some View{
+        Section("App Icon") {
+            NavigationLink {
+                AppIconPickerView { iconName in
+                    shownIconName = iconName
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Choose an App Icon")
+                        Text(displayName(for: shownIconName))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(iconAssetName(for: shownIconName))
+                        .resizable()
+                        .aspectRatio(1, contentMode: .fit)
+                        .frame(width: 32, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                
+                
+            }
+        }
+    }
+}
+
+// MARK: App Icon Helpers
+private func displayName(for iconName: String?) -> String {
+        if iconName == nil { return "Default" }
+        return appIcons.first(where: { $0.iconName == iconName })?.displayName
+            ?? iconName! // fallback, but should normally be found
+    }
+private func iconAssetName(for iconName: String?) -> String {
+        if let iconName,
+           let icon = appIcons.first(where: { $0.iconName == iconName }) {
+            return icon.assetName
+        } else {
+            // This must match a real image asset in the catalog
+            return appIcons.first(where: { $0.iconName == nil })?.assetName ?? "AppIcon"
+        }
+    }
+
 private struct MatrixSection: View {
-    @StateObject private var ledModel = LEDPreviewModel()
+
     @Binding var isExpanded: Bool
     @Binding var selectedMatrix: MatrixStyle
+    
     @State private var ledStates: [[Color]] = Array(
             repeating: Array(repeating: .black, count: 32),
             count: 64
@@ -419,16 +471,23 @@ private struct MatrixSection: View {
     var body: some View {
         DisclosureGroup("LED Configuration", isExpanded: $isExpanded) {
             VStack(alignment: .leading) {
-                Text("Preview:").font(.caption).foregroundStyle(.secondary)
+                Text("Preview:").font(.caption)
+                    .foregroundStyle(.secondary)
+                
                 HStack {
                     Spacer()
-                    LEDPreview(model: ledModel)
+                    LEDPreview(
+                        ledStates: $ledStates,
+                        activeColor: .white,
+                        isErasing: false,
+                        brushRadius: 1
+                    )
                     Spacer()
                 }
                 MatrixStylePicker(selectedMatrix: $selectedMatrix)
             }
         }
-        .disabled(true)
+        //.disabled(true)
     }
 }
 

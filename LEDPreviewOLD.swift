@@ -7,7 +7,7 @@
 import SwiftUI
 
 
-struct LEDPreview: View {
+struct LEDPreviewOLD: View {
     // Your 64×32 LED state
     @State private var ledStates: [[Color]] = Array(
         repeating: Array(repeating: .black, count: 32),
