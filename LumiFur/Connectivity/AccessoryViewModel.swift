@@ -154,14 +154,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var bootButtonState: Bool = false
     
     // User options - didSet triggers writes + UI updates
-    //@Published var selectedView: Int = 1 {
-    @Published var selectedView: Int = 1 { didSet {
-        // Only sync if the value actually changed to prevent loops.
-        if oldValue != selectedView {
-            syncStateToWatch()
-        }
-    }
-    }
+    @Published var selectedView: Int = 1
     
     // MARK: - OTA State Tracking
     @Published var otaStatusMessage: String = "Idle"
@@ -202,7 +195,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         didSet {
             guard oldValue != autoBrightness else { return }
             if !updateFromPeripheral { writeConfigToCharacteristic() }
-            syncStateToWatch()
         }
     }
 
@@ -210,7 +202,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         didSet {
             guard oldValue != accelerometerEnabled else { return }
             if !updateFromPeripheral { writeConfigToCharacteristic() }
-            syncStateToWatch()
         }
     }
 
@@ -218,7 +209,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         didSet {
             guard oldValue != sleepModeEnabled else { return }
             if !updateFromPeripheral { writeConfigToCharacteristic() }
-            syncStateToWatch()
         }
     }
 
@@ -226,7 +216,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         didSet {
             guard oldValue != auroraModeEnabled else { return }
             if !updateFromPeripheral { writeConfigToCharacteristic() }
-            syncStateToWatch()
         }
     }
 
@@ -234,7 +223,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         didSet {
             guard oldValue != customMessage else { return }
             if !updateFromPeripheral { writeConfigToCharacteristic() }
-            syncStateToWatch()
         }
     }
     
@@ -252,6 +240,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         connectionState.image
     }
     private var updateFromPeripheral = false
+
+    @MainActor
+    private func applyPeripheralUpdate(_ updates: () -> Void) {
+        let old = updateFromPeripheral
+        updateFromPeripheral = true
+        updates()
+        updateFromPeripheral = old
+    }
     
     var connectedDevice: PeripheralDevice? {
         guard isConnected, let target = targetPeripheral else { return nil }
@@ -328,9 +324,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private var currentActivity: Activity<LumiFur_WidgetAttributes>? = nil
     private var activityStateTask: Task<Void, Error>? = nil
     
-    // 2) A subject you’ll send new samples into
-    let temperatureSubject = PassthroughSubject<TemperatureData, Never>()
-    
     /// A running count of how many instances are alive
     private static var _instanceCount = 0
     static var instanceCount: Int {
@@ -369,40 +362,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
     // MARK: Setup Helpers
     private func configureCombinePipelines() {
-        // Temperature pipeline: go through didReceive so pruning/windowing is centralized
-        temperatureSubject
-            .receive(on: RunLoop.main)
-            .sink { [weak self] sample in
-                self?.didReceive(sample)
-            }
-            .store(in: &cancellables)
-
-        // WatchConnectivity: reduce spam with removeDuplicates
-        let watchSyncTriggers: [AnyPublisher<Void, Never>] = [
-            $temperature
-                .removeDuplicates()
-                .map { _ in () }
-                .eraseToAnyPublisher(),
-
-            $connectionState
-                .removeDuplicates()
-                .map { _ in () }
-                .eraseToAnyPublisher(),
-
-            $targetPeripheral
-                .map { $0?.identifier }      // UUID? (Equatable)
-                .removeDuplicates()
-                .map { _ in () }
-                .eraseToAnyPublisher()
-        ]
-
-        Publishers.MergeMany(watchSyncTriggers)
-            .throttle(for: .seconds(1.5), scheduler: RunLoop.main, latest: true)
-            .sink { [weak self] _ in
-                self?.syncStateToWatch()
-            }
-            .store(in: &cancellables)
-
         // Brightness → BLE write (skip if it originated from peripheral)
         $brightness
             .dropFirst()
@@ -435,6 +394,64 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 
 
+    private struct StateDigest: Equatable {
+        let connectionState: ConnectionState
+        let signalStrength: Int
+        let temperature: String
+        let selectedView: Int
+        let autoBrightness: Bool
+        let accelerometerEnabled: Bool
+        let sleepModeEnabled: Bool
+        let auroraModeEnabled: Bool
+        let customMessage: String
+        let connectedDeviceName: String?
+        let temperatureDataCount: Int
+        let temperatureDataLast: Date?
+    }
+    private struct WatchStateDigest: Equatable {
+        let connectionState: ConnectionState
+        let temperature: String
+        let selectedView: Int
+        let autoBrightness: Bool
+        let accelerometerEnabled: Bool
+        let sleepModeEnabled: Bool
+        let auroraModeEnabled: Bool
+        let customMessage: String
+        let connectedDeviceName: String?
+    }
+
+    @MainActor
+    private func makeStateDigest() -> StateDigest {
+        StateDigest(
+            connectionState: connectionState,
+            signalStrength: signalStrength,
+            temperature: temperature,
+            selectedView: selectedView,
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled,
+            customMessage: customMessage,
+            connectedDeviceName: connectedDeviceName,
+            temperatureDataCount: temperatureData.count,
+            temperatureDataLast: temperatureData.last?.timestamp
+        )
+    }
+    @MainActor
+    private func makeWatchStateDigest() -> WatchStateDigest {
+        WatchStateDigest(
+            connectionState: connectionState,
+            temperature: temperature,
+            selectedView: selectedView,
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled,
+            customMessage: customMessage,
+            connectedDeviceName: connectedDeviceName
+        )
+    }
+
     private func setupWidgetAndActivityDebounce() {
         let temperatureDataDigest: AnyPublisher<Void, Never> = {
             // Break the chain with explicit intermediate types to help the compiler
@@ -463,21 +480,41 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         let pAurora = $auroraModeEnabled.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
         let pView = $selectedView.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
         let pMsg = $customMessage.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
+        let pTarget = $targetPeripheral
+            .map { $0?.identifier }
+            .removeDuplicates()
+            .map { _ in () }
+            .eraseToAnyPublisher()
 
-        let merged =
-            Publishers.Merge3(pConnection, pTemperature, temperatureDataDigest)
-                .merge(with: pSignal)
-                .merge(with: pAuto)
-                .merge(with: pAccel)
-                .merge(with: pSleep)
-                .merge(with: pAurora)
-                .merge(with: pView)
-                .merge(with: pMsg)
-                .eraseToAnyPublisher()
+        let stateTriggers: [AnyPublisher<Void, Never>] = [
+            pConnection,
+            pTemperature,
+            temperatureDataDigest,
+            pSignal,
+            pAuto,
+            pAccel,
+            pSleep,
+            pAurora,
+            pView,
+            pMsg,
+            pTarget
+        ]
 
-        merged
+        let stateDigestPublisher = Publishers.MergeMany(stateTriggers)
+            .receive(on: RunLoop.main)
+            .map { [weak self] _ in self?.makeStateDigest() }
+            .compactMap { $0 }
+            .removeDuplicates()
+            .share()
+
+        stateDigestPublisher
             .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.updateWidgetAndActivity() }
+            .store(in: &cancellables)
+
+        stateDigestPublisher
+            .throttle(for: .seconds(1.5), scheduler: RunLoop.main, latest: true)
+            .sink { [weak self] _ in self?.syncStateToWatch() }
             .store(in: &cancellables)
     }
     
@@ -743,10 +780,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     // 3) Same for face buttons:
     func faceButtonTapped(_ faceIndex: Int) {
-        guard faceIndex != selectedView else { return }
-        selectedView = faceIndex
-        writeViewToCharacteristic()
-        scheduleLiveActivityUpdate()
+        setView(faceIndex)
     }
     
     @MainActor
@@ -844,8 +878,14 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     /// The single function that triggers a sync to the watch.
     func syncStateToWatch() {
-        //TODO: MAYBE?? Here you can also save to UserDefaults if you want persistence
-        
+        // Build a digest of the values that matter for the watch
+        let digest = makeWatchStateDigest()
+        // If nothing changed since last send, skip
+        if let last = lastSentWatchDigest, last == digest {
+            return
+        }
+        lastSentWatchDigest = digest
+        // Proceed with actual sync
         WatchConnectivityManager.shared.syncStateToWatch(from: self) // Pass self to the watch manager to be packaged and sent
     }
     
@@ -1050,7 +1090,6 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
         // 2) Apply state updates (MainActor)
         connectionState = newState
-        scheduleLiveActivityUpdate()
 
         if state != .poweredOn {
             targetPeripheral = nil
@@ -1171,9 +1210,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         startRSSIMonitoring()
 
         // Live Activity handling (your existing logic is fine)
-        if let activity = currentActivity, activity.activityState == .active {
-            scheduleLiveActivityUpdate()
-        } else {
+        if currentActivity?.activityState != .active {
             Task { @MainActor in
                 await startLumiFur_WidgetLiveActivity()
             }
@@ -1520,10 +1557,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
         case brightnessCharUUID:
             if let val = data.first {
-                let old = updateFromPeripheral
-                updateFromPeripheral = true
-                if brightness != val { brightness = val }
-                updateFromPeripheral = old
+                applyPeripheralUpdate {
+                    if brightness != val { brightness = val }
+                }
             }
 
         case otaCharUUID:
@@ -1559,10 +1595,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             let text = String(bytes: trimmed, encoding: .utf8)
                        ?? String(bytes: trimmed, encoding: .ascii)
                        ?? ""
-            let oldFlag = updateFromPeripheral
-            updateFromPeripheral = true
-            if customMessage != text { customMessage = text }
-            updateFromPeripheral = oldFlag
+            applyPeripheralUpdate {
+                if customMessage != text { customMessage = text }
+            }
 
         default:
             logger.warning("Unhandled characteristic \(uuid)")
@@ -1628,8 +1663,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     // MARK: - Data Handling Helpers (Called on bleQueue)
     
     
-    // FIXED: Improved updateFromPeripheral flag scoping
-    // Modify handleViewUpdate to set the flag
+    // Peripheral-originated updates should not echo back over BLE.
     @MainActor
     private func handleViewUpdate(data: Data) {
         guard let viewValue = data.first.map({ Int($0) }) else {
@@ -1638,11 +1672,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
 
         guard selectedView != viewValue else { return }
-
-        let old = updateFromPeripheral
-        updateFromPeripheral = true
-        selectedView = viewValue
-        updateFromPeripheral = old
+        applyPeripheralUpdate {
+            selectedView = viewValue
+        }
     }
     
     @MainActor
@@ -1657,16 +1689,13 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         let sleep  = data[2] == 1
         let aurora = data[3] == 1
 
-        let old = updateFromPeripheral
-        updateFromPeripheral = true
-
-        // Only assign if changed to avoid extra didSet churn
-        if autoBrightness != autoB { autoBrightness = autoB }
-        if accelerometerEnabled != accel { accelerometerEnabled = accel }
-        if sleepModeEnabled != sleep { sleepModeEnabled = sleep }
-        if auroraModeEnabled != aurora { auroraModeEnabled = aurora }
-
-        updateFromPeripheral = old
+        applyPeripheralUpdate {
+            // Only assign if changed to avoid extra didSet churn
+            if autoBrightness != autoB { autoBrightness = autoB }
+            if accelerometerEnabled != accel { accelerometerEnabled = accel }
+            if sleepModeEnabled != sleep { sleepModeEnabled = sleep }
+            if auroraModeEnabled != aurora { auroraModeEnabled = aurora }
+        }
     }
     // Inside AccessoryViewModel…
     @MainActor
@@ -2088,7 +2117,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     private var lastSentState: LumiFur_WidgetAttributes.ContentState?
-    private var pendingUpdateTask: Task<Void, Never>?
+    private var pendingUpdateTask: Task<Void, Never>? = nil
+    // Last watch payload digest sent; used to avoid redundant syncs when only timestamps change
+    private var lastSentWatchDigest: WatchStateDigest? = nil
     
     /*
      func faceButtonTapped(_ faceIndex: Int) {

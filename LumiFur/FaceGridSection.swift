@@ -94,7 +94,7 @@ struct FaceGridSection: View {
                         }
                     }
                     .padding(.horizontal)
-                    .scrollContentBackground(.hidden)
+                    //.scrollContentBackground(.hidden)
                     //.border(.red)
                 }
                 .scrollDismissesKeyboard(.automatic)
