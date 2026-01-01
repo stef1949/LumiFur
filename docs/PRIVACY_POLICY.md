@@ -4,7 +4,6 @@ Effective date: 12 December 2025
 
 App name: LumiFur
 
----
 
 ## 1) Who we are (Data Controller)
 
@@ -14,16 +13,14 @@ LumiFur is provided by **Richies 3D Ltd** (“we”, “us”). We are the data 
 
 Email: privacy@richies.uk  
 Support: admin@richies.uk  
-Address: 6 Mitre House, 149 Western Road, Brighton  
+Address: Mitre House, 149 Western Road, Brighton  
 Country: United Kingdom
 
----
 
 ## 2) What this policy covers
 
 This policy explains how we handle information when you use **LumiFur**, a SwiftUI iOS app designed to control fursuit LED/light systems (for example LED matrices or arrays) using connectivity such as Bluetooth and, where enabled, Wi-Fi.
 
----
 
 ## 3) Summary
 
@@ -33,7 +30,6 @@ This policy explains how we handle information when you use **LumiFur**, a Swift
 - Connectivity data (Bluetooth or local network) is used to connect to your controller device and send commands.
 - Most data stays on your device unless you choose to share it (for example by emailing logs).
 
----
 
 ## 4) Information we collect and use
 
@@ -55,7 +51,6 @@ Support and troubleshooting.
 
 Legitimate interests (support) and/or contract (providing the app or service).
 
----
 
 ### B) Data processed to make the app work (connectivity and device control)
 
@@ -75,7 +70,6 @@ Performance of a contract (core app functionality) and legitimate interests (ens
 > Note on location: LumiFur does not request your GPS location.  
 > However, Bluetooth scans and network information can indirectly relate to your environment or devices and may be considered personal data.
 
----
 
 ### C) Data received from your controller device (telemetry)
 
@@ -93,7 +87,6 @@ To show device state in the app, enable status or history features, and assist w
 
 Performance of a contract and legitimate interests.
 
----
 
 ### D) App preferences stored on your device
 
@@ -111,7 +104,6 @@ To remember your preferences and provide the expected user experience.
 
 Performance of a contract.
 
----
 
 ### E) Diagnostics and crash data
 
@@ -126,7 +118,6 @@ To improve stability and fix bugs.
 
 Legitimate interests.
 
----
 
 ## 5) What we do not collect
 
@@ -139,7 +130,6 @@ We do not intentionally collect:
 - advertising identifiers (IDFA)
 - data used for cross-app tracking
 
----
 
 ## 6) How we share data
 
@@ -151,20 +141,17 @@ We share personal data only:
 
 We do not sell personal data.
 
----
 
 ## 7) International transfers
 
 If we use providers that process data outside the UK or EEA, we will put in place appropriate safeguards where required, such as UK adequacy regulations or Standard Contractual Clauses.
 
----
 
 ## 8) Data retention
 
 - **On-device data** (preferences, recent device information, telemetry history) is kept until you delete the app or use any in-app reset or clear options.
 - **Support emails** are retained only as long as needed to resolve your request and maintain reasonable records of support, and are then deleted or anonymised.
 
----
 
 ## 9) Security
 
@@ -176,7 +163,6 @@ We use reasonable technical and organisational measures to protect data, includi
 
 Because Bluetooth and local networks are shared environments, you should only connect to controller devices that you trust.
 
----
 
 ## 10) Your GDPR / UK GDPR rights
 
@@ -196,7 +182,6 @@ Email: privacy@richies.uk
 
 We may need to verify your identity before completing your request.
 
----
 
 ## 11) Complaints
 
@@ -204,7 +189,6 @@ You can complain to your local data protection authority if you have concerns ab
 
 In the UK, this is the **Information Commissioner’s Office (ICO)**.
 
----
 
 ## 12) Children
 
@@ -212,7 +196,6 @@ LumiFur is not directed to children under 13 years of age (or the relevant age o
 
 If you believe a child has provided us with personal data, please contact us so that we can delete it.
 
----
 
 ## 13) Changes to this policy
 
@@ -220,7 +203,6 @@ We may update this privacy policy from time to time, for example when LumiFur ga
 
 When we make changes, we will update the effective date at the top of this document and, where appropriate, notify you in the app or via the App Store listing.
 
----
 
 ## 14) Contact
 
@@ -229,4 +211,4 @@ If you have any questions about this policy or how your data is handled, you can
 **Richies 3D Ltd**  
 Email (privacy): privacy@richies.uk  
 Email (support): admin@richies.uk  
-Address: 6 Mitre House, 149 Western Road, Brighton, United Kingdom
+Address: Mitre House, 149 Western Road, Brighton, United Kingdom
