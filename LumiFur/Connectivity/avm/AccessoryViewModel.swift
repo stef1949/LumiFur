@@ -12,55 +12,6 @@ import ActivityKit
 import AccessorySetupKit
 #endif // !targetEnvironment(macCatalyst )
 
-// MARK: - REQUIRED DEFINITIONS
-fileprivate var accessoryVMInstanceCount = 0
-
-/// Use only to move Obj-C / CoreBluetooth references into @Sendable closures.
-/// Safe here because we *only* touch these values on `bleQueue`.
-final class UncheckedSendableBox<T>: @unchecked Sendable {
-    let value: T
-    init(_ value: T) { self.value = value }
-}
-
-// --- Data Structures ---
-struct PeripheralDevice: Identifiable, Hashable {
-    let id: UUID
-    let name: String
-    let rssi: Int
-    let advertisementServiceUUIDs: [String]?
-    let peripheral: CBPeripheral //PeripheralDevice non-Codable by default
-    
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: PeripheralDevice, rhs: PeripheralDevice) -> Bool { lhs.id == rhs.id }
-}
-
-struct DeviceInfo: Codable {
-    let fw: String
-    let commit: String
-    let branch: String
-    let build: String
-    let model: String
-    let compat: String
-    let id: String
-}
-
-// ADDED: Definition for StoredPeripheral
-struct StoredPeripheral: Identifiable, Codable, Hashable {
-    let id: String // Stores peripheral.identifier.uuidString
-    let name: String
-    
-    // Conformance to Identifiable is met by 'let id: String'
-    // Conformance to Hashable
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-    // Conformance to Equatable (provided by Hashable if all stored properties are Equatable,
-    // but explicit definition is fine and clear)
-    static func == (lhs: StoredPeripheral, rhs: StoredPeripheral) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
 @MainActor
 // MARK: - AccessoryViewModel
 @available(iOS 16.1, *)
@@ -115,7 +66,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         let cBox = UncheckedSendableBox(characteristic)
 
         bleAsync { _ in
-            pBox.value.writeValue(data, for: cBox.value, type: .withoutResponse)
+            pBox.value.writeValue(data, for: cBox.value, type: .withResponse)
         }
     }
     
@@ -250,17 +201,26 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     var connectedDevice: PeripheralDevice? {
+        #if DEBUG
+        // In SwiftUI previews we don't have a real CBPeripheral,
+        // so just use the first discovered device as the "connected" one.
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return discoveredDevices.first
+        }
+        #endif
+
         guard isConnected, let target = targetPeripheral else { return nil }
-        // Find the full PeripheralDevice object from your discovered list
-        // based on the targetPeripheral's identifier
         return discoveredDevices.first { $0.id == target.identifier }
-        // Note: This relies on discoveredDevices being up-to-date.
-        // Alternatively, you could construct a basic PeripheralDevice here if needed,
-        // but finding it in the list is usually better if possible.
     }
-    
-    // This property returns just the name String?
+
     var connectedDeviceName: String? {
+        #if DEBUG
+        // Same trick for previews: use the mock device name.
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return discoveredDevices.first?.name
+        }
+        #endif
+
         return targetPeripheral?.name
     }
     // var connectedDeviceName: String? { targetPeripheral?.name }
@@ -325,10 +285,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private var activityStateTask: Task<Void, Error>? = nil
     
     /// A running count of how many instances are alive
-    private static var _instanceCount = 0
-    static var instanceCount: Int {
-        _instanceCount
-    }
+    nonisolated(unsafe) private static var _instanceCount = 0
+    nonisolated(unsafe) static var instanceCount: Int { _instanceCount }
     
     @MainActor private var rssiMonitoringGeneration: UInt64 = 0
     
@@ -336,9 +294,25 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @MainActor
     override init() {
         super.init()
-        accessoryVMInstanceCount += 1
-        logger.warning("🔧 AccessoryViewModel init — now \(accessoryVMInstanceCount) instance(s)")
+        AccessoryViewModel._instanceCount += 1
+        let countNow = AccessoryViewModel.instanceCount
+        logger.warning("🔧 AccessoryViewModel init — now \(countNow) instance(s)")
 
+        // SwiftUI previews
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            logger.info("Running in SwiftUI previews – skipping CBCentralManager, notifications, and live activities.")
+
+            // Give previews some deterministic baseline state if you want:
+            self.connectionState = .disconnected
+            self.previouslyConnectedDevices = []
+            self.temperatureData = []
+            self.signalStrength = -100
+
+            // Return here so we do *not* create CBCentralManager
+            return
+        }
+
+        // Real app behaviour (sim / device runs)
         centralManager = CBCentralManager(delegate: self, queue: bleQueue)
 
         previouslyConnectedDevices = loadStoredPeripherals()
@@ -350,10 +324,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         registerNotificationObservers()
         setupWidgetAndActivityDebounce()
 
-        // Initial snapshot push (we're already on MainActor)
         updateWidgetAndActivity()
 
-        // Clean up any stray live activities (async)
         Task { [weak self] in
             guard let self else { return }
             await self.endAllLumiFurActivities()
@@ -519,28 +491,33 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     deinit {
-        accessoryVMInstanceCount -= 1
-        logger.warning("🗑️ AccessoryViewModel deinit — now \(accessoryVMInstanceCount) instance(s)")
+        AccessoryViewModel._instanceCount -= 1
+        let countNow = AccessoryViewModel.instanceCount
+        logger.warning("🗑️ AccessoryViewModel deinit — now \(countNow) instance(s)")
 
-        NotificationCenter.default.removeObserver(self)
+        // Perform cleanup on the MainActor to satisfy Sendable/isolation rules.
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            NotificationCenter.default.removeObserver(self)
 
-        // Stop timers/tasks
-        rssiUpdateTimer?.invalidate()
-        rssiUpdateTimer = nil
+            // Stop timers/tasks
+            self.rssiUpdateTimer?.invalidate()
+            self.rssiUpdateTimer = nil
 
-        pendingUpdateTask?.cancel()
-        pendingUpdateTask = nil
+            self.pendingUpdateTask?.cancel()
+            self.pendingUpdateTask = nil
 
-        otaTask?.cancel()
-        otaTask = nil
+            self.otaTask?.cancel()
+            self.otaTask = nil
 
-        activityStateTask?.cancel()
-        activityStateTask = nil
+            self.activityStateTask?.cancel()
+            self.activityStateTask = nil
 
-        // Tear down Combine
-        cancellables.removeAll()
+            // Tear down Combine
+            self.cancellables.removeAll()
 
-        logger.warning("AccessoryViewModel deinitialized.")
+            self.logger.warning("AccessoryViewModel deinitialized (MainActor cleanup).")
+        }
     }
     
     // MARK: — APP BACK TO FOREGROUND
@@ -691,14 +668,35 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             pBox.value.writeValue(abortPacket, for: cBox.value, type: .withResponse)
         }
     }
+    
     @MainActor
     func scanForDevices() {
-        guard !isScanning else {
-            logger.debug("Scan already in progress—skipping duplicate scan call.")
+        // 1️⃣ Special case: SwiftUI previews
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            // Fake "scan" for the preview canvas
+            logger.info("SwiftUI preview: faking scanForDevices()")
+
+            isScanning = false
+            connectionState = .disconnected   // or .scanning if you have that case
+
+            // Populate some mock devices so the UI has something to show
+            discoveredDevices = [
+                .mock,
+                PeripheralDevice(
+                    id: UUID(),
+                    name: "LumiFur-BBBB",
+                    rssi: -68,
+                    advertisementServiceUUIDs: ["FFF0"],
+                    peripheral: nil
+                )
+            ]
+
             return
         }
+
+        // 2️⃣ Normal runtime behaviour (device / sim running app)
         guard centralManager.state == .poweredOn else {
-            logger.warning("Cannot scan: Bluetooth is not powered on")
+            logger.warning("Cannot scan: Bluetooth is not powered on.")
             connectionState = .bluetoothOff
             return
         }
@@ -709,9 +707,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         isScanning = true
 
         // BLE call: bleQueue
-        bleAsync { manager in
+        bleAsync { [serviceUUID] manager in
             manager.scanForPeripherals(
-                withServices: [self.serviceUUID],
+                withServices: [serviceUUID],
                 options: [CBCentralManagerScanOptionAllowDuplicatesKey: NSNumber(value: false)]
             )
         }
@@ -728,6 +726,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         isScanning = false
         if connectionState == .scanning { connectionState = .disconnected }
     }
+    
     @MainActor
     func connect(to device: PeripheralDevice) {
         guard centralManager.state == .poweredOn else {
@@ -736,6 +735,27 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             return
         }
 
+        // 2️⃣ Real app: be defensive about centralManager existing
+            guard let manager = centralManager else {
+                logger.error("connect(to:) called before centralManager was initialized.")
+                connectionState = .unknown
+                return
+            }
+
+            guard manager.state == .poweredOn else {
+                logger.warning("Cannot connect: Bluetooth is not powered on.")
+                connectionState = .bluetoothOff
+                return
+            }
+
+            // 3️⃣ We must have a real CBPeripheral to connect
+            guard let peripheral = device.peripheral else {
+                // This really shouldn’t happen in the *real* app.
+                logger.warning("connect(to:) called with device that has nil CBPeripheral; aborting connect.")
+                return
+            }
+
+        
         stopScan()
 
         connectingPeripheral = device
@@ -744,7 +764,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         targetPeripheral?.delegate = self
         isManualDisconnect = false
 
-        let peripheralBox = UncheckedSendableBox(device.peripheral)
+        let peripheralBox = UncheckedSendableBox(peripheral)
 
         bleAsync { manager in
             manager.connect(peripheralBox.value, options: nil)
@@ -845,16 +865,17 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @MainActor
     private func _startRSSIMonitoring() {
         rssiUpdateTimer?.invalidate()
-
+        
         rssiUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-
-            guard let p = self.targetPeripheral, p.state == .connected else { return }
-            let pBox = UncheckedSendableBox(p)
-
-            self.bleAsync { _ in
-                pBox.value.readRSSI()
-            }
+            MainActor.assumeIsolated {
+                        guard let self = self else { return }
+                        guard let p = self.targetPeripheral, p.state == .connected else { return }
+                        
+                        let pBox = UncheckedSendableBox(p)
+                        self.bleAsync { _ in
+                            pBox.value.readRSSI()
+                        }
+                    }
         }
     }
     @MainActor
@@ -900,7 +921,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         
         guard centralManager.state == .poweredOn else {
             logger.warning("Cannot scan: Bluetooth is not powered on")
-            DispatchQueue.main.async { self.connectionState = .bluetoothOff } // Fixed enum case
+            DispatchQueue.main.async { self.connectionState = .bluetoothOff
+            } // Fixed enum case
             return
         }
         
@@ -931,25 +953,37 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     /// Internal connect logic, runs on bleQueue
-    private func _connect(to device: PeripheralDevice) { // Uses definition
+    private func _connect(to device: PeripheralDevice) {
         guard centralManager.state == .poweredOn else {
             logger.warning("Cannot connect: Bluetooth is not powered on.")
-            DispatchQueue.main.async { self.connectionState = .bluetoothOff } // Fixed enum case
+            DispatchQueue.main.async {
+                self.connectionState = .bluetoothOff
+            }
             return
         }
+
+        // Must have a real CBPeripheral to connect
+        guard let peripheralToConnect = device.peripheral else {
+            logger.warning("Cannot connect: PeripheralDevice has nil CBPeripheral (id: \(device.id), name: \(device.name)).")
+            return
+        }
+
         _stopScan()
-        let peripheralToConnect = device.peripheral
-        DispatchQueue.main.async { [weak self] in // Added weak self
+
+        // Update UI-related state on the main thread
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.connectingPeripheral = device
             self.connectionState = .connecting
-            self.targetPeripheral = peripheralToConnect // Assign targetPeripheral on the main thread
+            self.targetPeripheral = peripheralToConnect
         }
+
         isManualDisconnect = false
         logger.info("Attempting to connect to \(device.name) (\(device.id)) on bleQueue...")
-        //targetPeripheral = device.peripheral // Redundent as it is set on Main thread
-        targetPeripheral?.delegate = self
-        centralManager.connect(device.peripheral, options: nil)
+
+        // Configure delegate and start connection with a non-optional peripheral
+        peripheralToConnect.delegate = self
+        centralManager.connect(peripheralToConnect, options: nil)
     }
     
     /// Internal disconnect logic, runs on bleQueue
@@ -1203,8 +1237,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
         // Kick off discovery on BLE queue (important!)
         let pBox = UncheckedSendableBox(peripheral)
-        bleAsync { _ in
-            pBox.value.discoverServices([self.serviceUUID])
+        bleAsync { [serviceUUID] _ in
+            pBox.value.discoverServices([serviceUUID])
         }
 
         startRSSIMonitoring()
@@ -1517,10 +1551,15 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                                       data: Data?,
                                       error: Error?) {
         if let error {
+            if isPairingError(error) {
+                showError(message: "Pairing required. Enter the passkey shown on the device.")
+                return
+            }
             logger.error("Error updating \(uuid): \(error.localizedDescription)")
             showError(message: "Characteristic \(uuid.uuidString.prefix(4)) update error")
             return
         }
+
         guard let data else {
             logger.warning("Nil data for \(uuid) on \(peripheralID)")
             return
@@ -1628,8 +1667,13 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             guard let self else { return }
 
             if let error {
-                self.logger.error("Error writing value to \(characteristic.uuid): \(error.localizedDescription)")
-                self.showError(message: "Error writing command.")
+                if self.isPairingError(error) {
+                    self.showError(message: "Pairing required. Enter the passkey shown on the device.")
+                } else {
+                    self.logger.error("Error writing value to \(characteristic.uuid): \(error.localizedDescription)")
+                    self.showError(message: "Error writing command.")
+                }
+
                 // Unblock OTA sender so it can fail/cancel cleanly
                 self.otaWriteContinuation?.resume()
                 self.otaWriteContinuation = nil
@@ -1873,6 +1917,22 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         totalHistoryChunksExpected = nil
         logger.info("History download state reset.")
     }
+    
+    private func isPairingError(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == CBATTErrorDomain,
+           let code = CBATTError.Code(rawValue: ns.code) {
+            return code == .insufficientAuthentication
+                || code == .insufficientEncryption
+                || code == .insufficientAuthorization
+        }
+        if ns.domain == CBErrorDomain,
+           let code = CBError.Code(rawValue: ns.code) {
+            return code == .peerRemovedPairingInformation
+        }
+        return false
+    }
+
     
     private func showError(message: String) { // Must be called on Main Thread
         logger.error("Displaying error to user: \(message)")
@@ -2207,6 +2267,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
+    /*
 #if DEBUG
     /// An initializer specifically for creating configured instances for SwiftUI Previews or tests.
     /// This initializer allows us to set the internal state that our get-only computed properties depend on.
@@ -2232,22 +2293,94 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
 #endif // DEBUG
+    */
     
 }// End of AccessoryViewModel
 
-// MARK: - Helper Extensions
-@available(iOS 16.1, *)
-func activityStateDescription(_ state: ActivityState) -> String {
-    switch state {
-    case .active: return "active"
-    case .dismissed: return "dismissed"
-    case .ended: return "ended"
-    case .stale: return "stale"
-    case .pending: return "pending" // ??????
-    @unknown default: return "unknown"
+
+/// Debug / preview helpers for SwiftUI and tests.
+#if DEBUG
+extension AccessoryViewModel {
+    /// Convenience initializer for SwiftUI previews / tests.
+    convenience init(
+        isConnected: Bool,
+        isScanning: Bool = false,
+        firmwareVersion: String = "N/A",
+        discoveredDevices: [PeripheralDevice] = [],
+        errorMessage: String? = nil
+    ) {
+        self.init()
+
+        // Shape the BLE "status" surface that the UI reads.
+        if isConnected {
+            self.connectionState = .connected
+        }
+        if isScanning {
+            self.connectionState = .scanning
+        }
+        self.firmwareVersion = firmwareVersion
+        self.discoveredDevices = discoveredDevices
+
+        if let errorMessage {
+            self.errorMessage = errorMessage
+            self.showError = true
+
+        }
+
+        // DO NOT touch isConnected (it's get-only)
+        // DO NOT call real Bluetooth APIs.
+    }
+
+    static var previewDisconnected: AccessoryViewModel {
+        AccessoryViewModel(
+            isConnected: false,
+            firmwareVersion: "N/A",
+            discoveredDevices: []
+        )
+    }
+
+    static var previewScanning: AccessoryViewModel {
+        AccessoryViewModel(
+            isConnected: false,
+            isScanning: true,
+            firmwareVersion: "N/A",
+            discoveredDevices: []
+        )
+    }
+    
+    static var previewConnected: AccessoryViewModel {
+        AccessoryViewModel(
+            isConnected: true,
+            firmwareVersion: "2.1.0",
+            discoveredDevices: [.mock]
+        )
+    }
+
+    static var previewError: AccessoryViewModel {
+        AccessoryViewModel(
+            isConnected: false,
+            firmwareVersion: "N/A",
+            discoveredDevices: [],
+            errorMessage: "Failed to connect. The device is out of range."
+        )
     }
 }
+#endif
 
+// MARK: - Helper Extensions
+/*
+ @available(iOS 16.1, *)
+ func activityStateDescription(_ state: ActivityState) -> String {
+ switch state {
+ case .active: return "active"
+ case .dismissed: return "dismissed"
+ case .ended: return "ended"
+ case .stale: return "stale"
+ case .pending: return "pending" // ??????
+ @unknown default: return "unknown"
+ }
+ }
+*/
 /*
  @available(iOS 16.1, *)
  func dismissalPolicyDescription(_ policy: ActivityUIDismissalPolicy) -> String {
@@ -2259,21 +2392,4 @@ func activityStateDescription(_ state: ActivityState) -> String {
  }
  }
  */
-
-#if DEBUG
-
-extension PeripheralDevice {
-    static var mock: PeripheralDevice {
-        PeripheralDevice(
-            id: UUID(),
-            name: "LumiFur-MOCK",
-            rssi: -60,
-            advertisementServiceUUIDs: [],
-            // NOTE: This unsafeBitCast is only for test/mock usage and not used in production.
-            peripheral: unsafeBitCast(0x1234 as UInt, to: CBPeripheral.self)
-        )
-    }
-}
-
-#endif
 

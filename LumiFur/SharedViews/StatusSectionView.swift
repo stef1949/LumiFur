@@ -42,7 +42,7 @@ struct StatusSectionView: View, Equatable {
     
     // MARK: - Body
     var body: some View {
-        GlassEffectContainer(spacing: 8.0) {
+//        GlassEffectContainer(spacing: 8.0) {
             HStack(spacing: 8) {
                 Group {
                     if connectionState == .connected {
@@ -57,11 +57,11 @@ struct StatusSectionView: View, Equatable {
                             .tint(.yellow)
                             .scaleEffect(0.5)
                         }
-                        .frame(width: 20, height: 20)
-                        .padding()
-                        .glassEffect()
-                        .glassEffectUnion(id: "luxMeter", namespace: namespace)
-                        //.transition(.move(edge: .trailing).combined(with: .opacity))
+                        //.frame(width: 20, height: 20)
+                        //.padding()
+                        //.glassEffect()
+                        //.glassEffectUnion(id: "luxMeter", namespace: namespace)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                     
                 }
@@ -75,47 +75,51 @@ struct StatusSectionView: View, Equatable {
                         animatedLuxProgress = newProgress
                     }
                 }
+                ZStack(alignment: .trailing) {
+                    // Signal view branch
                     if showSignalView {
                         HStack(spacing: 4) {
                             SignalStrengthView(rssi: signalStrength)
-                                .transition(.move(edge: .trailing).combined(with: .opacity))
                             
-                             ConnectionStateIconView(state: connectionState)
-                             .id(connectionState)
-                             
+                            ConnectionStateIconView(state: connectionState)
+                                .id(connectionState)
                         }
                         .padding()
-                        //.padding(.leading, 10)
-                        .glassEffect()
-                        .glassEffectUnion(id: "connectionGroup", namespace: namespace)
-                    } else {
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        // Ensure the outgoing view is on top when state changes
+                        .zIndex(showSignalView ? 0 : 1)
+                    }
+
+                    // Text branch
+                    if !showSignalView {
                         HStack(spacing: 4){
                             Text(connectionStatus)
                                 .font(.caption)
                                 .foregroundStyle(connectionState.color) // Get the color directly from the extension on ConnectionState.
                                 .id(connectionStatus)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-                                .padding(.vertical)
+                                //.minimumScaleFactor(0.5)
+                                //.padding()
                                 
                             ConnectionStateIconView(state: connectionState)
                                 .id(connectionState)
                         }
-                        .padding(.horizontal)
-                        .glassEffect()
-                        .glassEffectUnion(id: "connectionGroup", namespace: namespace)
-                        
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        // Ensure the outgoing view is on top when state changes
+                        .zIndex(showSignalView ? 1 : 0)
+                        .padding()
                     }
+                }
+                .clipped()
             }
-    }
+//    }
         // The .animation modifier on the container animates all changes within it,
         // including the icon replacement and text transitions.
+        .animation(.smooth(duration: 0.35), value: showSignalView)
+        .animation(.smooth(duration: 0.35), value: connectionStatus)
         .animation(.bouncy(duration: 0.4), value: connectionState)
         //.padding(10)
         //.glassEffect()
     }
 }
+

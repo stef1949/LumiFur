@@ -5,6 +5,8 @@
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.richies3d.LumiFur</string>
+		<string>group.com.rileytestut.AltStore.Z64L7GR687</string>
+		<string>group.com.richies3d.LumiFur.Z64L7GR687</string>
 	</array>
 </dict>
 </plist>

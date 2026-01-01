@@ -20,7 +20,7 @@ struct TemperatureSample: Identifiable, Equatable {
     var id: Date { timestamp }
 }
 
-final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+@MainActor final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @MainActor static let shared = WatchConnectivityManager()  // Singleton
     
     // MARK: - Published Properties (For watchOS UI)
@@ -124,11 +124,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     // MARK: - SYNC with iOS
     func requestSyncFromiOS() {
         print("WatchOS: Requesting sync from iOS")
-        sendMessage(["command": "getData"], replyHandler: { response in
-            print("WatchOS: Received sync response: \(response)")
-            // Response handler is on a background thread,
-            // so you must dispatch to the main thread to update the UI state.
-            DispatchQueue.main.async {
+        sendMessage(["command": "getData"], replyHandler: { [weak self] response in
+            // Hop to the main actor immediately to avoid sending non-Sendable values across actors.
+            Task { @MainActor in
+                guard let self = self else { return }
+                print("WatchOS: Received sync response: \(response)")
                 self.updateCompanionInfo(from: response)
                 self.updateAccessorySettings(from: response)
             }
@@ -352,3 +352,4 @@ extension WCError {
         self.init(_nsError: NSError(domain: "WCErrorDomain", code: code.rawValue, userInfo: userInfo))
     }
 }
+

@@ -45,6 +45,7 @@ struct SharedOptions {
         .symbol("apple.logo"),
         .symbol("paintpalette.fill"),
         .emoji("🏳️‍⚧️"),
+        .emoji("🏳️‍🌈"),
         .emoji("🙂"),
         .emoji("😳"),
         .emoji("😎"),
@@ -61,7 +62,8 @@ struct SharedOptions {
         .emoji("😲"),
         .emoji("🌀"),
         .emoji("꩜"),
-        .symbol("bubble.and.pencil")
+        .symbol("bubble.and.pencil"),
+        .emoji("🦖")
     ]
 }
 

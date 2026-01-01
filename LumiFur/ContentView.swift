@@ -183,10 +183,13 @@ struct ContentView: View {
     
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
     @State private var showSplash = true  // Local state to control the splash screen appearance.
+    @State private var showQuickControls = false
     
     @State private var drawProgress: CGFloat = 1.0
     
     @Environment(\.colorScheme) var colorScheme  // Colot Scheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     var overlayColor: Color {
         colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
     }
@@ -302,27 +305,58 @@ struct ContentView: View {
                 NavigationStack {
                     detailContent
                     //.navigationTitle("LumiFur")
-                    /*
-                     .toolbar {
-                         //ToolbarSpacer(.fixed)
-                         ToolbarItemGroup(placement: .bottomBar) {
-                             NavigationLink(destination: ContentView()) {
-                             Image(systemName: "gear")
-                             .glassEffect(.regular.interactive())
-                             }
-                             }
-                         ToolbarSpacer(.fixed)
-                    
-                         ToolbarItemGroup(placement: .bottomBar) {
-                     //Spacer()   // pushes the gear icon all the way to the right
-                     NavigationLink(destination: SettingsView(bleModel: accessoryViewModel,
-                     selectedMatrix: $selectedMatrix)) {
-                     Image(systemName: "gear")
-                     .glassEffect(.regular.interactive())
-                     }
-                     }
-                     }
-                     */
+                    //.navigationBarTitleDisplayMode(.large)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button {
+                                    showQuickControls.toggle()
+                                } label: {
+                                    Label("Options", systemImage: "line.3.horizontal")
+                                }
+                                .accessibilityLabel("Quick Controls")
+                                .accessibilityHint("Shows quick controls and the LumiFur logo")
+                                // Present as popover on regular width (iPad), sheet on compact (iPhone)
+                                .popover(
+                                    isPresented: Binding(
+                                        get: { showQuickControls && horizontalSizeClass == .regular },
+                                        set: { if !$0 { showQuickControls = false } }
+                                    ),
+                                    attachmentAnchor: .rect(.bounds),
+                                    arrowEdge: .top
+                                ) {
+                                    quickControlsContent
+                                }
+                                .popover(
+                                    isPresented: Binding(
+                                        get: { showQuickControls && horizontalSizeClass == .compact },
+                                        set: { if !$0 { showQuickControls = false } }
+                                    )
+                                ) {
+                                    quickControlsContent
+                                        .presentationBackground(.clear)
+                                        .presentationCompactAdaptation(.popover)
+                                        .padding()
+                                }
+                            }
+                            ToolbarItem(placement: .topBarTrailing) {
+                                
+                                /*
+                                 NavigationLink(destination: InfoView()) {
+                                 Image(systemName: "info.circle")
+                                 }
+                                 .accessibilityLabel("About")
+                                 }
+                                 */
+                                
+                                HeaderView(
+                                    connectionState: bleModel.connectionState,
+                                    connectionStatus: bleModel.connectionStatus,
+                                    signalStrength: bleModel.signalStrength,
+                                    luxValue: Double(bleModel.luxValue)
+                                )
+                                
+                            }
+                        }
                 }
                 .tabItem {
                     Label(SidebarItem.dashboard.rawValue, systemImage: SidebarItem.dashboard.iconName)
@@ -394,6 +428,7 @@ struct ContentView: View {
         ZStack {
             if selectedSidebarItem == .dashboard {
                 VStack {
+                    /*
                     HStack{
                         HeaderView(
                             connectionState: bleModel.connectionState,
@@ -402,7 +437,7 @@ struct ContentView: View {
                             luxValue: Double(bleModel.luxValue)
                         )
                     }
-                    optionGridSection
+                     */
                     //ledArraySection
                     //.border(.green)
                     
@@ -412,7 +447,7 @@ struct ContentView: View {
                         auroraModeEnabled: auroraModeEnabled
                         //items: SharedOptions.protoActionOptions3
                     )
-                    .zIndex(-1)
+                    //.zIndex(-1)
                     
                     ChartView(
                         isExpanded: $isChartsExpanded,
@@ -525,22 +560,16 @@ struct ContentView: View {
         ]
     }
     private var optionGridSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {  // Added showsIndicators: false
-            LazyHGrid(rows: twoRowOptionGrid) {
+        ScrollView(.vertical, showsIndicators: false) {  // Added showsIndicators: false
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(standardOptions) { option in
                     OptionToggleView(
                         title: option.title,
                         isOn: option.binding,
                         optionType: option.type
                     )
-                    .onChange(of: option.binding.wrappedValue) {
-                        oldValue,
-                        newValue in
+                    .onChange(of: option.binding.wrappedValue) { oldValue, newValue in
                         option.action?(newValue)
-                        // If accessoryViewModel actions are always the same,
-                        // you might simplify the `action` closure further or move
-                        // `writeConfigToCharacteristic` here.
-                        // For now, I've kept the print and commented viewModel lines in the closures.
                     }
                 }
                 // Custom Message Toggle - handled separately due to unique popover logic
@@ -549,13 +578,9 @@ struct ContentView: View {
                     isOn: $customMessage,
                     optionType: .customMessage
                 )
-                .onChange(of: customMessage) { oldValue, newValue in  // Correct onChange signature
-                    if newValue {  // Use newValue for clarity
+                .onChange(of: customMessage) { oldValue, newValue in
+                    if newValue {
                         showCustomMessagePopup = true
-                    } else {
-                        // Optionally handle if customMessage is turned OFF by means other than Cancel button
-                        // For example, if customMessageText should be cleared.
-                        // customMessageText = "" // If desired
                     }
                 }
                 .popover(
@@ -569,9 +594,9 @@ struct ContentView: View {
                         .padding()
                 }
             }
-            .padding(.horizontal)  // Apply padding to the HGrid content
+            .padding(.horizontal)
         }
-        .frame(maxWidth: .infinity, maxHeight: 80)
+        //.frame(maxWidth: .infinity, maxHeight: 80)
         //.scrollContentBackground(.hidden)
         .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
         // If you want content to extend beyond scroll view bounds, set true.
@@ -625,6 +650,27 @@ struct ContentView: View {
         .padding(12)
         .frame(width: 300, height: 140)  // Slightly increased height for better spacing
         //.glassEffect(.regular.tint(.blue))
+    }
+    
+    // Quick Controls content used in both popover and sheet
+    private var quickControlsContent: some View {
+        VStack(spacing: 12) {
+            /*
+            Image("LumiFur_Controller_AK")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
+             */
+            Text("LumiFur")
+                .font(Font.custom("Meloriac", size: 35))
+                .frame(width: 150)
+                //.border(.purple)
+            optionGridSection
+                //.frame(maxHeight: 120)
+        }
+        .padding()
     }
     
     // MARK: –––––––––––––––––––––––––––––––––

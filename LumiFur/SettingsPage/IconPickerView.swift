@@ -42,6 +42,11 @@ struct AppIconPickerView: View {
     @State private var isChangingIcon = false
     @State private var errorMessage: String?
 
+    #if canImport(UIKit)
+    @State private var availableAlternateIcons: Set<String> = []
+    @State private var supportsAlternateIcons: Bool = UIApplication.shared.supportsAlternateIcons
+    #endif
+
     /// Optional callback to inform the parent of the currently selected icon
     var onIconChanged: ((String?) -> Void)? = nil
     
@@ -62,6 +67,10 @@ struct AppIconPickerView: View {
             .navigationTitle("App Icon")
             .onAppear {
                 loadCurrentIcon()
+                #if canImport(UIKit)
+                supportsAlternateIcons = UIApplication.shared.supportsAlternateIcons
+                availableAlternateIcons = configuredAlternateIconNames()
+                #endif
             }
             .alert("Error changing icon", isPresented: Binding(
                 get: { errorMessage != nil },
@@ -77,6 +86,24 @@ struct AppIconPickerView: View {
     // MARK: - Icon Cell
 
     @ViewBuilder
+    private func iconPreviewImage(named name: String) -> some View {
+        #if canImport(UIKit)
+        if let ui = UIImage(named: name) {
+            Image(uiImage: ui)
+                .resizable()
+        } else {
+            Image(systemName: "app")
+                .resizable()
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+        }
+        #else
+        Image(name)
+            .resizable()
+        #endif
+    }
+
+    @ViewBuilder
     private func iconButton(for icon: AppIcon) -> some View {
         let isSelected = icon.iconName == currentIconName
 
@@ -84,8 +111,7 @@ struct AppIconPickerView: View {
             changeIcon(to: icon)
         } label: {
             VStack(spacing: 6) {
-                Image(icon.assetName)
-                    .resizable()
+                iconPreviewImage(named: icon.assetName)
                     .aspectRatio(1, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
@@ -126,6 +152,17 @@ struct AppIconPickerView: View {
 
     // MARK: - Logic
 
+    #if canImport(UIKit)
+    private func configuredAlternateIconNames() -> Set<String> {
+        guard let info = Bundle.main.infoDictionary,
+              let iconsDict = info["CFBundleIcons"] as? [String: Any],
+              let alternates = iconsDict["CFBundleAlternateIcons"] as? [String: Any] else {
+            return []
+        }
+        return Set(alternates.keys)
+    }
+    #endif
+
     private func loadCurrentIcon() {
         #if canImport(UIKit)
         currentIconName = UIApplication.shared.alternateIconName
@@ -141,6 +178,22 @@ struct AppIconPickerView: View {
         isChangingIcon = true
 
         #if canImport(UIKit)
+        // Validate platform support and configuration before attempting the change
+        guard UIApplication.shared.supportsAlternateIcons else {
+            self.isChangingIcon = false
+            self.errorMessage = "This device does not support alternate app icons."
+            return
+        }
+        if let name = icon.iconName {
+            // Ensure the alternate name exists in Info.plist
+            let configured = availableAlternateIcons
+            if !configured.contains(name) {
+                self.isChangingIcon = false
+                self.errorMessage = "Alternate icon '" + name + "' is not configured.\nAdd a CFBundleAlternateIcons entry named '" + name + "' in Info.plist and include the icon files."
+                return
+            }
+        }
+
         UIApplication.shared.setAlternateIconName(icon.iconName) { error in
             DispatchQueue.main.async {
                 self.isChangingIcon = false

@@ -119,28 +119,29 @@ private func faceView(for face: SharedOptions.ProtoAction) -> some View {
 }
 
 // MARK: - Wrist Flick Detection (watchOS)
+@MainActor
 final class WristFlickDetector: ObservableObject {
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()
-
+    
     // Cooldown to prevent rapid repeats
     private var lastFlickTime: TimeInterval = 0
-
+    
     // Tune these if needed
     private let accelerationThreshold: Double = 1.2
     private let cooldownSeconds: TimeInterval = 0.6
-
+    
     // Callbacks
     var onFlickLeft: (() -> Void)?
     var onFlickRight: (() -> Void)?
-
+    
     func start() {
         guard motionManager.isDeviceMotionAvailable else { return }
         if motionManager.isDeviceMotionActive { return }
-
+        
         queue.qualityOfService = .userInteractive
         motionManager.deviceMotionUpdateInterval = 1.0 / 50.0
-
+        
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: queue) { [weak self] motion, _ in
             guard let self, let motion else { return }
 
@@ -148,20 +149,20 @@ final class WristFlickDetector: ObservableObject {
             let ax = motion.userAcceleration.x
             let now = Date().timeIntervalSince1970
 
-            // Cooldown gate
+            // Cooldown gate on main actor
             if now - self.lastFlickTime < self.cooldownSeconds { return }
 
             // On Apple Watch, a lateral wrist flick often shows as a spike in X user acceleration.
             if ax <= -self.accelerationThreshold {
                 self.lastFlickTime = now
-                DispatchQueue.main.async { self.onFlickLeft?() }
+                self.onFlickLeft?()
             } else if ax >= self.accelerationThreshold {
                 self.lastFlickTime = now
-                DispatchQueue.main.async { self.onFlickRight?() }
+                self.onFlickRight?()
             }
         }
     }
-
+    
     func stop() {
         guard motionManager.isDeviceMotionActive else { return }
         motionManager.stopDeviceMotionUpdates()
@@ -169,25 +170,28 @@ final class WristFlickDetector: ObservableObject {
 }
 
 /*
-private extension SharedOptions.ProtoAction {
-    // helper to unify sending & comparison
-    var rawValue: String {
-        switch self {
-        case .emoji(let s):  return s
-        case .symbol(let s): return s
-        }
-    }
-    var isEmoji: Bool {
-        if case .emoji = self { return true }
-        else                 { return false }
-    }
-}
-*/
+ private extension SharedOptions.ProtoAction {
+ // helper to unify sending & comparison
+ var rawValue: String {
+ switch self {
+ case .emoji(let s):  return s
+ case .symbol(let s): return s
+ }
+ }
+ var isEmoji: Bool {
+ if case .emoji = self { return true }
+ else                 { return false }
+ }
+ }
+ */
 // MARK: - Main View Structure
-struct ItemView: View {
+struct DeviceView: View {
     let item: Item
     @ObservedObject private var connectivityManager = WatchConnectivityManager.shared
     @StateObject private var wristFlickDetector = WristFlickDetector()
+    
+    // AppStorage to persist on watch
+    @AppStorage("wristFlickEnabled") private var wristFlickEnabled: Bool = true
     /*
      @State private var selectedView: Int? = nil
      @State private var autoBrightness: Bool = false
@@ -199,6 +203,7 @@ struct ItemView: View {
     var body: some View {
         VStack {
             if item == .device {
+                Spacer()
                 /*
                  Image ("Image")
                  .renderingMode(.template)
@@ -206,6 +211,7 @@ struct ItemView: View {
                  .aspectRatio(contentMode: .fit)
                  .padding(.bottom, 5)
                  */
+                
                 // --- Display Connection Info ---
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Status: \(connectivityManager.connectionStatus)")
@@ -215,15 +221,16 @@ struct ItemView: View {
                     
                     Group {
                         if let deviceName = connectivityManager.companionDeviceName {
-                            Text("Device: \(deviceName)")
+                            Text("Companion: \(deviceName)")
                                 .foregroundColor(.primary)
+                                .transition(.slide)
                         } else if isConnectedOrConnecting(connectivityManager.connectionStatus) {
                             // Show placeholder only if actually connected but name not received yet
                             Text("iPhone: Requesting name…")
                                 .foregroundColor(.gray)
+                                .transition(.slide)
                         } else {
-                            Text("Device: N/A")      // Show N/A if not connected
-                                .foregroundColor(.gray)
+                            
                         }
                     }
                 }
@@ -249,12 +256,13 @@ struct ItemView: View {
                     //.padding(.top, 5)
                     .glassEffect(.regular.interactive())
                     .disabled(!WCSession.default.isReachable)
-
+                    
                     if !WCSession.default.isReachable {
                         Text("iPhone not reachable")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .padding(.top, 4)
+                            .transition(.slide)
                     }
                 } else {
                     VStack(spacing: 8) {
@@ -269,19 +277,19 @@ struct ItemView: View {
                         }
                         .glassEffect(.regular.tint(.red).interactive())
                         .disabled(!WCSession.default.isReachable)
-/*
-                        Button("Reconnect") {
-                            let message = ["command": "connectToDevice"]
-                            print("Watch sending 'connectToDevice' command (reconnect)...")
-                            WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                                print("Reconnect command reply: \(reply)")
-                            }, errorHandler: { error in
-                                print("Reconnect command error: \(error.localizedDescription)")
-                            })
-                        }
-                        .glassEffect(.regular.interactive())
-                        .disabled(!WCSession.default.isReachable)
-*/
+                        /*
+                         Button("Reconnect") {
+                         let message = ["command": "connectToDevice"]
+                         print("Watch sending 'connectToDevice' command (reconnect)...")
+                         WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
+                         print("Reconnect command reply: \(reply)")
+                         }, errorHandler: { error in
+                         print("Reconnect command error: \(error.localizedDescription)")
+                         })
+                         }
+                         .glassEffect(.regular.interactive())
+                         .disabled(!WCSession.default.isReachable)
+                         */
                         if !WCSession.default.isReachable {
                             Text("iPhone not reachable")
                                 .font(.caption2)
@@ -320,32 +328,52 @@ struct ItemView: View {
                     }
                     .onAppear {
                         // Configure callbacks to move between views
-                        wristFlickDetector.onFlickLeft = {
+                        wristFlickDetector.onFlickLeft = { [weak wristFlickDetector] in
+                            guard let _ = wristFlickDetector, wristFlickEnabled else { return }
                             handleSwipeToChangeView(-100)
                         }
-                        wristFlickDetector.onFlickRight = {
+                        wristFlickDetector.onFlickRight = { [weak wristFlickDetector] in
+                            guard let _ = wristFlickDetector, wristFlickEnabled else { return }
                             handleSwipeToChangeView(100)
                         }
-                        wristFlickDetector.start()
+                        
+                        if wristFlickEnabled {
+                            wristFlickDetector.start()
+                        } else {
+                            wristFlickDetector.stop()
+                        }
                     }
                     .onDisappear {
                         wristFlickDetector.stop()
                     }
+                    .onChange(of: wristFlickEnabled) { _, enabled in
+                        // Toggles behaviour
+                        if enabled {
+                            wristFlickDetector.start()
+                        } else {
+                            wristFlickDetector.stop()
+                        }
+                    }
                     .gesture(
                         DragGesture(minimumDistance: 10)
                             .onEnded { value in
+                                // Swipe gesture still works regardless of wrist-flick setting
                                 handleSwipeToChangeView(value.translation.width)
                             }
                     )
-	                } else {
-	                        Text("Connect to LumiFur to configure your settings here")
-	                }
-	            case .status:
-	                StatusView()
-	            case .settings:
-	                
-	                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
-	                    Text("Connect to LumiFur to configure your settings here")
+                } else {
+                    Text("Connect to LumiFur to configure your settings here")
+                }
+            case .status:
+                StatusView()
+            case .settings:
+                
+                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                    Toggle("Wrist Flick to Change Face", isOn: $wristFlickEnabled)
+                        .padding(15)
+                        .glassEffect(.regular.interactive())
+                        .listRowBackground(Color.clear)
+                    Text("Connect to LumiFur to configure your settings here")
                 }
                 else {
                     // Wrap the whole List in a GlassEffectContainer
@@ -353,7 +381,7 @@ struct ItemView: View {
                         List {
                             Toggle("Auto Brightness", isOn: $connectivityManager.autoBrightness)
                                 .onChange(of: connectivityManager.autoBrightness) { _, newValue in
-                                    // ✅ Send a specific message for this one setting
+                                    // Send a specific message for this one setting
                                     print("Toggle changed. Sending autoBrightness: \(newValue)")
                                     sendMessage(["autoBrightness": newValue])
                                 }
@@ -379,8 +407,7 @@ struct ItemView: View {
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
-                                .glassEffect(.regular
-                                    .interactive())
+                                .glassEffect(.regular.interactive())
                                 .listRowBackground(Color.clear)
                                 .disabled(!WCSession.default.isReachable)
                             
@@ -395,74 +422,74 @@ struct ItemView: View {
                                 .listRowBackground(Color.clear)
                                 .disabled(!WCSession.default.isReachable)
                             
-                            //.listStyle(.automatic
-                            //.scrollContentBackground(.hidden)
+                            // Wrist-flick option (watch-local, so no sendMessage)
+                            Toggle("Wrist Flick to Change Face", isOn: $wristFlickEnabled)
+                                .padding(15)
+                                .glassEffect(.regular.interactive())
+                                .listRowBackground(Color.clear)
                         }
-                        .onAppear {
-                            // Activate the session as soon as this view appears
-                            // _ = WatchConnectivityManager.shared
-                            connectivityManager.requestSyncFromiOS()
-                            
-                        }
-                        //.listRowBackground(Color.clear)
+                    }
+                    
+                    .onAppear {
+                        // Activates session as soon as this view appears
+                        // _ = WatchConnectivityManager.shared
+                        connectivityManager.requestSyncFromiOS()
+                        
                     }
                 }
             }
         }
-        //.frame(maxWidth: .infinity, maxHeight: .infinity)
-        //.containerBackground(.gray.gradient, for: .tabView)
-        //.border(Color.yellow, width: 1)
-        .containerBackground(statusColor(connectivityManager.connectionStatus).gradient, for: .navigation)
     }
 }
 
+
 private struct StatusView: View {
     @ObservedObject private var connectivityManager = WatchConnectivityManager.shared
-
+    
     private var temperatureHeadline: String {
         if let tempC = connectivityManager.temperatureC {
             return String(format: "%.1f°C", tempC)
         }
         return connectivityManager.temperatureText
     }
-
+    
     private var temperatureSecondary: String? {
         guard let tempC = connectivityManager.temperatureC else { return nil }
         let tempF = (tempC * 9 / 5) + 32
         return String(format: "%.1f°F", tempF)
     }
-
+    
     private var controllerTitle: String {
         connectivityManager.connectedControllerName ?? "Controller"
     }
-
+    
     private var isControllerConnectedOrConnecting: Bool {
         isConnectedOrConnecting(connectivityManager.controllerConnectionStatus)
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(controllerTitle)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-
+                
                 Text(connectivityManager.controllerConnectionStatus)
                     .font(.caption2)
                     .foregroundStyle(statusColor(connectivityManager.controllerConnectionStatus))
             }
-
+            
             Text(temperatureHeadline)
                 .font(.system(size: 30, weight: .semibold, design: .rounded))
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
-
+            
             if let secondary = temperatureSecondary {
                 Text(secondary)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-
+            
             if isControllerConnectedOrConnecting, connectivityManager.temperatureHistory.count >= 2 {
                 Chart(connectivityManager.temperatureHistory) { sample in
                     LineMark(
@@ -477,13 +504,13 @@ private struct StatusView: View {
                 .frame(height: 60)
                 .padding(.vertical, 4)
             }
-
+            
             if let updated = connectivityManager.temperatureTimestamp {
                 Text("Updated \(updated, style: .time)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-
+            
             Spacer(minLength: 0)
         }
         .padding(.top, 10)
@@ -498,34 +525,34 @@ private struct StatusView: View {
     let connectivityManager = WatchConnectivityManager.shared
     // Only act if we're connected/connecting
     guard isConnectedOrConnecting(connectivityManager.connectionStatus) else { return }
-
+    
     // Require a minimum swipe distance to avoid accidental changes
     let threshold: CGFloat = 30
     guard abs(translationWidth) > threshold else { return }
-
+    
     // Determine direction: swipe left -> next, swipe right -> previous
     // (On watch, negative translation means finger moved left)
     let direction = translationWidth < 0 ? 1 : -1
-
+    
     // Determine current view (defaults to 1 if unknown)
     let current = max(1, connectivityManager.selectedView)
     let maxView = SharedOptions.protoActionOptions3.count
     guard maxView > 0 else { return }
-
+    
     // Compute next view and clamp to valid range
     var next = current + direction
     if next < 1 { next = 1 }
     if next > maxView { next = maxView }
     guard next != current else { return }
-
+    
     WKInterfaceDevice.current().play(.click)
-
+    
     // Send the same command as tapping a face, using the 1-based view number
     let payload: [String: Any] = [
         "command": "setFace",
         "view": next
     ]
-
+    
     print("Swipe changing view from \\(current) -> \\(next). Sending: \\(payload)")
     WatchConnectivityManager.shared.sendMessage(payload) { reply in
         print("Reply:", reply)
@@ -552,16 +579,18 @@ struct ContentView: View {
             List(selection: $selected) {
                 ForEach(Item.allCases) { item in
                     Text(item.displayName)
+                        .navigationTitle("Options")
                         .tag(item)
                 }
+                .padding()
             }
-            .listStyle(.carousel) // Use carousel for watchOS top-level navigation
-            .containerBackground(.green.gradient, for: .navigationSplitView)
+            .listStyle(.carousel) // Carousel for watchOS top-level navigation
+            //.containerBackground(.green.gradient, for: .navigationSplitView)
         } detail: {
             // Detail view: a vertically paging TabView
             TabView(selection: $selected) {
                 ForEach(Item.allCases) { item in
-                    ItemView(item: item)
+                    DeviceView(item: item)
                         .navigationTitle(item.rawValue.capitalized)
                         .tag(Optional(item))
                 }
@@ -584,6 +613,140 @@ extension String {
     }
 }
 
-#Preview {
-    ContentView()
+/*
+ #Preview {
+ ContentView()
+ }
+ */
+
+// MARK: - Preview Helpers (watchOS)
+#if DEBUG
+
+extension WatchConnectivityManager {
+    /// Configure the shared manager with preview state and return it.
+    /// This lets multiple previews set up different "worlds" for the watch UI.
+    @MainActor @discardableResult
+    static func configurePreview(
+        connectionStatus: String = "Disconnected",
+        controllerConnectionStatus: String? = nil,
+        reachable: Bool = true,
+        companionName: String? = "Steph’s iPhone",
+        connectedControllerName: String? = "LumiFur Controller",
+        tempC: Double? = 22.3,
+        selectedView: Int = 3,
+        autoBrightness: Bool = true,
+        accelerometer: Bool = false,
+        sleepMode: Bool = false,
+        auroraMode: Bool = true
+    ) -> WatchConnectivityManager {
+        let m = WatchConnectivityManager.shared
+        
+        // High-level connection state
+        m.connectionStatus = connectionStatus
+        m.controllerConnectionStatus = controllerConnectionStatus ?? connectionStatus
+        m.isReachable = reachable
+        
+        // Names
+        m.companionDeviceName = companionName
+        m.connectedControllerName = connectedControllerName
+        
+        // Temperature
+        m.temperatureC = tempC
+        m.temperatureText = tempC.map { String(format: "%.1f°C", $0) } ?? "--"
+        m.temperatureTimestamp = tempC != nil ? Date() : nil
+        
+        // Face / view + toggles
+        m.selectedView = selectedView
+        m.autoBrightness = autoBrightness
+        m.accelerometerEnabled = accelerometer
+        m.sleepModeEnabled = sleepMode
+        m.auroraModeEnabled = auroraMode
+        
+        return m
+    }
 }
+
+// MARK: - SwiftUI Previews
+
+#Preview("Content – Disconnected") {
+    // Completely disconnected, phone not reachable
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Disconnected",
+        reachable: false,
+        companionName: nil,
+        connectedControllerName: nil,
+        tempC: nil,
+        selectedView: 1
+    )
+    return ContentView()
+}
+
+#Preview("Content – Connected") {
+    // Happy path: phone reachable, LumiFur connected
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Connected",
+        reachable: true,
+        companionName: "Steph’s iPhone",
+        connectedControllerName: "LumiFur-1234",
+        tempC: 23.4,
+        selectedView: 4,
+        autoBrightness: true,
+        accelerometer: true,
+        sleepMode: false,
+        auroraMode: true
+    )
+    return ContentView()
+}
+
+// Focused previews for each item tab if you like:
+
+#Preview("Device Tab – Connected") {
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Connected",
+        reachable: true,
+        companionName: "Steph’s iPhone",
+        connectedControllerName: "LumiFur-Head",
+        tempC: 22.0
+    )
+    return DeviceView(item: .device)
+}
+
+#Preview("Faces Tab – Connected") {
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Connected",
+        reachable: true,
+        connectedControllerName: "LumiFur-Head",
+        tempC: 21.7,
+        selectedView: 5
+    )
+    return DeviceView(item: .faces)
+}
+
+#Preview("Status Tab – With Temp") {
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Connected",
+        reachable: true,
+        connectedControllerName: "LumiFur-Head",
+        tempC: 24.1
+    )
+    return DeviceView(item: .status)
+}
+
+#Preview("Settings Tab – Connected") {
+    WatchConnectivityManager.configurePreview(
+        connectionStatus: "Connected",
+        controllerConnectionStatus: "Connected",
+        reachable: true,
+        connectedControllerName: "LumiFur-Head",
+        tempC: 23.0,
+        autoBrightness: true,
+        accelerometer: true,
+        sleepMode: false,
+        auroraMode: true
+    )
+    return DeviceView(item: .settings)
+}
+
+#endif
+
+

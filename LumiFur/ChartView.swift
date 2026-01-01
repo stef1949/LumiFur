@@ -45,7 +45,7 @@ struct ChartView: View {
                             x: .value("Time", p.timestamp),
                             y: .value("Temp", toDisplayUnit(p.temperature))
                         )
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.catmullRom(alpha: 0.0))
                         .lineStyle(StrokeStyle(lineWidth: 2.5))
                     }
                 }

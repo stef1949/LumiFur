@@ -145,6 +145,11 @@ struct InfoView: View {
                     }
                     .padding(.vertical, 8)
                 }
+                Section {
+                    NavigationLink("Privacy Policy") {
+                        PrivacyPolicyView()
+                    }
+                }
             }
             .listStyle(.insetGrouped)  // iOS18 default grouping
             .scrollContentBackground(.hidden)  // let our list sit over the material
@@ -153,4 +158,8 @@ struct InfoView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
     }
+}
+
+#Preview {
+    InfoView()
 }

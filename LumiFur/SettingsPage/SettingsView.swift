@@ -96,9 +96,10 @@ struct SettingsView: View {
                         UnifiedConnectionView(accessoryViewModel: bleModel)
                         //.scrollContentBackground(.hidden)
                     }
+                //.frame(maxWidth: .infinity, alignment: .center)
                 //.listRowBackground(Color.blue.opacity(0.0))
-                    //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
-                    //.scrollContentBackground(.hidden)
+                //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
+                //.scrollContentBackground(.hidden)
                 
                 // OTA Update link appears conditionally.
                 if bleModel.isConnected {
@@ -237,10 +238,11 @@ private struct UnifiedConnectionView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            statusAndScanSection
-                .connectionCard()
+            if !accessoryViewModel.isConnected {
+                statusAndScanSection
+                    .connectionCard()
                 //.padding(.horizontal)
-
+            }
             ZStack {
                 if accessoryViewModel.isConnected {
                     connectedSection
@@ -258,7 +260,7 @@ private struct UnifiedConnectionView: View {
             }
             .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         }
-        .padding(.vertical)
+        //.padding(.vertical)
     }
 
     private var statusAndScanSection: some View {
@@ -266,54 +268,79 @@ private struct UnifiedConnectionView: View {
             ConnectionStateIconView(state: accessoryViewModel.connectionState)
                 .font(.system(size: accessoryViewModel.isConnected ? 72 : 56, weight: .regular))
                 .animation(.easeInOut(duration: 0.25), value: accessoryViewModel.isConnected)
-
-            Text(accessoryViewModel.connectionStatus)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .foregroundStyle(.primary)
-                .background(accessoryViewModel.connectionState.color.opacity(0.18),
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            if !accessoryViewModel.isConnected {
+            HStack {
+                Image("blueoth.fill")
+                Text(accessoryViewModel.connectionStatus)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .foregroundStyle(.primary)
+                    .background(accessoryViewModel.connectionState.color.opacity(0.18),
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            if !accessoryViewModel.isConnected && !accessoryViewModel.isScanning {
                 Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
                     .buttonStyle(.glassProminent)
                     .padding(.top, 6)
             }
         }
         .animation(.easeInOut, value: accessoryViewModel.connectionState)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private var connectedSection: some View {
         if let device = accessoryViewModel.targetPeripheral {
-            VStack(spacing: 12) {
-                Text(device.name ?? "LumiFur Controller")
-                    .font(.headline.weight(.semibold))
-
-                HStack() {
-                    VStack() {
-                        SignalStrengthView(rssi: accessoryViewModel.signalStrength)
-
-                        Image("mps3")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .shadow(radius: 6)
+            VStack(alignment: .leading, spacing: 16) {
+                // Header: device name and connection status, with signal strength as a trailing accessory
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(device.name ?? "LumiFur Controller")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(accessoryViewModel.connectionStatus)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .foregroundStyle(.primary)
+                            .background(accessoryViewModel.connectionState.color.opacity(0.18),
+                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    
                     Spacer()
-
-                    DeviceInfoView(accessoryViewModel: .shared)
-                        .frame(maxWidth: 320)
+                    SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+                        .accessibilityLabel("Signal strength")
                 }
 
-                Button("Disconnect", role: .destructive, action: accessoryViewModel.disconnect)
-                    .buttonStyle(.glassProminent)
+                Divider()
+
+                // Details: product image and device info aligned to leading
+                VStack(alignment: .center, spacing: 16) {
+                    Image("mps3")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 84, height: 84)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .shadow(radius: 2, y: 1)
+                        .accessibilityHidden(true)
+
+                    DeviceInfoView(accessoryViewModel: accessoryViewModel)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Primary destructive action uses standard system styling for consistency
+                Button(role: .destructive, action: accessoryViewModel.disconnect) {
+                    Label("Disconnect", systemImage: "antenna.radiowaves.left.and.right.slash")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.large)
+                .accessibilityHint("Disconnect from this controller")
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .connectionCard()
-            .padding(.horizontal)
+            //.padding(.horizontal)
         }
     }
 
@@ -356,7 +383,7 @@ private struct UnifiedConnectionView: View {
                 }
             }
         }
-        .padding(.horizontal)
+        //.padding(.horizontal)
     }
 }
 // MARK: - Subviews as Structs (MAJOR OPTIMIZATION)
@@ -663,14 +690,24 @@ private extension AccessoryViewModel {
     }
 }
 
+ */
+
 // MARK: - Previews
 
 #Preview("Disconnected") {
     @Previewable @State var matrixStyle: MatrixStyle = .array
     
-    return SettingsView(
-        // Use the new debug initializer to create the exact state you need.
-        bleModel: AccessoryViewModel(isConnected: false),
+    SettingsView(
+        bleModel: .previewDisconnected,
+        selectedMatrix: $matrixStyle
+    )
+}
+
+#Preview("Scanning") {
+    @Previewable @State var matrixStyle: MatrixStyle = .array
+    
+    SettingsView(
+        bleModel: .previewScanning,
         selectedMatrix: $matrixStyle
     )
 }
@@ -678,9 +715,8 @@ private extension AccessoryViewModel {
 #Preview("Connected") {
     @Previewable @State var matrixStyle: MatrixStyle = .dot
     
-    return SettingsView(
-        // Create a connected state with a specific firmware version.
-        bleModel: AccessoryViewModel(isConnected: true, firmwareVersion: "2.1.0"),
+    SettingsView(
+        bleModel: .previewConnected,
         selectedMatrix: $matrixStyle
     )
     .preferredColorScheme(.dark)
@@ -689,14 +725,10 @@ private extension AccessoryViewModel {
 #Preview("Error State") {
     @Previewable @State var matrixStyle: MatrixStyle = .wled
     
-    return SettingsView(
-        // Create an error state to preview the alert.
-        bleModel: AccessoryViewModel(
-            isConnected: false,
-            errorMessage: "Failed to connect. The device is out of range."
-        ),
+    SettingsView(
+        bleModel: .previewError,
         selectedMatrix: $matrixStyle
     )
 }
-*/
+
 

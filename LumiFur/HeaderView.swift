@@ -23,12 +23,14 @@ struct HeaderView: View {
     // MARK: - Body
     var body: some View {
         HStack {
+            /*
             Text("LumiFur")
                 .font(Font.custom("Meloriac", size: 35))
                 .frame(width: 150)
                 //.border(.purple)
+            */
             
-            Spacer()
+            // Spacer()
             
             // It creates the StatusSectionView and passes down the data.
             StatusSectionView(
@@ -40,6 +42,6 @@ struct HeaderView: View {
             )
             .equatable()
         }
-        .padding(.horizontal)
+        //.padding(.horizontal)
     }
 }
