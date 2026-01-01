@@ -1,175 +1,187 @@
-LumiFur Privacy Policy
+# LumiFur Privacy Policy
 
-Effective date: 12 December 2025
-App name: LumiFur
+**Effective date:** 12 December 2025  
+**App name:** LumiFur
 
-1) Who we are (Data Controller)
+---
 
-LumiFur is provided by [Richies 3D Ltd] (“we”, “us”). We are the data controller for personal data processed through the app.
+## 1) Who we are (Data Controller)
 
-Contact:
-Email: [admin@richies.uk
-]
-Address: [6 Mitre House, 149 Western Road, Brighton]
+LumiFur is provided by **Richies 3D Ltd** (“we”, “us”). We are the data controller for personal data processed through the app.
+
+**Contact:**  
+Email: admin@richies.uk  
+Address: 6 Mitre House, 149 Western Road, Brighton  
 Country: United Kingdom
 
-2) What this policy covers
+---
 
-This policy explains how we handle information when you use LumiFur, a SwiftUI iOS app designed to control fursuit LED/light systems (e.g., LED matrices/arrays) using connectivity such as Bluetooth and, where enabled, Wi-Fi. 
-GitHub
+## 2) What this policy covers
 
-3) Summary
+This policy explains how we handle information when you use **LumiFur**, a SwiftUI iOS app designed to control fursuit LED/light systems (e.g., LED matrices/arrays) using connectivity such as Bluetooth and, where enabled, Wi-Fi.
 
-No account required.
+---
 
-We do not sell your data.
+## 3) Summary
 
-We do not run third-party ad tracking.
+- No account required.  
+- We do **not** sell your data.  
+- We do **not** run third-party ad tracking.  
+- Connectivity data (Bluetooth / local network) is used to connect to your controller device and send commands.  
+- Most data stays on your device unless you choose to share it (e.g., emailing logs).
 
-Connectivity data (Bluetooth / local network) is used to connect to your controller device and send commands. 
-GitHub
+---
 
-Most data stays on your device unless you choose to share it (e.g., by emailing logs).
+## 4) Information we collect and use
 
-4) Information we collect and use
-A) Data you provide
+### A) Data you provide
+- **Support messages:** your email address and message content (including attachments).  
+**Purpose:** support & troubleshooting  
+**Legal basis (GDPR/UK GDPR):** legitimate interests (support), and/or contract (providing the app/service)
 
-Support messages (if you contact us): your email address and what you send us (message content, attachments).
-Purpose: support and troubleshooting.
-Legal basis (GDPR/UK GDPR): legitimate interests (support) and/or contract (providing the app/service).
+---
 
-B) Data processed to make the app work (connectivity & device control)
+### B) Data processed to make the app work (connectivity & device control)
 
-LumiFur may process the following on your device to connect to and control your LED controller hardware: 
-GitHub
+LumiFur may process the following on your device to connect to and control your LED controller hardware:
 
-Bluetooth information: nearby device discovery results (e.g., device name broadcast, identifiers assigned by iOS, signal strength/RSSI) and connection state.
+- **Bluetooth information:** nearby device discovery results (e.g., broadcast device names, iOS-assigned identifiers, RSSI/signal strength), connection state  
+- **Local network/Wi-Fi information:** controller IP/host details and connectivity status (if Wi-Fi control is enabled)
 
-Local network/Wi-Fi information (if you use Wi-Fi control): your controller’s local IP/host details and connection status on your local network.
+**Purpose:** discover, connect to, and communicate with your controller device; apply lighting settings/patterns  
+**Legal basis:** performance of a contract (core app functionality) & legitimate interests (reliable connectivity)
 
-Purpose: to discover, connect to, and communicate with your controller device and apply your lighting settings/patterns. 
-GitHub
+> **Note on “location”:** LumiFur does *not* request GPS location.  
+> However, Bluetooth scans and network information can indirectly relate to your environment or devices and may be considered personal data.
 
-Legal basis: performance of a contract (providing core app functionality) and legitimate interests (ensuring reliable connectivity).
+---
 
-Note on “location”: LumiFur does not request your GPS location to function. However, Bluetooth scans and network information can be considered personal data because they may indirectly relate to your environment or devices.
+### C) Data received from your controller device (telemetry)
 
-C) Data received from your controller device (telemetry)
+Depending on firmware/device features, LumiFur may display/store locally:
 
-Depending on your firmware/controller features, LumiFur may display and store locally values such as:
+- device metadata (e.g., firmware version)
+- sensor/telemetry readings (e.g., temperature)
+- settings state (brightness, animation, toggles)
 
-device status/metadata (e.g., firmware version/build info),
+**Purpose:** show device state, enable status/history features, assist troubleshooting  
+**Legal basis:** contract & legitimate interests
 
-sensor/telemetry readings exposed by the controller (e.g., temperature),
+---
 
-settings state (e.g., brightness, selected animation/view, feature toggles).
+### D) App preferences stored on your device
 
-Purpose: show device state in-app, enable features like status displays and history graphs, and help troubleshooting.
-Legal basis: contract (core functionality) and legitimate interests (diagnostics).
+Stored locally using iOS mechanisms (e.g., UserDefaults):
 
-D) App preferences stored on your device
+- last connected device
+- UI preferences
+- lighting presets
 
-We store your settings locally (e.g., last connected device, UI preferences, lighting presets) using iOS storage mechanisms such as app storage/UserDefaults.
+**Purpose:** remember your preferences  
+**Legal basis:** contract
 
-Purpose: remember your preferences.
-Legal basis: contract (provide expected functionality).
+---
 
-E) Diagnostics and crash data
+### E) Diagnostics and crash data
 
-If you install via the App Store/TestFlight, Apple may provide us aggregated crash information and diagnostics depending on your Apple settings and distribution channel.
+- If installed via the App Store/TestFlight, Apple may provide aggregated crash/diagnostic information depending on your device settings.
+- Logs are only shared if you choose to export/send them.
 
-If LumiFur includes an in-app “export logs” option, any logs are only shared if you choose to share them.
+**Purpose:** app stability & bug fixing  
+**Legal basis:** legitimate interests
 
-Purpose: stability and bug fixing.
-Legal basis: legitimate interests.
+---
 
-5) What we don’t collect
+## 5) What we don’t collect
 
-We do not intentionally collect:
+We do **not intentionally collect:**
 
-precise location,
+- precise location  
+- contacts  
+- photos/camera  
+- microphone recordings  
+- advertising identifiers (IDFA)  
+- data for cross-app tracking
 
-contacts,
+---
 
-photos/camera,
+## 6) How we share data
 
-microphone recordings,
+We share personal data only:
 
-advertising identifiers (IDFA),
+- with service providers used for support/distribution (e.g., Apple)  
+- if required by law  
+- with your consent (e.g., emailing logs)
 
-data for cross-app tracking.
+We **do not sell** personal data.
 
-6) How we share data
+---
 
-We only share personal data:
+## 7) International transfers
 
-With service providers we use to operate support or distribution (e.g., Apple’s App Store/TestFlight infrastructure), to the extent applicable.
+If providers process data outside the UK/EEA, we ensure appropriate safeguards (e.g., adequacy regulations or Standard Contractual Clauses) where required.
 
-If required by law (e.g., lawful request by authorities).
+---
 
-With your consent (e.g., if you choose to send logs via email).
+## 8) Data retention
 
-We do not sell personal data.
+- **On-device data:** retained until you delete the app or reset/clear data in-app  
+- **Support emails:** kept only as long as reasonably required, then deleted or anonymised
 
-7) International transfers
+---
 
-If we use providers that process data outside the UK/EEA (for example, some global cloud email providers), we will ensure appropriate safeguards (e.g., adequacy regulations or Standard Contractual Clauses) where required.
+## 9) Security
 
-8) Data retention
+We use reasonable technical and organisational measures, including:
 
-On-device data (preferences, recent device info, telemetry history) is kept until you delete the app or use any in-app reset/clear options.
+- limiting data collection to what’s needed  
+- relying on iOS security features (sandboxing, permissions)  
+- recommending you keep iOS updated
 
-Support emails are retained only as long as needed to resolve your request and maintain records of support, then deleted or anonymised on a reasonable schedule.
+> Because Bluetooth/local networks are shared environments, only connect to controller devices you trust.
 
-9) Security
+---
 
-We use reasonable technical and organisational measures to protect data, including:
+## 10) Your GDPR/UK GDPR rights
 
-limiting data collection to what’s needed for device control,
+If you are in the UK/EEA, you may request:
 
-relying on iOS security features (sandboxing, system permissions),
+- access  
+- correction  
+- deletion  
+- restriction  
+- objection  
+- portability (where applicable)  
+- withdrawal of consent (where consent is used)
 
-recommending you keep iOS up to date.
+**To exercise rights:** privacy@richies.uk  
+Verification may be required.
 
-Because Bluetooth and local networks are shared environments, you should only connect to controller devices you trust.
+---
 
-10) Your GDPR/UK GDPR rights
+## 11) Complaints
 
-If you are in the UK/EEA, you have rights including:
+You can complain to your local data protection authority.  
+**UK:** Information Commissioner’s Office (ICO)
 
-access to your personal data,
+---
 
-correction,
+## 12) Children
 
-deletion,
+LumiFur is **not directed to children under 13** (or relevant age of digital consent).  
+We do not knowingly collect personal data from children.
 
-restriction,
+---
 
-objection,
+## 13) Changes to this policy
 
-portability (where applicable),
+We may update this policy to reflect app changes (e.g., online features).  
+We will update the **effective date** and may notify you in-app or via the App Store listing where appropriate.
 
-withdrawal of consent (where we rely on consent).
+---
 
-To exercise rights, contact [privacy@richies.uk
-]. We may need to verify your identity.
+## 14) Contact
 
-11) Complaints
-
-You can complain to your local data protection authority.
-If you’re in the UK: Information Commissioner’s Office (ICO).
-
-12) Children
-
-LumiFur is not directed to children under 13 (or the relevant age of digital consent in your country). We do not knowingly collect personal data from children.
-
-13) Changes to this policy
-
-We may update this policy to reflect app changes (for example, if online features are added). We will update the “Effective date” and, where appropriate, notify you in-app or via the App Store listing.
-
-14) Contact
-
-[Richies 3D Ltd]
-Email: [admin@richies.uk
-]
-Address: [6 Mitre House, 149 Western Road, Brighton]
+**Richies 3D Ltd**  
+Email: admin@richies.uk  
+Address: 6 Mitre House, 149 Western Road, Brighton
