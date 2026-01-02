@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -34,7 +34,6 @@
 		355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E72EFE5C3C001666E6 /* LEDArraySection.swift */; };
 		355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E92EFF7302001666E6 /* IconPickerView.swift */; };
 		356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D04CA62DB29DAA00199C5D /* SharedKeys.swift */; };
-		35741B362F05F5CC00D4937C /* PrivacyPolicy.md in Sources */ = {isa = PBXBuildFile; fileRef = 35741B352F05F5B100D4937C /* PrivacyPolicy.md */; };
 		35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35741B392F05FF0A00D4937C /* PrivacyPolicyView.swift */; };
 		35741B3D2F061C7800D4937C /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 35741B3C2F061C7800D4937C /* Textual */; };
 		357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357EEA682E0EE00A0085E438 /* CustomLedView.swift */; };
@@ -121,25 +120,21 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		3591DD752D5FB697009A3A94 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
+			dstSubfolder = Product;
 			files = (
 				3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstSubfolder = PlugIns;
 			files = (
 				35AE1A602D5D24C700FDD29E /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -272,57 +267,43 @@
 /* Begin PBXFrameworksBuildPhase section */
 		3591DD4E2D5FB695009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5D2D5FB697009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD672D5FB697009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A472D5D24C600FDD29E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */,
 				35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A592C8739FB0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35741B3D2F061C7800D4937C /* Textual in Frameworks */,
 				35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */,
 				35062EA82E107A590012AC60 /* MarkdownUI in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A6A2C8739FD0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A742C8739FD0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -539,14 +520,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */,
 			);
 			name = "LumiFurWatchOS Watch App";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch App";
 			productReference = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */;
 			productType = "com.apple.product-type.application";
@@ -568,8 +545,6 @@
 				3591DD632D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */,
 			);
 			name = "LumiFurWatchOS Watch AppTests";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch AppTests";
 			productReference = 3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -591,8 +566,6 @@
 				3591DD6D2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */,
 			);
 			name = "LumiFurWatchOS Watch AppUITests";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch AppUITests";
 			productReference = 3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -607,14 +580,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				35AE1A502D5D24C600FDD29E /* LumiFur Widget */,
 			);
 			name = "LumiFur WidgetExtension";
-			packageProductDependencies = (
-			);
 			productName = "LumiFur WidgetExtension";
 			productReference = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -725,7 +694,7 @@
 				35197ABD2DA1A17100BE0EE3 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				35741B3B2F061C7800D4937C /* XCRemoteSwiftPackageReference "textual" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 35DA3A5D2C8739FB0039D19D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -744,96 +713,73 @@
 /* Begin PBXResourcesBuildPhase section */
 		3591DD4F2D5FB695009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5E2D5FB697009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD682D5FB697009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A482D5D24C600FDD29E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A5A2C8739FB0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35F936F42DBC808D00A45B64 /* Meloriac.ttf in Resources */,
 				354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */,
 				355853DA2EF716FB001666E6 /* Assets.xcassets in Resources */,
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A6B2C8739FD0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A752C8739FD0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3591DD4D2D5FB695009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35D04CA92DB29DB300199C5D /* SharedKeys.swift in Sources */,
 				35A391A22DD77A6300F60E47 /* GitHubRelease.swift in Sources */,
 				354B00CD2DCE631A00825147 /* SharedOptions.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5C2D5FB697009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD662D5FB697009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A462D5D24C600FDD29E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */,
 				355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A582C8739FB0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */,
 				358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */,
@@ -843,7 +789,6 @@
 				35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */,
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
 				35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */,
-				35741B362F05F5CC00D4937C /* PrivacyPolicy.md in Sources */,
 				35E93AB02E17EDD600E9D52F /* AboutSectionView.swift in Sources */,
 				354B42882F02B62800074B7F /* UncheckedSendableBox.swift in Sources */,
 				358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */,
@@ -880,25 +825,20 @@
 				35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */,
 				354B00D82DD26E4000825147 /* GlassView.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A692C8739FD0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35DA3A722C8739FD0039D19D /* LumiFurTests.swift in Sources */,
 				358151AB2E16FF48003CE8A3 /* AccessoryViewModelTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A732C8739FD0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35DA3A7C2C8739FD0039D19D /* LumiFurUITests.swift in Sources */,
 				35DA3A7E2C8739FD0039D19D /* LumiFurUITestsLaunchTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -936,11 +876,12 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		3591DD762D5FB697009A3A94 /* Debug */ = {
+		3591DD762D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = "LumiFurWatchOS Watch App/LumiFurWatchOS Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
@@ -970,11 +911,12 @@
 			};
 			name = Debug;
 		};
-		3591DD772D5FB697009A3A94 /* Release */ = {
+		3591DD772D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = "LumiFurWatchOS Watch App/LumiFurWatchOS Watch AppRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
@@ -1005,7 +947,7 @@
 			};
 			name = Release;
 		};
-		3591DD782D5FB697009A3A94 /* Debug */ = {
+		3591DD782D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1020,7 +962,7 @@
 			};
 			name = Debug;
 		};
-		3591DD792D5FB697009A3A94 /* Release */ = {
+		3591DD792D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1036,7 +978,7 @@
 			};
 			name = Release;
 		};
-		3591DD7A2D5FB697009A3A94 /* Debug */ = {
+		3591DD7A2D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1050,7 +992,7 @@
 			};
 			name = Debug;
 		};
-		3591DD7B2D5FB697009A3A94 /* Release */ = {
+		3591DD7B2D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1065,11 +1007,12 @@
 			};
 			name = Release;
 		};
-		35AE1A632D5D24C700FDD29E /* Debug */ = {
+		35AE1A632D5D24C700FDD29E /* Debug configuration for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = "LumiFur WidgetExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1100,11 +1043,12 @@
 			};
 			name = Debug;
 		};
-		35AE1A642D5D24C700FDD29E /* Release */ = {
+		35AE1A642D5D24C700FDD29E /* Release configuration for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = "LumiFur WidgetExtensionRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1136,7 +1080,7 @@
 			};
 			name = Release;
 		};
-		35DA3A7F2C8739FD0039D19D /* Debug */ = {
+		35DA3A7F2C8739FD0039D19D /* Debug configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1191,7 +1135,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_UNROLL_LOOPS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1216,12 +1159,12 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
-		35DA3A802C8739FD0039D19D /* Release */ = {
+		35DA3A802C8739FD0039D19D /* Release configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1292,18 +1235,19 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
 		};
-		35DA3A822C8739FD0039D19D /* Debug */ = {
+		35DA3A822C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
@@ -1318,7 +1262,6 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GCC_UNROLL_LOOPS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumiFur/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LumiFur;
@@ -1358,13 +1301,14 @@
 			};
 			name = Debug;
 		};
-		35DA3A832C8739FD0039D19D /* Release */ = {
+		35DA3A832C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFurRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -1420,7 +1364,7 @@
 			};
 			name = Release;
 		};
-		35DA3A852C8739FD0039D19D /* Debug */ = {
+		35DA3A852C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1437,7 +1381,7 @@
 			};
 			name = Debug;
 		};
-		35DA3A862C8739FD0039D19D /* Release */ = {
+		35DA3A862C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1454,7 +1398,7 @@
 			};
 			name = Release;
 		};
-		35DA3A882C8739FD0039D19D /* Debug */ = {
+		35DA3A882C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1470,7 +1414,7 @@
 			};
 			name = Debug;
 		};
-		35DA3A892C8739FD0039D19D /* Release */ = {
+		35DA3A892C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1492,73 +1436,65 @@
 		3591DD7C2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD762D5FB697009A3A94 /* Debug */,
-				3591DD772D5FB697009A3A94 /* Release */,
+				3591DD762D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */,
+				3591DD772D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		3591DD7D2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD782D5FB697009A3A94 /* Debug */,
-				3591DD792D5FB697009A3A94 /* Release */,
+				3591DD782D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */,
+				3591DD792D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		3591DD7E2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD7A2D5FB697009A3A94 /* Debug */,
-				3591DD7B2D5FB697009A3A94 /* Release */,
+				3591DD7A2D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */,
+				3591DD7B2D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35AE1A632D5D24C700FDD29E /* Debug */,
-				35AE1A642D5D24C700FDD29E /* Release */,
+				35AE1A632D5D24C700FDD29E /* Debug configuration for PBXNativeTarget "LumiFur WidgetExtension" */,
+				35AE1A642D5D24C700FDD29E /* Release configuration for PBXNativeTarget "LumiFur WidgetExtension" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A572C8739FB0039D19D /* Build configuration list for PBXProject "LumiFur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A7F2C8739FD0039D19D /* Debug */,
-				35DA3A802C8739FD0039D19D /* Release */,
+				35DA3A7F2C8739FD0039D19D /* Debug configuration for PBXProject "LumiFur" */,
+				35DA3A802C8739FD0039D19D /* Release configuration for PBXProject "LumiFur" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A812C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A822C8739FD0039D19D /* Debug */,
-				35DA3A832C8739FD0039D19D /* Release */,
+				35DA3A822C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFur" */,
+				35DA3A832C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFur" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A842C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A852C8739FD0039D19D /* Debug */,
-				35DA3A862C8739FD0039D19D /* Release */,
+				35DA3A852C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurTests" */,
+				35DA3A862C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A872C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A882C8739FD0039D19D /* Debug */,
-				35DA3A892C8739FD0039D19D /* Release */,
+				35DA3A882C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurUITests" */,
+				35DA3A892C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */

@@ -8,7 +8,7 @@
 //
 
 import Foundation
-import WatchConnectivity
+@preconcurrency import WatchConnectivity   // <- key for Swift 6 sendable-closure-captures
 import Combine
 import SwiftUI
 import WatchKit
@@ -20,14 +20,14 @@ struct TemperatureSample: Identifiable, Equatable {
     var id: Date { timestamp }
 }
 
-@MainActor final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
-    @MainActor static let shared = WatchConnectivityManager()  // Singleton
+final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+    static let shared = WatchConnectivityManager()  // Singleton
     
     // MARK: - Published Properties (For watchOS UI)
     @Published var connectionStatus: String = "Disconnected"
     @Published var isReachable: Bool = false
     @Published var companionDeviceName: String? = nil      // Received iPhone name
-    @Published var connectedControllerName: String? = nil    // Received BLE Controller name
+    @Published var connectedControllerName: String? = nil  // Received BLE Controller name
     @Published var controllerConnectionStatus: String = "Disconnected"
     @Published var temperatureText: String = "--"
     @Published var temperatureC: Double? = nil
@@ -59,17 +59,18 @@ struct TemperatureSample: Identifiable, Equatable {
             print("WatchOS: WCSession activated.")
         } else {
             print("WatchOS: WCSession is not supported on this device.")
-                       // Since this is the init, we can safely set these properties directly.
-                       // No need for a dispatch queue here as the object is not yet in use.
-                       self.connectionStatus = "Not Supported"
-                       self.isReachable = false
+            // Safe here: we're still on the main thread during init.
+            self.connectionStatus = "Not Supported"
+            self.isReachable = false
         }
     }
     
     // MARK: - Public Sending Methods
-    func sendMessage(_ message: [String: Any],
-                     replyHandler: (([String: Any]) -> Void)? = nil,
-                     errorHandler: ((Error) -> Void)? = nil) {
+    func sendMessage(
+        _ message: [String: Any],
+        replyHandler: (([String: Any]) -> Void)? = nil,
+        errorHandler: ((Error) -> Void)? = nil
+    ) {
         guard session.activationState == .activated else {
             print("WatchOS: Session not activated.")
             errorHandler?(WCError(.sessionNotActivated))
@@ -124,37 +125,42 @@ struct TemperatureSample: Identifiable, Equatable {
     // MARK: - SYNC with iOS
     func requestSyncFromiOS() {
         print("WatchOS: Requesting sync from iOS")
-        sendMessage(["command": "getData"], replyHandler: { [weak self] response in
-            // Hop to the main actor immediately to avoid sending non-Sendable values across actors.
-            Task { @MainActor in
-                guard let self = self else { return }
-                print("WatchOS: Received sync response: \(response)")
-                self.updateCompanionInfo(from: response)
-                self.updateAccessorySettings(from: response)
+        sendMessage(
+            ["command": "getData"],
+            replyHandler: { [weak self] response in
+                // WCSession calls this on a background queue -> hop to main
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    print("WatchOS: Received sync response: \(response)")
+                    self.updateCompanionInfo(from: response)
+                    self.updateAccessorySettings(from: response)
+                }
+            },
+            errorHandler: { error in
+                print("WatchOS: Failed to sync from iOS: \(error.localizedDescription)")
             }
-        }, errorHandler: { error in
-            print("WatchOS: Failed to sync from iOS: \(error.localizedDescription)")
-        })
+        )
     }
     
     // MARK: - WCSessionDelegate Methods
-    func session(_ session: WCSession,
-                 activationDidCompleteWith activationState: WCSessionActivationState,
-                 error: Error?) {
-        // This delegate is on a background thread.
+    
+    func session(
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
+        error: Error?
+    ) {
+        // Delegate callbacks are on a background queue -> hop to main
         DispatchQueue.main.async {
             switch activationState {
             case .activated:
                 self.connectionStatus = "Connected"
-                self.isReachable = session.isReachable
+                self.isReachable = self.session.isReachable
                 print("WatchOS: WCSession activated.")
                 
-                // Once activated, check for any existing context from the phone.
-                let receivedContext = session.receivedApplicationContext
+                let receivedContext = self.session.receivedApplicationContext
                 if !receivedContext.isEmpty {
                     self.updateCompanionInfo(from: receivedContext)
                 }
-                
             case .inactive:
                 self.connectionStatus = "Inactive"
                 self.isReachable = false
@@ -177,53 +183,50 @@ struct TemperatureSample: Identifiable, Equatable {
     }
     
     func sessionReachabilityDidChange(_ session: WCSession) {
-        // Delegate is on a background thread.
         DispatchQueue.main.async {
-            print("WatchOS: Reachability changed: \(session.isReachable)")
-            self.isReachable = session.isReachable
-            // FIX: More robust status update. Only show reachable status if fully connected.
+            print("WatchOS: Reachability changed: \(self.session.isReachable)")
+            self.isReachable = self.session.isReachable
             if self.session.activationState == .activated {
-                self.connectionStatus = session.isReachable ? "Connected" : "Connected (Unreachable)"
+                self.connectionStatus = self.session.isReachable
+                    ? "Connected"
+                    : "Connected (Unreachable)"
             }
         }
     }
     
-    // Delegate is on a background thread.
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         print("WatchOS: Received message: \(message)")
-        
-        // FIX: You MUST dispatch to the main thread before updating @Published properties.
         DispatchQueue.main.async {
             self.updateAccessorySettings(from: message)
             self.messageSubject.send(message)
         }
     }
     
-    // Delegate is on a background thread.
-    func session(_ session: WCSession,
-                 didReceiveMessage message: [String : Any],
-                 replyHandler: @escaping ([String : Any]) -> Void) {
+    func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String : Any],
+        replyHandler: @escaping ([String : Any]) -> Void
+    ) {
         print("WatchOS: Received message with reply handler: \(message)")
         
-        // Process the message and prepare a reply
-        var replyData: [String: Any] = [:]
-        if let command = message["command"] as? String, command == "getData" {
-            replyData["status"] = "getData not supported on watchOS"
-        }
-        
-        // FIX: You MUST dispatch to the main thread before updating @Published properties.
         DispatchQueue.main.async {
+            var replyData: [String: Any] = [:]
+            if let command = message["command"] as? String, command == "getData" {
+                replyData["status"] = "getData not supported on watchOS"
+            }
+            
             self.updateAccessorySettings(from: message)
             self.messageSubject.send(message)
-            // It's safe to call the replyHandler here, as it just sends data back.
+            
             replyHandler(replyData)
         }
     }
     
-    // Delegate is on a background thread.
-    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+    func session(
+        _ session: WCSession,
+        didReceiveApplicationContext applicationContext: [String : Any]
+    ) {
         print("WatchOS: Received application context: \(applicationContext)")
-        
         DispatchQueue.main.async {
             self.updateCompanionInfo(from: applicationContext)
             self.updateAccessorySettings(from: applicationContext)
@@ -232,9 +235,6 @@ struct TemperatureSample: Identifiable, Equatable {
     
     // MARK: - Private Helper Methods
     
-    // FIX: Mark helper methods that modify @Published properties with @MainActor.
-    // This enforces that they are always called on the main thread.
-    @MainActor
     private func updateCompanionInfo(from context: [String: Any]) {
         if let name = context["deviceName"] as? String, self.companionDeviceName != name {
             self.companionDeviceName = name
@@ -251,8 +251,6 @@ struct TemperatureSample: Identifiable, Equatable {
         }
     }
     
-    // FIX: Mark helper methods that modify @Published properties with @MainActor.
-    @MainActor
     private func updateAccessorySettings(from data: [String: Any]) {
         if let view = data["selectedView"] as? Int, view != self.selectedView {
             self.selectedView = view
@@ -311,7 +309,6 @@ struct TemperatureSample: Identifiable, Equatable {
         }
     }
 
-    @MainActor
     private func appendTemperatureSampleIfNeeded(tempC: Double, timestamp: Date) {
         // Avoid duplicates (syncs can resend the latest sample).
         if temperatureHistory.last?.timestamp == timestamp { return }
@@ -323,9 +320,13 @@ struct TemperatureSample: Identifiable, Equatable {
         temperatureHistory.removeAll { $0.timestamp < cutoff }
     }
 
-    @MainActor
     private func clearTemperatureCacheIfNeeded() {
-        guard temperatureC != nil || temperatureTimestamp != nil || !temperatureHistory.isEmpty || temperatureText != "--" else { return }
+        guard temperatureC != nil ||
+              temperatureTimestamp != nil ||
+              !temperatureHistory.isEmpty ||
+              temperatureText != "--"
+        else { return }
+        
         temperatureText = "--"
         temperatureC = nil
         temperatureTimestamp = nil
@@ -335,11 +336,14 @@ struct TemperatureSample: Identifiable, Equatable {
     // MARK: - App Lifecycle Integration
     func applicationDidBecomeActive() {
         print("WatchOS: App became active.")
-        if session.activationState == .activated {
-            self.requestSyncFromiOS()
-            let context = session.receivedApplicationContext
-            if !context.isEmpty {
-                DispatchQueue.main.async { self.updateCompanionInfo(from: context) }
+        // This should already be on main, but be defensive:
+        DispatchQueue.main.async {
+            if self.session.activationState == .activated {
+                self.requestSyncFromiOS()
+                let context = self.session.receivedApplicationContext
+                if !context.isEmpty {
+                    self.updateCompanionInfo(from: context)
+                }
             }
         }
     }
@@ -352,4 +356,3 @@ extension WCError {
         self.init(_nsError: NSError(domain: "WCErrorDomain", code: code.rawValue, userInfo: userInfo))
     }
 }
-

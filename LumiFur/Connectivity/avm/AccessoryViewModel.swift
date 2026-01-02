@@ -1125,6 +1125,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         // 2) Apply state updates (MainActor)
         connectionState = newState
 
+        
         if state != .poweredOn {
             targetPeripheral = nil
             discoveredDevices.removeAll()
@@ -1169,14 +1170,33 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                                     didDiscover peripheral: CBPeripheral,
                                     advertisementData: [String : Any],
                                     rssi RSSI: NSNumber) {
+        // Build a Sendable snapshot to avoid cross-actor transfer of non-Sendable [String: Any]
+        let serviceUUIDs = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
+        let localName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+        let isConnectable = (advertisementData[CBAdvertisementDataIsConnectable] as? NSNumber)?.boolValue
+        let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+
+        let snapshot = AdvertisementSnapshot(
+            serviceUUIDs: serviceUUIDs,
+            localName: localName,
+            isConnectable: isConnectable,
+            manufacturerData: manufacturerData
+        )
         Task { @MainActor [weak self] in
-            self?.handleDidDiscover(peripheral, advertisementData: advertisementData, rssi: RSSI)
+            self?.handleDidDiscover(peripheral, snapshot: snapshot, rssi: RSSI)
         }
+    }
+    
+    private struct AdvertisementSnapshot: Sendable {
+        let serviceUUIDs: [String]?
+        let localName: String?
+        let isConnectable: Bool?
+        let manufacturerData: Data?
     }
 
     @MainActor
     private func handleDidDiscover(_ peripheral: CBPeripheral,
-                                   advertisementData: [String: Any],
+                                   snapshot: AdvertisementSnapshot,
                                    rssi RSSI: NSNumber) {
         // Auto-reconnect path
         if let lastUUID = lastConnectedPeripheralUUID,
@@ -1190,7 +1210,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 id: peripheral.identifier,
                 name: peripheral.name ?? "Unknown",
                 rssi: RSSI.intValue,
-                advertisementServiceUUIDs: (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map(\.uuidString),
+                advertisementServiceUUIDs: snapshot.serviceUUIDs,
                 peripheral: peripheral
             )
             connect(to: device)
@@ -1199,7 +1219,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
         // Normal discovery update
         guard let name = peripheral.name, !name.isEmpty else { return }
-        let serviceUUIDs = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map(\.uuidString)
+        let serviceUUIDs = snapshot.serviceUUIDs
 
         let device = PeripheralDevice(
             id: peripheral.identifier,
@@ -1848,7 +1868,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 
                 decodedHistoryPoints.append(TemperatureData(timestamp: estimatedTimestamp, temperature: Double(tempValue)))
             }
-            if errorOccurred { break }
+            // if errorOccurred { break }
         }
         
         DispatchQueue.main.async { [weak self] in
