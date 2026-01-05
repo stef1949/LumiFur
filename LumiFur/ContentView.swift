@@ -27,63 +27,45 @@ let configs = SharedOptions.protoConfigOptions
 // ----- iOSViewModel Definition -----
 // (Technically possible to put it here)
 @MainActor
-class iOSViewModel: ObservableObject {
+final class iOSViewModel: ObservableObject {
     @Published var receivedCommand: String = "None"
-    // We can keep this for debugging, but it's not essential for the core logic anymore.
     @Published var receivedFaceFromWatch: String? = nil
-    // This provides a link to the single source of truth for your app's state.
-    @ObservedObject var accessoryViewModel = AccessoryViewModel.shared
+
+    private let bleModel: AccessoryViewModel
     private var cancellables = Set<AnyCancellable>()
-    
-    // ✅ REPLACE YOUR OLD init() WITH THIS ONE
-    init() {
-        // This check is good practice to avoid running connectivity code in SwiftUI Previews.
+
+    init(bleModel: AccessoryViewModel) {
+        self.bleModel = bleModel
+
         let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         if isPreview { return }
-        
-        // Subscribe to messages from the WatchConnectivityManager
+
         WatchConnectivityManager.shared.messageSubject
-            .receive(on: DispatchQueue.main) // Ensure UI updates happen on the main thread
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] messageData in
-                // Use a guard to safely unwrap `self` and avoid retain cycles
-                guard let self = self else { return }
-                
-                // Check if the command is "setFace"
+                guard let self else { return }
+
                 if let command = messageData["command"] as? String, command == "setFace" {
-                    self.receivedCommand = command // Update for debugging
-                    
-                    // ✅ Look for the "view" integer key sent from the watch
+                    self.receivedCommand = command
+
                     if let view = messageData["view"] as? Int {
                         print("iOS ViewModel: Received 'setFace' command from watch for view: \(view)")
-                        
-                        // Call the accessory view model to update the app's state.
-                        // This will update the iOS UI and send the command to the BLE device.
-                        self.accessoryViewModel.setView(view)
-                        
-                        // Clear the old debugging property
+                        self.bleModel.setView(view)          // ✅ FIXED
                         self.receivedFaceFromWatch = nil
-                        
+                    } else if let face = messageData["faceValue"] as? String {
+                        print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
+                        self.receivedFaceFromWatch = face
                     } else {
-                        // This block is for backwards compatibility or debugging the old format.
-                        if let face = messageData["faceValue"] as? String {
-                            print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
-                            self.receivedFaceFromWatch = face // For debugging
-                        } else {
-                            print("iOS ViewModel: Received 'setFace' command but 'view' key was missing or not an Int.")
-                        }
+                        print("iOS ViewModel: Received 'setFace' command but 'view' key was missing or not an Int.")
                     }
-                } else {
-                    // Handle other potential commands from the watch
-                    if let command = messageData["command"] as? String {
-                        self.receivedCommand = command
-                        print("iOS ViewModel: Received other command: \(command)")
-                    }
+                } else if let command = messageData["command"] as? String {
+                    self.receivedCommand = command
+                    print("iOS ViewModel: Received other command: \(command)")
                 }
             }
-            .store(in: &cancellables) // Store the subscription to keep it alive
+            .store(in: &cancellables)
     }
 }
-
 struct WidgetItem: Identifiable, Equatable {
     let id: Int  // ← stable index, not UUID()
     let title: String
@@ -147,6 +129,21 @@ struct AppInfo {
     }
 }
 
+extension ConnectionState {
+    var toolbarStatusText: String {
+        switch self {
+        case .connected:    return "Connected"
+        case .connecting:   return "Connecting…"
+        case .disconnected: return "Disconnected"
+        case .scanning:     return "Scanning…"
+        case .bluetoothOff: return "Turn on Bluetooth"
+        case .reconnecting: return "Reconnecting…"
+        case .failed:       return "Error"
+        case .unknown:      return "Unknown Error"
+        }
+    }
+}
+
 // MARK: ContentView
 struct ContentView: View {
     @StateObject private var ledModel = LEDPreviewModel()
@@ -155,7 +152,7 @@ struct ContentView: View {
     
     // 1. Declare this as an @ObservedObject. It will receive the instance
         //    created in the App struct.
-        @ObservedObject var bleModel: AccessoryViewModel
+    @ObservedObject var bleModel: AccessoryViewModel
     
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
@@ -177,8 +174,13 @@ struct ContentView: View {
             count: 64
         )
     
-    @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
+    @StateObject private var viewModel: iOSViewModel  // Instantiates the class defined above
 
+    init(bleModel: AccessoryViewModel) {
+            self.bleModel = bleModel
+            _viewModel = StateObject(wrappedValue: iOSViewModel(bleModel: bleModel))
+        }
+    
     @State private var errorMessage: String?
     
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
@@ -275,6 +277,15 @@ struct ContentView: View {
         }
     }
     
+    private var toolbarModel: ToolbarStatusModel {
+        .init(
+            connectionState: bleModel.connectionState,
+            toolbarStatusText: bleModel.connectionState.toolbarStatusText,
+            signalStrength: bleModel.signalStrength,
+            luxValue: Int(bleModel.luxValue)
+        )
+    }
+    
     var body: some View {
         #if os(macOS)
             NavigationSplitView {
@@ -308,13 +319,12 @@ struct ContentView: View {
                     //.navigationBarTitleDisplayMode(.large)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
-                                Button {
-                                    showQuickControls.toggle()
-                                } label: {
-                                    Label("Options", systemImage: "line.3.horizontal")
+                                Button { showQuickControls.toggle() } label: {
+                                    Image(systemName: "line.3.horizontal")
                                 }
                                 .accessibilityLabel("Quick Controls")
                                 .accessibilityHint("Shows quick controls and the LumiFur logo")
+                            
                                 // Present as popover on regular width (iPad), sheet on compact (iPhone)
                                 .popover(
                                     isPresented: Binding(
@@ -339,22 +349,17 @@ struct ContentView: View {
                                 }
                             }
                             ToolbarItem(placement: .topBarTrailing) {
-                                
-                                /*
-                                 NavigationLink(destination: InfoView()) {
-                                 Image(systemName: "info.circle")
-                                 }
-                                 .accessibilityLabel("About")
-                                 }
-                                 */
-                                
                                 HeaderView(
-                                    connectionState: bleModel.connectionState,
-                                    connectionStatus: bleModel.connectionStatus,
-                                    signalStrength: bleModel.signalStrength,
-                                    luxValue: Double(bleModel.luxValue)
+                                    connectionState: toolbarModel.connectionState,
+                                    // Use a stable status for width; don’t include fast-changing numbers
+                                    connectionStatus: toolbarModel.connectionState.toolbarStatusText,
+                                    // Still pass the real numbers, but HeaderView must not let them change width
+                                    signalStrength: toolbarModel.signalStrength,
+                                    luxValue: Double(toolbarModel.luxValue)
                                 )
-                                
+                                //.animation(.smooth(duration: 0.25), value: bleModel.connectionState)
+                                //.animation(.smooth(duration: 0.25), value: bleModel.connectionState.toolbarStatusText)
+                                .fixedSize(horizontal: true, vertical: false) // allow grow/shrink naturally
                             }
                         }
                 }

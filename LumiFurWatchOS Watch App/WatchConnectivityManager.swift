@@ -20,6 +20,7 @@ struct TemperatureSample: Identifiable, Equatable {
     var id: Date { timestamp }
 }
 
+@MainActor
 final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchConnectivityManager()  // Singleton
     
@@ -356,3 +357,4 @@ extension WCError {
         self.init(_nsError: NSError(domain: "WCErrorDomain", code: code.rawValue, userInfo: userInfo))
     }
 }
+

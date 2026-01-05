@@ -34,6 +34,22 @@ struct ChartView: View {
         (now.addingTimeInterval(-windowSeconds))...now
     }
     
+    @State private var nowTimer: AnyCancellable?
+    
+    private func startNowTimer() {
+        guard nowTimer == nil else { return }
+        nowTimer = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                now = Date()
+            }
+    }
+
+    private func stopNowTimer() {
+        nowTimer?.cancel()
+        nowTimer = nil
+    }
+    
     var body: some View {
         VStack(spacing: 8) {
             header
@@ -50,23 +66,32 @@ struct ChartView: View {
                     }
                 }
                 .transition(.opacity)
-                .onReceive(timer) { t in
-                    now = t
-                }
             }
         }
         .padding()
         .onChange(of: isExpanded) { _, isNowExpanded in
-            if isNowExpanded { startSubscription() } else { stopSubscription() }
+            if isNowExpanded {
+                startNowTimer()
+                startSubscription()
+            } else {
+                stopNowTimer()
+                stopSubscription()
+            }
+        }
+        .onAppear {
+            if isExpanded {
+                startNowTimer()
+                startSubscription()
+            }
+        }
+        .onDisappear {
+            stopNowTimer()
+            stopSubscription()
         }
         .onChange(of: selectedUnits) { _, _ in
             // Units changed: recompute domain (and samples if you want)
             updateYAxisDomain(with: samples)
         }
-        .onAppear {
-            if isExpanded { startSubscription() }
-        }
-        .onDisappear(perform: stopSubscription)
     }
 
     private var header: some View {
@@ -83,10 +108,6 @@ struct ChartView: View {
                 isExpanded.toggle()
             }
         }
-    }
-
-    private var timer: Publishers.Autoconnect<Timer.TimerPublisher> {
-        Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
     }
 
     // MARK: - Chart Builder
@@ -128,6 +149,9 @@ struct ChartView: View {
                 Rectangle()
                     .padding(.trailing, (1 - animationEndFraction) * chartPlotSize.width)
             }
+            .animation(nil, value: samples)
+            .animation(nil, value: yAxisDomain)
+            .animation(nil, value: now)
     }
 
     // MARK: - Subscription
@@ -138,6 +162,7 @@ struct ChartView: View {
         let initial = processData(from: accessoryViewModel.temperatureData)
         samples = initial
         updateYAxisDomain(with: initial)
+        now = Date()
 
         // Animate reveal after first layout
         DispatchQueue.main.async {
@@ -153,8 +178,18 @@ struct ChartView: View {
                 guard isExpanded else { return }
 
                 let processed = processData(from: newSamples)
+                // Deduplicate: only update if there's a newer data point
+                let latestIncoming = processed.last?.timestamp
+                let latestCurrent = samples.last?.timestamp
+                guard latestIncoming != nil && latestIncoming != latestCurrent else {
+                    return
+                }
+
                 samples = processed
                 updateYAxisDomain(with: processed)
+                if let latest = latestIncoming {
+                    now = latest
+                }
             }
     }
 
@@ -168,7 +203,7 @@ struct ChartView: View {
 
     // MARK: - Data processing
     private func processData(from allData: [TemperatureData]) -> [TemperatureData] {
-        let cutoff = now.addingTimeInterval(-windowSeconds)
+        let cutoff = Date().addingTimeInterval(-windowSeconds)
         let recent = allData.filter { $0.timestamp >= cutoff }
 
         let strideBy = max(1, recent.count / maxPoints)

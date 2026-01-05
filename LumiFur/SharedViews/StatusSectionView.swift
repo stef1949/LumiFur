@@ -6,120 +6,100 @@
 //
 import SwiftUI
 
+
+struct ToolbarStatusModel: Equatable {
+    let connectionState: ConnectionState
+    let toolbarStatusText: String
+    let signalStrength: Int
+    let luxValue: Int
+}
+
 struct StatusSectionView: View, Equatable {
-    @State private var animatedLuxProgress: Double = 0.0
-    @Namespace private var namespace
-    
-    // MARK: - Properties
+
     let connectionState: ConnectionState
     let connectionStatus: String
     let signalStrength: Int
     let showSignalView: Bool
     let luxValue: Double
-    
-    // Define your min/max lux values here or pass them in
-    private static let minLux: Double = 1
-    private static let maxLux: Double = 4097 // max value
-    
-    // Normalize to 0…1 on a log scale
-    private var luxProgress: Double {
-        // clamp to avoid log(0)
-        let clamped = min(max(luxValue, Self.minLux), Self.maxLux)
-        // compute logs (base-10 here, but natural log works too)
-        let logMin   = log10(Self.minLux)
-        let logMax   = log10(Self.maxLux)
-        let logValue = log10(clamped)
-        return (logValue - logMin) / (logMax - logMin)
-    }
 
-    static func == (lhs: StatusSectionView, rhs: StatusSectionView) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.connectionState == rhs.connectionState &&
         lhs.connectionStatus == rhs.connectionStatus &&
         lhs.signalStrength == rhs.signalStrength &&
         lhs.showSignalView == rhs.showSignalView &&
         lhs.luxValue == rhs.luxValue
     }
-    
-    // MARK: - Body
-    var body: some View {
-//        GlassEffectContainer(spacing: 8.0) {
-            HStack(spacing: 8) {
-                Group {
-                    if connectionState == .connected {
-                        VStack {
-                            Gauge(
-                                value: animatedLuxProgress,
-                                in: 0...1,
-                                label: { Label("Lux", systemImage: "sun.max.fill") },
-                                currentValueLabel: { Text("\(Int(luxValue)) lx") }
-                            )
-                            .gaugeStyle(.accessoryCircular)
-                            .tint(.yellow)
-                            .scaleEffect(0.5)
-                        }
-                        //.frame(width: 20, height: 20)
-                        //.padding()
-                        //.glassEffect()
-                        //.glassEffectUnion(id: "luxMeter", namespace: namespace)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                    
-                }
-                .onAppear {
-                    // Initialize the gauge’s fill
-                    animatedLuxProgress = luxProgress
-                }
-                .onChange(of: luxProgress) { oldProgress, newProgress in
-                    // Smoothly animate whenever the normalized value changes
-                    withAnimation(.smooth(duration: 3.0)) {
-                        animatedLuxProgress = newProgress
-                    }
-                }
-                ZStack(alignment: .trailing) {
-                    // Signal view branch
-                    if showSignalView {
-                        HStack(spacing: 4) {
-                            SignalStrengthView(rssi: signalStrength)
-                            
-                            ConnectionStateIconView(state: connectionState)
-                                .id(connectionState)
-                        }
-                        .padding()
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        // Ensure the outgoing view is on top when state changes
-                        .zIndex(showSignalView ? 0 : 1)
-                    }
 
-                    // Text branch
-                    if !showSignalView {
-                        HStack(spacing: 4){
-                            Text(connectionStatus)
-                                .font(.caption)
-                                .foregroundStyle(connectionState.color) // Get the color directly from the extension on ConnectionState.
-                                .id(connectionStatus)
-                                .lineLimit(1)
-                                //.minimumScaleFactor(0.5)
-                                //.padding()
-                                
-                            ConnectionStateIconView(state: connectionState)
-                                .id(connectionState)
-                        }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        // Ensure the outgoing view is on top when state changes
-                        .zIndex(showSignalView ? 1 : 0)
-                        .padding()
-                    }
-                }
-                .clipped()
+    var body: some View {
+        HStack(spacing: 8) {
+            // Lux badge (render only when connected); otherwise keep layout with a lightweight placeholder
+            if connectionState == .connected {
+                LuxBadgeView(progress: luxProgress)
+                    .equatable()
+            } else {
+                Color.clear
+                    .frame(width: 22, height: 22)
             }
-//    }
-        // The .animation modifier on the container animates all changes within it,
-        // including the icon replacement and text transitions.
-        .animation(.smooth(duration: 0.35), value: showSignalView)
-        .animation(.smooth(duration: 0.35), value: connectionStatus)
-        .animation(.bouncy(duration: 0.4), value: connectionState)
-        //.padding(10)
-        //.glassEffect()
+
+            // Content + trailing connection icon
+            HStack(spacing: 4) {
+                if showSignalView {
+                    SignalBarsView(rssi: signalStrength)
+                        .frame(width: 28)
+                        .transition(.opacity)
+                } else {
+                    Text(connectionStatus)
+                        .font(.caption)
+                        .foregroundStyle(connectionState.color)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .transition(.opacity)
+                }
+
+                // Keep the icon outside the conditional to avoid re-creating it on toggle
+                ConnectionStateIconView(state: connectionState)
+            }
+            .frame(height: 20)
+            .animation(.smooth(duration: 0.25), value: showSignalView)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private struct LuxBadgeView: View, Equatable {
+        let progress: Double
+
+        var body: some View {
+            Gauge(
+                value: progress,
+                in: 0...1,
+                label: { EmptyView() },
+                currentValueLabel: { EmptyView() }
+            )
+            .gaugeStyle(.accessoryCircular)
+            .scaleEffect(0.55)
+            .frame(width: 22, height: 22)
+            .animation(.smooth(duration: 2.0), value: progress)
+        }
+    }
+
+    private struct SignalBarsView: View, Equatable {
+        let rssi: Int
+
+        var body: some View {
+            SignalStrengthView(rssi: rssi)
+        }
+    }
+
+    private static let minLux: Double = 1
+    private static let maxLux: Double = 4097
+    private var luxProgress: Double {
+        let clamped = min(max(luxValue, Self.minLux), Self.maxLux)
+        let logMin = log10(Self.minLux)
+        let logMax = log10(Self.maxLux)
+        let logValue = log10(clamped)
+        return (logValue - logMin) / (logMax - logMin)
     }
 }
 

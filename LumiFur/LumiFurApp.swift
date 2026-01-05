@@ -34,7 +34,7 @@ extension EnvironmentValues {
 
 @main
 struct LumiFurApp: App {
-    //@StateObject private var bleModel = AccessoryViewModel()
+    //@StateObject private var bleModel = AccessoryViewModel.shared
     //@StateObject private var settings = SettingsStore()
     
     //@StateObject private var AccessoryViewModel = AccessoryViewModel.shared
@@ -55,6 +55,7 @@ struct LumiFurApp: App {
 }
 
 struct RootView: View {
+    @StateObject private var bleModel = AccessoryViewModel.shared
     // Persist the last shown version
     @AppStorage("lastAppVersion") private var lastAppVersion: String = ""
     // Get the current version from the bundle
@@ -79,7 +80,7 @@ struct RootView: View {
          }
          */
         // RootView2()
-        ContentView(bleModel: accessoryManager)
+        ContentView(bleModel: bleModel)
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNew()
             }

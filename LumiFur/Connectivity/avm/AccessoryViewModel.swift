@@ -80,7 +80,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         // Its publisher ($temperatureData) emits the entire array whenever it's mutated.
         return $temperatureData
             // Throttle updates to prevent the UI from refreshing too frequently.
-            .throttle(for: .seconds(1.5), scheduler: DispatchQueue.main, latest: true)
+            .throttle(for: .seconds(5.0), scheduler: DispatchQueue.main, latest: true)
             // Ensure the final data is delivered on the main thread, where UI updates must occur.
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
@@ -480,12 +480,12 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             .share()
 
         stateDigestPublisher
-            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.updateWidgetAndActivity() }
             .store(in: &cancellables)
 
         stateDigestPublisher
-            .throttle(for: .seconds(1.5), scheduler: RunLoop.main, latest: true)
+            .throttle(for: .seconds(5.0), scheduler: RunLoop.main, latest: true)
             .sink { [weak self] _ in self?.syncStateToWatch() }
             .store(in: &cancellables)
     }
@@ -1475,15 +1475,13 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
             case viewCharUUID:
                 targetCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in
-                    p.setNotifyValue(true, for: c)
+                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
                     p.readValue(for: c)
                 }
 
             case configCharUUID:
                 configCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in
-                    p.setNotifyValue(true, for: c)
+                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
                     p.readValue(for: c)
                 }
 
@@ -1501,8 +1499,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
             case brightnessCharUUID:
                 brightnessCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in
-                    p.setNotifyValue(true, for: c)
+                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
                     p.readValue(for: c)
                 }
 
@@ -1516,8 +1513,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 
             case scrollTextCharUUID:
                 scrollTextCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in
-                    p.setNotifyValue(true, for: c)
+                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
                     p.readValue(for: c) // read current text on connect
                     // Removed the line: p.writeValue(Data(Text), for: c, type: .withResponse)
                 }
@@ -1586,6 +1582,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
 
         switch uuid {
+            
         case deviceInfoCharUUID:
             if let jsonString = String(data: data, encoding: .utf8),
                let jsonData = jsonString.data(using: .utf8) {
@@ -1712,15 +1709,29 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            logger.error("Error changing notification state for \(characteristic.uuid) on \(peripheral.identifier.uuidString): \(error.localizedDescription)")
-            return
-        }
-        if characteristic.isNotifying {
-            logger.info("Notifications ENABLED for \(characteristic.uuid) on \(peripheral.identifier.uuidString).")
-        } else {
-            logger.info("Notifications DISABLED for \(characteristic.uuid) on \(peripheral.identifier.uuidString). This might be an issue if unexpected.")
+    nonisolated func peripheral(
+        _ peripheral: CBPeripheral,
+        didUpdateNotificationStateFor characteristic: CBCharacteristic,
+        error: Error?
+    ) {
+        let uuid = characteristic.uuid
+        let isNotifying = characteristic.isNotifying
+        let pid = peripheral.identifier.uuidString
+        let errDesc = error?.localizedDescription
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let errDesc {
+                self.logger.error("Error changing notification state for \(uuid) on \(pid): \(errDesc)")
+                return
+            }
+
+            if isNotifying {
+                self.logger.info("Notifications ENABLED for \(uuid) on \(pid).")
+            } else {
+                self.logger.info("Notifications DISABLED for \(uuid) on \(pid). This might be an issue if unexpected.")
+            }
         }
     }
     
@@ -1764,70 +1775,138 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     // Inside AccessoryViewModel…
     @MainActor
     private func handleLiveTemperatureUpdate(data: Data) {
-        guard let tempString = String(data: data, encoding: .utf8) else {
-            logger.warning("Temp decode failed: \(data.map { String(format: "%02x", $0) }.joined())")
-            temperature = "Error"
-            return
-        }
-
-        let cleaned = tempString
-            .replacingOccurrences(of: "°C", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard let tempValue = Double(cleaned) else {
-            logger.warning("Temp parse failed: '\(cleaned)' (raw '\(tempString)')")
+        guard data.count >= 2 else {
+            logger.warning("Temp payload too short: \(data.count)")
             temperature = "?"
             return
         }
 
+        let raw: Int16 = data.withUnsafeBytes { $0.load(as: Int16.self) }
+        let fixed10 = Int16(littleEndian: raw)          // ESP32 is little-endian
+        let tempValue = Double(fixed10) / 10.0
+
         temperature = String(format: "%.1f°C", tempValue)
 
         let newPoint = TemperatureData(timestamp: Date(), temperature: tempValue)
-        didReceive(newPoint) // appends + prunes window
+        didReceive(newPoint)
     }
     
+    private struct HistoryDL {
+        var totalChunks: Int = 0
+        var receivedChunks: Int = 0
+        var interval: TimeInterval = 60
+        var oldestTimestamp: Date = .distantPast
+        var points: [TemperatureData] = []
+        var expectedTotalPoints: Int = 0
+    }
+
+    private var historyDL: HistoryDL?
+    
     private func handleHistoryChunk(data: Data) {
-        guard data.count >= 3 else {
-            logger.warning("History chunk data too short: \(data.count) bytes. Expected at least 3.")
-            return
-        }
-        
-        let packetType = data[0]
-        let chunkIndex = Int(data[1])
-        let totalChunks = Int(data[2])
-        let payload = data.subdata(in: 3..<data.count)
-        
-        guard packetType == historyPacketType else {
-            logger.warning("Received history chunk with incorrect packet type: \(packetType). Expected: \(self.historyPacketType)")
-            return
-        }
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            if !self.isDownloadingHistory {
-                self.isDownloadingHistory = true; self.receivedHistoryChunks.removeAll(); self.totalHistoryChunksExpected = totalChunks
-                self.temperatureData.removeAll() // Clear old live data before loading history
-                logger.info("Starting history download. Expecting \(totalChunks) chunks.")
-            }
-            
-            // Validate totalChunks consistency
-            if let expected = self.totalHistoryChunksExpected, expected != totalChunks {
-                logger.warning("Inconsistent total chunks received. Expected \(expected), got \(totalChunks). Resetting download.")
-                self.resetHistoryDownloadState() // This is on main, safe
+        guard data.count >= 1 else { return }
+
+        let type = data[0]
+
+        switch type {
+        case 0xA0: // START
+            guard data.count >= 8 else {
+                logger.warning("START pkt too short: \(data.count)")
                 return
             }
-            
-            
-            self.receivedHistoryChunks[chunkIndex] = payload
-            if let totalExpected =
-                self.totalHistoryChunksExpected, self.receivedHistoryChunks.count == totalExpected {
-                logger.info("All \(totalExpected) history chunks received. Processing...")
-                // Dispatch processing to BLE queue to avoid blocking main thread if it's heavy
-                self.bleQueue.async {
-                    DispatchQueue.main.async {   self.processCompletedHistoryDownload()}
+
+            let intervalSeconds = Int(data[2])
+            let totalPoints: UInt16 = data.withUnsafeBytes { raw in
+                raw.load(fromByteOffset: 4, as: UInt16.self)
+            }
+            let startAgeMinutes: UInt16 = data.withUnsafeBytes { raw in
+                raw.load(fromByteOffset: 6, as: UInt16.self)
+            }
+
+            let interval = TimeInterval(intervalSeconds)
+            let oldest = Date().addingTimeInterval(-TimeInterval(UInt16(littleEndian: startAgeMinutes)) * 60)
+
+            // Estimate totalChunks based on your MAX_POINTS_PER_CHUNK on iOS side if you want,
+            // but ESP32 also provides totalChunks in DATA packets, so we’ll trust that later.
+            historyDL = HistoryDL(
+                totalChunks: 0,
+                receivedChunks: 0,
+                interval: interval,
+                oldestTimestamp: oldest,
+                points: [],
+                expectedTotalPoints: Int(UInt16(littleEndian: totalPoints))
+            )
+
+            logger.info("History START: points=\(Int(UInt16(littleEndian: totalPoints))) interval=\(intervalSeconds)s oldest=\(oldest)")
+
+        case 0xA1: // DATA
+            guard data.count >= 4 else {
+                logger.warning("DATA pkt too short: \(data.count)")
+                return
+            }
+            guard var dl = historyDL else {
+                logger.warning("DATA before START; ignoring")
+                return
+            }
+            // let chunkIndex = Int(data[1])
+            let totalChunks = Int(data[2])
+            let pointsInChunk = Int(data[3])
+
+            if dl.totalChunks == 0 { dl.totalChunks = totalChunks }
+            if dl.totalChunks != totalChunks {
+                logger.warning("Inconsistent totalChunks \(dl.totalChunks) vs \(totalChunks); resetting")
+                historyDL = nil
+                return
+            }
+
+            // Payload begins at byte 4
+            let neededBytes = 4 + pointsInChunk * 2
+            guard data.count >= neededBytes else {
+                logger.warning("DATA pkt length mismatch: got \(data.count), need \(neededBytes)")
+                return
+            }
+
+            // Compute base index in overall series (oldest→newest) assuming chunks arrive in order.
+            // If you want to handle out-of-order, we can store and reorder, but BLE notify is almost always in-order.
+            let baseIndex = dl.points.count
+
+            data.withUnsafeBytes { raw in
+                for i in 0..<pointsInChunk {
+                    let off = 4 + i * 2
+                    let v = raw.load(fromByteOffset: off, as: Int16.self)
+                    let fixed10 = Int16(littleEndian: v)
+                    let tempC = Double(fixed10) / 10.0
+
+                    let ts = dl.oldestTimestamp.addingTimeInterval(Double(baseIndex + i) * dl.interval)
+                    dl.points.append(TemperatureData(timestamp: ts, temperature: tempC))
                 }
             }
+
+            dl.receivedChunks += 1
+            historyDL = dl
+
+            if dl.receivedChunks == dl.totalChunks {
+                // Finalize once
+                let finalPoints = dl.points
+                historyDL = nil
+
+                DispatchQueue.main.async { [weak self] in
+                    self?.temperatureData = finalPoints
+                    self?.isDownloadingHistory = false
+                    self?.logger.info("Loaded \(finalPoints.count) history points.")
+                }
+            } else {
+                // Optional progress updates (cheap)
+                DispatchQueue.main.async { [weak self] in
+                    self?.isDownloadingHistory = true
+                    self?.totalHistoryChunksExpected = dl.totalChunks
+                }
+            }
+
+        default:
+            logger.warning("Unknown history pkt type: \(type)")
         }
     }
+    
     private func processCompletedHistoryDownload() {
         let chunksToProcess = self.receivedHistoryChunks
         let totalChunks = self.totalHistoryChunksExpected ?? 0
@@ -2412,4 +2491,5 @@ extension AccessoryViewModel {
  }
  }
  */
+
 
