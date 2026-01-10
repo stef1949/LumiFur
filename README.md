@@ -3,6 +3,8 @@
 
 <p align="center">
    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/stef1949/lumifur">
+   <a href="https://github.com/stef1949/lumifur/pulse" alt="Activity">
+        <img src="https://img.shields.io/github/commit-activity/w/stef1949/lumifur" /></a>
 </p>
 
 
