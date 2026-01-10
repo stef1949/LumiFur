@@ -1,5 +1,11 @@
 <p align="center" style="display: flex; justify-content: center; flex-wrap: nowrap;">
 <img width="400" alt="image" src="https://github.com/stef1949/LumiFur/blob/5c48ab8c76d953ef63359d3aafae4a7bbecd0a2c/docs/Mockup_fullres.webp" style="margin: 10px;">
+
+<p align="center">
+   <img alt="GitHub Release" src="https://img.shields.io/github/v/release/stef1949/lumifur">
+</p>
+
+
 </p>
 <h1 align="center">
 LumiFur
