@@ -439,6 +439,7 @@ struct ContentView: View {
                         if isLandscape {
                             HStack(spacing: 16) {
                                 FaceGridSection(
+                                    bleModel: bleModel,
                                     selectedView: bleModel.selectedView,
                                     onSetView: { bleModel.setView($0) },
                                     auroraModeEnabled: auroraModeEnabled
@@ -468,6 +469,7 @@ struct ContentView: View {
                         } else {
                             VStack {
                                 FaceGridSection(
+                                    bleModel: bleModel,
                                     selectedView: bleModel.selectedView,
                                     onSetView: { bleModel.setView($0) },
                                     auroraModeEnabled: auroraModeEnabled
@@ -703,6 +705,7 @@ struct ContentView: View {
     // 1) Standalone grid view
     struct FaceGridSection: View {
         // No longer observing the whole VM, but taking specific values/callbacks
+        @ObservedObject var bleModel: AccessoryViewModel
         let selectedView: Int
         let onSetView: (Int) -> Void  // Callback to update the selection
         let auroraModeEnabled: Bool
@@ -734,6 +737,7 @@ struct ContentView: View {
         
         // --- The rest of your view remains the same ---
         @State private var selectedItemID: FaceItem.ID?
+        @State private var showStrobeOptions = false
         
         //@Namespace private var glassNamespace
         
@@ -749,14 +753,16 @@ struct ContentView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
                         // 2. ForEach loops over identifiable data, not indices.
-                        ForEach(items) { item in
+                        ForEach(items, id: \.id) { item in
                             FaceCellView(
                                 // 3. Pass the item and selection state cleanly.
                                 item: item,
-                                isSelected: selectedItemID == item.id,
+                                isSelected: isSelectedFaceItem(item),
                                 auroraModeEnabled: auroraModeEnabled,
                                 overlayColor: lightColor,
-                                backgroundColor: darkColor
+                                backgroundColor: darkColor,
+                                showsMenuButton: shouldShowStrobeMenu(for: item),
+                                onMenuTap: shouldShowStrobeMenu(for: item) ? { showStrobeOptions = true } : nil
                                 //namespace: glassNamespace,
                                 
                                 // The action now provides the item directly.
@@ -773,7 +779,21 @@ struct ContentView: View {
                                     print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")
                                 }
                             }
-                            .equatable() // This is good, keep it!
+                            .equatable()
+                            .popover(
+                                isPresented: Binding(
+                                    get: { shouldShowStrobeMenu(for: item) && showStrobeOptions },
+                                    set: { showStrobeOptions = $0 }
+                                ),
+                                attachmentAnchor: .rect(.bounds),
+                                arrowEdge: .top
+                            ) {
+                                StrobeControlsView(
+                                    bleModel: bleModel,
+                                    onDone: { showStrobeOptions = false }
+                                )
+                                .presentationCompactAdaptation(.popover)
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -790,6 +810,21 @@ struct ContentView: View {
                 } else {
                     selectedItemID = nil // Deselect if index is out of bounds
                 }
+            }
+        }
+
+        private func isSelectedFaceItem(_ item: FaceItem) -> Bool {
+            selectedItemID == item.id
+        }
+
+        private func shouldShowStrobeMenu(for item: FaceItem) -> Bool {
+            guard isSelectedFaceItem(item) else { return false }
+
+            switch item.content {
+            case .symbol(let symbol):
+                return symbol == SharedOptions.strobeActionSymbol
+            case .emoji:
+                return false
             }
         }
     }
@@ -1099,5 +1134,3 @@ class MockViewModel: AccessoryViewModel {
  }
  }
  */
-
-

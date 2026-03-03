@@ -55,11 +55,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -96,11 +99,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -137,11 +143,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -178,11 +187,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -219,11 +231,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -260,11 +275,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -301,11 +319,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>title</key>
 			<string>LED Preview grid</string>
@@ -344,11 +365,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -385,11 +409,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -472,11 +499,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -595,11 +625,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            title: "Controller Releases",
+            releases: [] // Pass an empty array
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        )
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>

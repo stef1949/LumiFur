@@ -33,14 +33,14 @@ struct SharedDataKeys {
 // MARK: - Shared Data Structures
 
 /// Data structure for temperature readings (SHARED)
-struct TemperatureData: Identifiable, Codable, Equatable {
+struct TemperatureData: Identifiable, Codable, Equatable, Sendable {
     var id = UUID()
     let timestamp: Date
     let temperature: Double
 }
 
 /// Data structure for CPU usage data.
-struct CPUUsageData: Identifiable, Codable {
+struct CPUUsageData: Identifiable, Codable, Sendable {
     var id = UUID()
     let timestamp: Date
     let cpuUsage: Int
@@ -49,7 +49,7 @@ struct CPUUsageData: Identifiable, Codable {
 // MARK: - Connection State Enum
 
 /// Enum for connection state (SHARED)
-enum ConnectionState: String, Codable { // Make it Codable for easy storage
+enum ConnectionState: String, Codable, Sendable { // Make it Codable for easy storage
     case disconnected = "Disconnected"
     case scanning = "Scanning..."
     case connecting = "Connecting..."
@@ -113,7 +113,7 @@ enum ConnectionState: String, Codable { // Make it Codable for easy storage
 
 // IMPORTANT: Requires iOS 16.1+ checks where used if deploying below 16.1
 // But the definition itself can exist.
-#if canImport(ActivityKit)
+#if canImport(ActivityKit) && !os(macOS)
 @available(iOS 16.1, *) // Keep this if supporting below 16.1
 struct LumiFur_WidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {

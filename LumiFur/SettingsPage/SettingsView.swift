@@ -147,22 +147,6 @@ struct SettingsView: View {
                 
                 AppIconPickerSection()
                 
-                StrobeControlsView(
-                    bleModel: bleModel,
-                    strobeEnabled: Binding(
-                        get: { bleModel.strobeEnabled },
-                        set: { bleModel.strobeEnabled = $0 }
-                    ),
-                    strobeColor: Binding(
-                        get: { bleModel.strobeColor },
-                        set: { bleModel.strobeColor = $0 }
-                    ),
-                    strobeCycleMs: Binding(
-                        get: { bleModel.strobeCycleMs },
-                        set: { bleModel.strobeCycleMs = $0 }
-                    )
-                )
-                
                 Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
                     .textFieldStyle(.plain)
                     .font(.caption)
@@ -630,7 +614,7 @@ private struct BrightnessControls: View {
                 Slider(
                     value: Binding(
                         get: { Double(bleModel.brightness) },
-                        set: { bleModel.brightness = UInt8($0) }
+                        set: { bleModel.setBrightness(UInt8($0)) }
                     ),
                     in: 0...255,
                     step: 15
@@ -750,5 +734,3 @@ private extension AccessoryViewModel {
         selectedMatrix: $matrixStyle
     )
 }
-
-

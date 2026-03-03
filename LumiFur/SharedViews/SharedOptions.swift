@@ -66,6 +66,8 @@ struct SharedOptions {
         .emoji("🦖"),
         .symbol("laser.burst")
     ]
+
+    static let strobeActionSymbol = "laser.burst"
 }
 
 // MARK: - Helpers for testing and UI logic
@@ -88,5 +90,10 @@ extension SharedOptions.ProtoAction {
         case .symbol:
             return false
         }
+    }
+
+    /// Returns true for the face tile that exposes strobe controls in the dashboard.
+    var isStrobeAction: Bool {
+        !isEmoji && rawValue == SharedOptions.strobeActionSymbol
     }
 }

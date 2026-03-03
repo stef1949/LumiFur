@@ -1,681 +1,791 @@
-import SwiftUI
 import Combine
 @preconcurrency import CoreBluetooth
-import WidgetKit
 import Foundation
+import SwiftUI
 import os
-#if !targetEnvironment(macCatalyst )
+
 #if canImport(UIKit)
 import UIKit
-#endif // !targetEnvironment(watchOS )
+#endif
+
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
 import ActivityKit
-import AccessorySetupKit
-#endif // !targetEnvironment(macCatalyst )
+#endif
 
-@MainActor
 // MARK: - AccessoryViewModel
-@available(iOS 16.1, *)
-class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
-    static let shared = AccessoryViewModel()
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "AccessoryViewModel")
-    
-    // --- Threading ---
-    private let bleQueue = DispatchQueue(label: "com.richies3d.lumifur.bleQueue", qos: .userInitiated)
-    
-    // MARK: Published Properties (Must be updated on Main Thread)
-    @Published var deviceInfo: DeviceInfo? = nil
-    //@Published var connectionState: ConnectionState = .disconnected { didSet { updateWidgetAndActivityOnMain() } }
+
+/// UI-facing state and orchestration for the LumiFur accessory.
+class AccessoryViewModel: ObservableObject {
+    @MainActor static let shared = AccessoryViewModel()
+
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LumiFur", category: "AccessoryViewModel")
+
+    // MARK: Published state
+
+    @Published var deviceInfo: DeviceInfo?
     @Published var connectionState: ConnectionState = .disconnected
-    @Published var isScanning: Bool = false
-    @Published var discoveredDevices: [PeripheralDevice] = [] // Uses definition above
-    //@Published var temperature: String = "--" { didSet { updateWidgetAndActivityOnMain() } }
-    // Temperature is stored as a real value; UI formatting is derived.
-    @Published private(set) var currentTempC: Double? = nil
-
-    /// Kept as a published string for existing UI/widget bindings.
-    @Published private(set) var temperature: String = "--"
-
-    /// Rolling chart data (bounded window).
+    @Published var isScanning = false
+    @Published var discoveredDevices: [PeripheralDevice] = []
+    @Published private(set) var currentTempC: Double?
+    @Published private(set) var temperature = "--"
     @Published private(set) var temperatureData: [TemperatureData] = []
-
-    /// Derived, always consistent with `currentTempC`.
-    var temperatureString: String {
-        guard let t = currentTempC else { return "--" }
-        return String(format: "%.1f°C", t)
-    }
-
-    // Noise gate for live temperature updates.
-    private var lastPublishedTempC: Double? = nil
-    private let liveTempChangeThresholdC: Double = 0.1
-
-    // Public publisher of a bounded sliding window, throttled to reduce UI churn.
-    // IMPORTANT: derived from `$temperatureData` so new subscribers immediately get the latest array.
-    lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
-        $temperatureData
-            .map { [weak self] all in
-                guard let self else { return all }
-
-                // Keep a rolling time window (5 minutes)
-                let cutoff = Date().addingTimeInterval(-5 * 60)
-                var data = all.filter { $0.timestamp >= cutoff }
-
-                // Safety hard cap
-                if data.count > self.maxTemperatureDataPoints {
-                    data.removeFirst(data.count - self.maxTemperatureDataPoints)
-                }
-
-                return data
-            }
-            .throttle(for: .seconds(5.0), scheduler: RunLoop.main, latest: true)
-            .receive(on: RunLoop.main)
-            .eraseToAnyPublisher()
-    }()
-    
-    @Published var brightness: UInt8 = 255 // No didSet, handled by .sink
-    private var brightnessCharacteristic: CBCharacteristic?
-    
-    // MARK: – Ambient-light (lux) characteristic
+    @Published var brightness: UInt8 = 255
     @Published var luxValue: UInt16 = 0
-    
-    private var scrollTextCharacteristic: CBCharacteristic? // Scroll text/speed characteristic
-    
-    @MainActor
-    private func bleAsync(_ work: @escaping @Sendable (CBCentralManager) -> Void) {
-        guard let manager = centralManager else {
-            logger.error("bleAsync called before centralManager initialized")
-            return
-        }
-        let box = UncheckedSendableBox(manager)
-        bleQueue.async { [box] in
-            work(box.value)
-        }
-    }
-    
-    @MainActor
-    private func writeBrightness(_ newValue: UInt8) {
-        guard let peripheral = targetPeripheral,
-              let characteristic = brightnessCharacteristic else {
-            logger.warning("Cannot write brightness: peripheral or brightness characteristic not available.")
-            return
-        }
-
-        let data = Data([newValue])
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-
-        bleAsync { _ in
-            pBox.value.writeValue(data, for: cBox.value, type: .withResponse)
-        }
-    }
-    
-    @MainActor
-    private func didReceive(_ newDataPoint: TemperatureData) {
-        temperatureData.append(newDataPoint)
-
-        // Keep a rolling 10-minute window
-        let cutoff = Date().addingTimeInterval(-10 * 60)
-        if let firstKept = temperatureData.firstIndex(where: { $0.timestamp >= cutoff }) {
-            if firstKept > 0 {
-                temperatureData.removeFirst(firstKept)
-            }
-        } else {
-            temperatureData.removeAll(keepingCapacity: true)
-        }
-
-        // Safety hard cap
-        if temperatureData.count > maxTemperatureDataPoints {
-            temperatureData.removeFirst(temperatureData.count - maxTemperatureDataPoints)
-        }
-    }
-    
-    @Published var errorMessage: String = ""
-    @Published var showError: Bool = false
-    //@Published var signalStrength: Int = -100 { didSet { updateWidgetAndActivityOnMain() } }
-    @Published var signalStrength: Int = -100
-    @Published var connectingPeripheral: PeripheralDevice? = nil // Uses definition above
-    @Published var cpuUsageData: [CPUUsageData] = [] // Uses definition above
-    @Published var bootButtonState: Bool = false
-    
-    // User options - didSet triggers writes + UI updates
-    @Published var selectedView: Int = 1
-    
-    // Strobe Variables
-    @Published var strobeEnabled: Bool = false
+    @Published var errorMessage = ""
+    @Published var showError = false
+    @Published var signalStrength = -100
+    @Published var connectingPeripheral: PeripheralDevice?
+    @Published var selectedView = 1
+    @Published var strobeEnabled = false
     @Published var strobeCycleMs: UInt16 = 120
     @Published var strobeColor: Color = .white
+    @Published var otaStatusMessage = "Idle"
+    @Published var otaProgress = 0.0
+    @Published var autoBrightness = true
+    @Published var accelerometerEnabled = true
+    @Published var sleepModeEnabled = true
+    @Published var auroraModeEnabled = true
+    @Published var customMessage = ""
+    @Published var firmwareVersion = "N/A"
+    @Published var previouslyConnectedDevices: [StoredPeripheral]
+    @Published private(set) var targetPeripheral: CBPeripheral?
+    @Published var autoReconnectEnabled = true
+    @Published private(set) var isDownloadingHistory = false
 
-    /// UI entrypoint for strobe settings. Debounced + deduped via `strobeSettingsSubject`.
-    @MainActor
-    func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
-        // Clamp to sane range; firmware accepts UInt16 but UI can misfire.
-        let clamped = UInt16(max(1, min(10_000, Int(cycleMs))))
-        let rgb = color.toRGB8() ?? RGB8(r: 255, g: 255, b: 255)
-        strobeSettingsSubject.send(
-            StrobeSettingsPayload(enabled: enabled, rgb: rgb, cycleMs: clamped)
-        )
-    }
-    
-    // MARK: - OTA State Tracking
-    @Published var otaStatusMessage: String = "Idle"
-    @Published var otaProgress: Double = 0.0
-    @MainActor private var totalOTASize: Int = 0
-    @MainActor private var otaBytesSent: Int = 0
-    @MainActor private var otaTimer: Timer?
-    @MainActor private var otaTask: Task<Void, Never>?
-    @MainActor private var otaGeneration: UInt64 = 0
-    @MainActor private var otaWriteContinuation: CheckedContinuation<Void, Never>?
-    @MainActor private var otaInProgress: Bool = false
-    @MainActor
-    private func writeWithResponse(_ data: Data,
-                                   peripheral: CBPeripheral,
-                                   characteristic: CBCharacteristic) async {
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
+    // MARK: Derived state
 
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            // Store continuation on MainActor; resumed by didWriteValueFor
-            self.otaWriteContinuation = cont
-
-            // Do the actual write on the BLE queue
-            self.bleAsync { _ in
-                pBox.value.writeValue(data, for: cBox.value, type: .withResponse)
-            }
-        }
-    }
-    
-    /*
-     @Published var autoBrightness: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
-     @Published var accelerometerEnabled: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
-     @Published var sleepModeEnabled: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
-     @Published var auroraModeEnabled: Bool = true { didSet { writeConfigToCharacteristic(); updateWidgetAndActivityOnMain() } }
-     @Published var customMessage: String = "" { didSet { updateWidgetAndActivityOnMain() /* TODO: Add write if needed */ } }
-     */
-    @Published var autoBrightness: Bool = true {
-        didSet {
-            guard oldValue != autoBrightness else { return }
-            if !updateFromPeripheral { writeConfigToCharacteristic() }
-        }
-    }
-
-    @Published var accelerometerEnabled: Bool = true {
-        didSet {
-            guard oldValue != accelerometerEnabled else { return }
-            if !updateFromPeripheral { writeConfigToCharacteristic() }
-        }
-    }
-
-    @Published var sleepModeEnabled: Bool = true {
-        didSet {
-            guard oldValue != sleepModeEnabled else { return }
-            if !updateFromPeripheral { writeConfigToCharacteristic() }
-        }
-    }
-
-    @Published var auroraModeEnabled: Bool = true {
-        didSet {
-            guard oldValue != auroraModeEnabled else { return }
-            if !updateFromPeripheral { writeConfigToCharacteristic() }
-        }
-    }
-
-    @Published var customMessage: String = "" {
-        didSet {
-            guard oldValue != customMessage else { return }
-            if !updateFromPeripheral { writeConfigToCharacteristic() }
-        }
-    }
-    
-    @Published var firmwareVersion: String = "N/A"
-    @Published var previouslyConnectedDevices: [StoredPeripheral] = [] // Uses definition above
-    
-    // Derived Published Properties (Computed on Main Thread)
     var isConnected: Bool { connectionState == .connected }
-    var isConnecting: Bool { connectionState == .connecting || connectionState == .reconnecting } // Uses fixed ConnectionState
+    var isConnecting: Bool { connectionState == .connecting || connectionState == .reconnecting }
     var connectionStatus: String { connectionState.rawValue }
     var connectionColor: Color { connectionState.color }
-    // var connectionImageName: String { connectionState.imageName }
-    
-    var connectionImageName: Image {
-        connectionState.image
+    var connectionImageName: Image { connectionState.image }
+    var temperatureString: String {
+        guard let currentTempC else { return "--" }
+        return String(format: "%.1f°C", currentTempC)
     }
-    private var updateFromPeripheral = false
+    var isBluetoothReady: Bool { bluetoothState == .poweredOn }
 
-    @MainActor
-    private func applyPeripheralUpdate(_ updates: () -> Void) {
-        let old = updateFromPeripheral
-        updateFromPeripheral = true
-        updates()
-        updateFromPeripheral = old
-    }
-    
     var connectedDevice: PeripheralDevice? {
         #if DEBUG
-        // In SwiftUI previews we don't have a real CBPeripheral,
-        // so just use the first discovered device as the "connected" one.
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+        if isRunningPreview {
             return discoveredDevices.first
         }
-#endif // DEBUG
+        #endif
 
-        guard isConnected, let target = targetPeripheral else { return nil }
-        return discoveredDevices.first { $0.id == target.identifier }
+        guard isConnected, let targetPeripheral else { return nil }
+        return discoveredDevices.first { $0.id == targetPeripheral.identifier }
     }
 
     var connectedDeviceName: String? {
         #if DEBUG
-        // Same trick for previews: use the mock device name.
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+        if isRunningPreview {
             return discoveredDevices.first?.name
         }
-#endif // DEBUG
+        #endif
 
         return targetPeripheral?.name
     }
-    // var connectedDeviceName: String? { targetPeripheral?.name }
-    
-    var isBluetoothReady: Bool {
-        // Check if centralManager is initialized AND its state is poweredOn
-        guard let manager = centralManager else { return false } // Handle pre-initialization case
-        return manager.state == .poweredOn
-    }
-    
-    // MARK: Private Properties
-    private var centralManager: CBCentralManager!
-    @Published private(set) var targetPeripheral: CBPeripheral?
-    private var targetCharacteristic: CBCharacteristic? // For View
-    private var configCharacteristic: CBCharacteristic? // For Config
-    private var temperatureCharacteristic: CBCharacteristic? // For Live Temp
-    private var commandCharacteristic: CBCharacteristic? // For Commands
-    private var temperatureLogsCharacteristic: CBCharacteristic? // For History
-    private var otaCharacteristic: CBCharacteristic? // For OTA Updates
-    
-    private var luxCharacteristic: CBCharacteristic?
-    
-    //MARK: Strobe variables
-    private var strobeSettingsCharacteristic: CBCharacteristic? // For Strobe Settings
-    
-    private var rssiUpdateTimer: Timer?
-    private var isManualDisconnect: Bool = false
-    @Published var autoReconnectEnabled: Bool = true
-    private var didAttemptAutoReconnect: Bool = false
-    private var lastConnectedPeripheralUUID: String?
-    
-    // Service and characteristic UUIDs
-    private let serviceUUID = CBUUID(string: "01931c44-3867-7740-9867-c822cb7df308")
-    private let viewCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09fe")
-    private let configCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ff")
-    private let tempCharUUID = CBUUID(string: "01931c44-3867-7b5d-9774-18350e3e27db")
-    private let commandCharUUID = CBUUID(string: "0195eec3-06d2-7fd4-a561-49493be3ee41")
-    private let temperatureLogsCharUUID = CBUUID(string: "0195eec2-ae6e-74a1-bcd5-215e2365477c")
-    private let brightnessCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ef")
-    private let requestHistoryCommand: UInt8 = 0x01
-    private let historyPacketType: UInt8 = 0x01
-    //private let deviceInfoServiceUUID = CBUUID(string: "cba1d466-344c-4be3-ab3f-189f80dd7518")
-    private let deviceInfoCharUUID = CBUUID(string: "cba1d466-344c-4be3-ab3f-189f80dd7599")
-    private let otaCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ee")
-    private let luxCharUUID = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09f0")
-    
-    private let custColUUID = CBUUID(string: "7f9b8b12-1234-4c55-9b77-a19d55aa0022")
-    
-    private let scrollTextCharUUID = CBUUID(string: "7f9b8b12-1234-4c55-9b77-a19d55aa0011")
-    
-    private let strobeSettingCharUUID = CBUUID(string: "7f9b8b12-1234-4c55-9b77-a19d55aa0033")
-    
-    // MARK: - Strobe write pipeline (debounced)
-    private let strobeSettingsSubject = PassthroughSubject<StrobeSettingsPayload, Never>()
-    
-        // Threshold to filter insignificant changes
-        private let luxThreshold: UInt16 = 5
-        private var lastLuxValue: UInt16 = 0
-    
-    private var cancellables = Set<AnyCancellable>()
-    
-    // MARK: - State for History Download
-    @Published var isDownloadingHistory: Bool = false
-    private var receivedHistoryChunks: [Int: Data] = [:]
-    private var totalHistoryChunksExpected: Int? = nil
-    private let maxTemperatureDataPoints = 600 //200
-    
-    // MARK: - Live Activity
-    private var currentActivity: Activity<LumiFur_WidgetAttributes>? = nil
-    private var activityStateTask: Task<Void, Error>? = nil
-    
-    /// A running count of how many instances are alive
-    nonisolated(unsafe) private static var _instanceCount = 0
-    nonisolated(unsafe) static var instanceCount: Int { _instanceCount }
-    
-    @MainActor private var rssiMonitoringGeneration: UInt64 = 0
-    
-    // MARK: Initialization
-    @MainActor
-    override init() {
-        super.init()
-        AccessoryViewModel._instanceCount += 1
-        let countNow = AccessoryViewModel.instanceCount
-        logger.warning("🔧 AccessoryViewModel init — now \(countNow) instance(s)")
 
-        // SwiftUI previews
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            logger.info("Running in SwiftUI previews – skipping CBCentralManager, notifications, and live activities.")
+    /// A throttled chart publisher that keeps only a rolling five-minute window.
+    var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> {
+        $temperatureData
+            .map { [maxTemperatureDataPoints] all in
+                let cutoff = Date().addingTimeInterval(-5 * 60)
+                var window = all.filter { $0.timestamp >= cutoff }
 
-            // Give previews some deterministic baseline state if you want:
-            self.connectionState = .disconnected
-            self.previouslyConnectedDevices = []
-            self.temperatureData = []
-            self.signalStrength = -100
+                if window.count > maxTemperatureDataPoints {
+                    window.removeFirst(window.count - maxTemperatureDataPoints)
+                }
 
-            // Return here so we do *not* create CBCentralManager
-            return
-        }
-        
-        strobeSettingsSubject
-            .removeDuplicates()
-            .debounce(for: .milliseconds(120), scheduler: DispatchQueue.main)
-            .sink { [weak self] settings in
-                self?.writeStrobeSettings(settings)
+                return window
             }
-            .store(in: &cancellables)
-        
-
-        // Real app behaviour (sim / device runs)
-        centralManager = CBCentralManager(delegate: self, queue: bleQueue)
-
-        previouslyConnectedDevices = loadStoredPeripherals()
-        logger.info("Initialized previouslyConnectedDevices with \(self.previouslyConnectedDevices.count) items: \(self.previouslyConnectedDevices.map(\.name))")
-
-        lastConnectedPeripheralUUID = UserDefaults.standard.string(forKey: "LastConnectedPeripheralUUID")
-
-        configureCombinePipelines()
-        registerNotificationObservers()
-        setupWidgetAndActivityDebounce()
-
-        updateWidgetAndActivity()
-
-        Task { [weak self] in
-            guard let self else { return }
-            await self.endAllLumiFurActivities()
-        }
+            .throttle(for: .seconds(5), scheduler: RunLoop.main, latest: true)
+            .eraseToAnyPublisher()
     }
 
-    func bind(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
-        //self.peripheral = peripheral
-        self.strobeSettingsCharacteristic = characteristic
-    }
-    
-    // MARK: Setup Helpers
-    private func configureCombinePipelines() {
-        // Brightness → BLE write (skip if it originated from peripheral)
-        $brightness
-            .dropFirst()
-            .removeDuplicates()
-            .debounce(for: .milliseconds(20), scheduler: RunLoop.main)
-            .sink { [weak self] newVal in
-                guard let self else { return }
-                guard !self.updateFromPeripheral else { return }
-                self.writeBrightness(newVal)
-            }
-            .store(in: &cancellables)
-    }
+    // MARK: Internal coordination state
 
-    private func registerNotificationObservers() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleChangeViewIntent(_:)),
-            name: .changeViewIntentTriggered,
-            object: nil
-        )
-
-        #if canImport(UIKit)
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appDidBecomeActive),
-            name: UIApplication.didBecomeActiveNotification,
-            object: nil
-        )
-        #endif // canImport(UIKit)
-    }
-
-
-    private struct StateDigest: Equatable {
+    struct StateDigest: Equatable {
         let connectionState: ConnectionState
         let signalStrength: Int
         let temperature: String
         let selectedView: Int
-        let autoBrightness: Bool
-        let accelerometerEnabled: Bool
-        let sleepModeEnabled: Bool
-        let auroraModeEnabled: Bool
+        let configuration: AccessoryConfiguration
         let customMessage: String
         let connectedDeviceName: String?
-        let temperatureDataCount: Int
-        let temperatureDataLast: Date?
+        let temperatureCount: Int
+        let lastTemperatureTimestamp: Date?
     }
-    private struct WatchStateDigest: Equatable {
+
+    struct WatchStateDigest: Equatable {
         let connectionState: ConnectionState
         let temperature: String
         let selectedView: Int
-        let autoBrightness: Bool
-        let accelerometerEnabled: Bool
-        let sleepModeEnabled: Bool
-        let auroraModeEnabled: Bool
+        let configuration: AccessoryConfiguration
         let customMessage: String
         let connectedDeviceName: String?
     }
 
+    let client: BLEClient
+    private let store: StoredPeripheralStore
+    private let isRunningPreview: Bool
+    private let maxTemperatureDataPoints = 600
+    private let liveTempChangeThresholdC = 0.1
+    private let changeViewIntentNotification = Notification.Name("com.richies3d.LumiFur.ChangeViewIntentTriggered")
+    private var notificationTokens: [NSObjectProtocol] = []
+    private var bluetoothState: CBManagerState
+    private var lastPublishedTempC: Double?
+    private var lastConnectedPeripheralUUID: String?
+    private var didAttemptAutoReconnect = false
+    private var isManualDisconnect = false
+    var pendingExternalUpdateTask: Task<Void, Never>?
+    var pendingWatchSyncTask: Task<Void, Never>?
+    var lastSentStateDigest: StateDigest?
+    var lastSentWatchDigest: WatchStateDigest?
+    var lastWatchSyncAt = Date.distantPast
+    private var pendingStrobeWriteTask: Task<Void, Never>?
+    private var otaTask: Task<Void, Never>?
+    private var otaGeneration: UInt64 = 0
+    private var otaInProgress = false
+
+    #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+    var currentActivity: Activity<LumiFur_WidgetAttributes>?
+    var activityStateTask: Task<Void, Never>?
+    var lastSentActivityState: LumiFur_WidgetAttributes.ContentState?
+    var pendingLiveActivityUpdateTask: Task<Void, Never>?
+    var isCreatingActivity = false
+    #endif
+
+    // MARK: Init
+
     @MainActor
-    private func makeStateDigest() -> StateDigest {
-        StateDigest(
-            connectionState: connectionState,
-            signalStrength: signalStrength,
-            temperature: temperature,
-            selectedView: selectedView,
-            autoBrightness: autoBrightness,
-            accelerometerEnabled: accelerometerEnabled,
-            sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled,
-            customMessage: customMessage,
-            connectedDeviceName: connectedDeviceName,
-            temperatureDataCount: temperatureData.count,
-            temperatureDataLast: temperatureData.last?.timestamp
-        )
-    }
-    @MainActor
-    private func makeWatchStateDigest() -> WatchStateDigest {
-        WatchStateDigest(
-            connectionState: connectionState,
-            temperature: temperature,
-            selectedView: selectedView,
-            autoBrightness: autoBrightness,
-            accelerometerEnabled: accelerometerEnabled,
-            sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled,
-            customMessage: customMessage,
-            connectedDeviceName: connectedDeviceName
-        )
-    }
+    init(
+        client: BLEClient = BLEClient(),
+        store: StoredPeripheralStore = StoredPeripheralStore()
+    ) {
+        let environment = ProcessInfo.processInfo.environment
+        self.client = client
+        self.store = store
+        self.isRunningPreview = environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        self.bluetoothState =
+            environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" ||
+            environment["XCTestConfigurationFilePath"] != nil
+            ? .poweredOn
+            : .unknown
+        self.previouslyConnectedDevices = store.load()
+        self.lastConnectedPeripheralUUID = store.lastConnectedPeripheralUUID()
 
-    private func setupWidgetAndActivityDebounce() {
-        let temperatureDataDigest: AnyPublisher<Void, Never> = {
-            // Break the chain with explicit intermediate types to help the compiler
-            let base: AnyPublisher<[TemperatureData], Never> = $temperatureData.eraseToAnyPublisher()
-            let mapped: AnyPublisher<(count: Int, last: Date?), Never> = base
-                .map { data -> (count: Int, last: Date?) in
-                    return (count: data.count, last: data.last?.timestamp)
-                }
-                .eraseToAnyPublisher()
-            let deduped: AnyPublisher<(count: Int, last: Date?), Never> = mapped
-                .removeDuplicates { lhs, rhs in
-                    return lhs.count == rhs.count && lhs.last == rhs.last
-                }
-                .eraseToAnyPublisher()
-            return deduped
-                .map { _ in () }
-                .eraseToAnyPublisher()
-        }()
+        configureTransport()
+        registerObservers()
 
-        let pConnection = $connectionState.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pTemperature = $temperature.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pSignal = $signalStrength.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pAuto = $autoBrightness.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pAccel = $accelerometerEnabled.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pSleep = $sleepModeEnabled.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pAurora = $auroraModeEnabled.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pView = $selectedView.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pMsg = $customMessage.removeDuplicates().map { _ in () }.eraseToAnyPublisher()
-        let pTarget = $targetPeripheral
-            .map { $0?.identifier }
-            .removeDuplicates()
-            .map { _ in () }
-            .eraseToAnyPublisher()
-
-        let stateTriggers: [AnyPublisher<Void, Never>] = [
-            pConnection,
-            pTemperature,
-            temperatureDataDigest,
-            pSignal,
-            pAuto,
-            pAccel,
-            pSleep,
-            pAurora,
-            pView,
-            pMsg,
-            pTarget
-        ]
-
-        let stateDigestPublisher = Publishers.MergeMany(stateTriggers)
-            .receive(on: RunLoop.main)
-            .map { [weak self] _ in self?.makeStateDigest() }
-            .compactMap { $0 }
-            .removeDuplicates()
-            .share()
-
-        stateDigestPublisher
-            .debounce(for: .milliseconds(1000), scheduler: RunLoop.main)
-            .sink { [weak self] _ in self?.updateWidgetAndActivity() }
-            .store(in: &cancellables)
-
-        stateDigestPublisher
-            .throttle(for: .seconds(5.0), scheduler: RunLoop.main, latest: true)
-            .sink { [weak self] _ in self?.syncStateToWatch() }
-            .store(in: &cancellables)
-    }
-    
-    deinit {
-        AccessoryViewModel._instanceCount -= 1
-        let countNow = AccessoryViewModel.instanceCount
-        logger.warning("🗑️ AccessoryViewModel deinit — now \(countNow) instance(s)")
-
-        // Perform cleanup on the MainActor to satisfy Sendable/isolation rules.
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            NotificationCenter.default.removeObserver(self)
-
-            // Stop timers/tasks
-            self.rssiUpdateTimer?.invalidate()
-            self.rssiUpdateTimer = nil
-
-            self.pendingUpdateTask?.cancel()
-            self.pendingUpdateTask = nil
-
-            self.otaTask?.cancel()
-            self.otaTask = nil
-
-            self.activityStateTask?.cancel()
-            self.activityStateTask = nil
-
-            // Tear down Combine
-            self.cancellables.removeAll()
-
-            self.logger.warning("AccessoryViewModel deinitialized (MainActor cleanup).")
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+        if !isRunningPreview {
+            Task { @MainActor [weak self] in
+                await self?.endAllLumiFurActivities()
+            }
         }
+        #endif
     }
-    
-    // MARK: — APP BACK TO FOREGROUND
-    #if canImport(UIKit)
-    @objc private func appDidBecomeActive() {
-        guard isConnected else { return }
 
-        let alreadyRunning =
-            currentActivity?.activityState == .active
-            || !Activity<LumiFur_WidgetAttributes>.activities.isEmpty
+    deinit {
+        notificationTokens.forEach(NotificationCenter.default.removeObserver)
+        pendingExternalUpdateTask?.cancel()
+        pendingWatchSyncTask?.cancel()
+        pendingStrobeWriteTask?.cancel()
+        otaTask?.cancel()
 
-        guard !alreadyRunning else {
-            logger.info("App open → live activity already present; skipping start.")
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+        pendingLiveActivityUpdateTask?.cancel()
+        activityStateTask?.cancel()
+        #endif
+    }
+
+    // MARK: Public API
+
+    func encodedAccessorySettingsPayload(
+        autoBrightness: Bool,
+        accelerometerEnabled: Bool,
+        sleepModeEnabled: Bool,
+        auroraModeEnabled: Bool
+    ) -> Data {
+        AccessoryCommandEncoder.accessorySettingsPayload(
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled
+        )
+    }
+
+    func loadStoredPeripherals() -> [StoredPeripheral] {
+        store.load()
+    }
+
+    func saveStoredPeripherals(_ devices: [StoredPeripheral]) {
+        store.save(devices)
+        previouslyConnectedDevices = devices
+    }
+
+    @MainActor
+    func scanForDevices() {
+        if isRunningPreview {
+            discoveredDevices = [
+                PeripheralDevice(
+                    id: UUID(),
+                    name: "LumiFur-1234",
+                    rssi: -55,
+                    advertisementServiceUUIDs: ["FFF0"],
+                    peripheral: nil
+                ),
+                PeripheralDevice(
+                    id: UUID(),
+                    name: "LumiFur-BBBB",
+                    rssi: -68,
+                    advertisementServiceUUIDs: ["FFF0"],
+                    peripheral: nil
+                ),
+            ]
+            isScanning = false
+            connectionState = .disconnected
             return
         }
 
-        Task { [weak self] in
-            guard let self else { return }
-            logger.info("App open → no live activity, launching one now.")
-            await self.startLumiFur_WidgetLiveActivity()
+        guard isBluetoothReady else {
+            connectionState = .bluetoothOff
+            return
+        }
+
+        discoveredDevices.removeAll(keepingCapacity: true)
+        connectingPeripheral = nil
+        isScanning = true
+        connectionState = .scanning
+        client.startScan()
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func stopScan() {
+        client.stopScan()
+        isScanning = false
+
+        if connectionState == .scanning {
+            connectionState = .disconnected
+        }
+
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func connect(to device: PeripheralDevice) {
+        guard isBluetoothReady else {
+            connectionState = .bluetoothOff
+            return
+        }
+        guard let peripheral = device.peripheral else {
+            logger.warning("Attempted to connect without a CoreBluetooth peripheral instance.")
+            return
+        }
+
+        stopScan()
+        connectingPeripheral = device
+        connectionState = .connecting
+        targetPeripheral = peripheral
+        isManualDisconnect = false
+        client.connect(to: peripheral)
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func disconnect() {
+        isManualDisconnect = true
+        client.disconnect()
+    }
+
+    @MainActor
+    func connectToStoredPeripheral(_ stored: StoredPeripheral) {
+        guard isBluetoothReady else {
+            connectionState = .bluetoothOff
+            return
+        }
+
+        connectionState = .reconnecting
+        connectingPeripheral = nil
+        client.connectToStoredUUID(stored.id)
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func setView(_ view: Int) {
+        guard (1...50).contains(view), selectedView != view else { return }
+        selectedView = view
+        client.writeView(view)
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func faceButtonTapped(_ faceIndex: Int) {
+        setView(faceIndex)
+    }
+
+    @MainActor
+    func sendScrollText(_ text: String) {
+        customMessage = text
+        client.writeScrollText(text)
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func sendScrollSpeed(_ speed: UInt8) {
+        client.writeScrollSpeed(speed)
+    }
+
+    @MainActor
+    func setBrightness(_ value: UInt8) {
+        guard brightness != value else { return }
+        brightness = value
+        client.writeBrightness(value)
+    }
+
+    @MainActor
+    func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
+        let clampedCycle = UInt16(max(1, min(10_000, Int(cycleMs))))
+        let rgb = color.toRGB8() ?? RGB8(r: 255, g: 255, b: 255)
+        let payload = StrobeSettingsPayload(enabled: enabled, rgb: rgb, cycleMs: clampedCycle)
+
+        strobeEnabled = enabled
+        strobeColor = Color(rgb)
+        strobeCycleMs = clampedCycle
+
+        pendingStrobeWriteTask?.cancel()
+        pendingStrobeWriteTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+            self?.client.writeStrobe(payload)
         }
     }
-    #endif // canImport(UIKit)
-    
-    // MARK: - Public Methods (Called from UI - Main Thread)
-    
-    // MARK: - OTA Update Methods (MainActor entrypoints)
+
+    @MainActor
+    func writeConfigToCharacteristic() {
+        let configuration = AccessoryConfiguration(
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled
+        )
+        client.writeConfiguration(configuration)
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    func startRSSIMonitoring() {
+        client.startRSSIMonitoring()
+    }
+
+    @MainActor
+    func stopRSSIMonitoring() {
+        client.stopRSSIMonitoring()
+    }
 
     @MainActor
     func startOTAUpdate(firmwareData: Data) {
-        guard let peripheral = targetPeripheral,
-              let characteristic = commandCharacteristic else {
+        guard isConnected else {
             otaStatusMessage = "OTA Error: Peripheral not ready"
             return
         }
 
-        // Cancel any existing OTA
         otaTask?.cancel()
         otaGeneration &+= 1
         otaInProgress = true
-
+        otaProgress = 0
         otaStatusMessage = "Starting OTA..."
-        otaProgress = 0.0
-        otaBytesSent = 0
-        totalOTASize = firmwareData.count
 
-        let gen = otaGeneration
+        let generation = otaGeneration
 
         otaTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                // 1) Send START packet: [0x01][u32 size LE]
-                var size = UInt32(firmwareData.count)
-                var start = Data([0x01])
-                start.append(Data(bytes: &size, count: 4))
-
-                await self.writeWithResponse(start, peripheral: peripheral, characteristic: characteristic)
-
-                // Small settle delay (replaces DispatchQueue.main.asyncAfter)
-                try await Task.sleep(nanoseconds: 300_000_000)
-
-                // 2) Stream payload
-                try await self.sendOTAPayload(firmwareData: firmwareData,
-                                             peripheral: peripheral,
-                                             characteristic: characteristic,
-                                             generation: gen)
-
-                // 3) Finalize
-                await self.endOTAUpdate(peripheral: peripheral, characteristic: characteristic, generation: gen)
-
+                try await self.runOTAUpdate(firmwareData: firmwareData, generation: generation)
             } catch is CancellationError {
-                // Task cancelled: just exit cleanly
+                return
             } catch {
                 self.otaStatusMessage = "OTA Error: \(error.localizedDescription)"
+                self.otaProgress = 0
                 self.otaInProgress = false
             }
         }
     }
 
     @MainActor
-    private func sendOTAPayload(firmwareData: Data,
-                                peripheral: CBPeripheral,
-                                characteristic: CBCharacteristic,
-                                generation: UInt64) async throws {
-        // Basic MTU chunking (keep your existing values)
+    func abortOTAUpdate() {
+        otaTask?.cancel()
+        otaGeneration &+= 1
+        otaInProgress = false
+        otaProgress = 0
+        otaStatusMessage = "OTA Aborted"
+        client.writeOTAAbort()
+    }
+
+    @MainActor
+    func syncStateToWatch() {
+        let digest = makeWatchStateDigest()
+        guard digest != lastSentWatchDigest else { return }
+
+        lastSentWatchDigest = digest
+        lastWatchSyncAt = Date()
+        WatchConnectivityManager.shared.syncStateToWatch(from: self)
+    }
+
+    // MARK: Transport wiring
+
+    @MainActor
+    private func configureTransport() {
+        let selfBox = WeakUncheckedSendableBox(self)
+        client.onEvent = { event in
+            selfBox.value?.handleTransportEvent(event)
+        }
+    }
+
+    @MainActor
+    private func registerObservers() {
+        let selfBox = WeakUncheckedSendableBox(self)
+        notificationTokens.append(
+            NotificationCenter.default.addObserver(
+                forName: changeViewIntentNotification,
+                object: nil,
+                queue: .main
+            ) { notification in
+                let nextView = notification.userInfo?["nextView"] as? Int
+                MainActor.assumeIsolated {
+                    guard let nextView else { return }
+                    selfBox.value?.setView(nextView)
+                }
+            }
+        )
+
+        #if canImport(UIKit)
+        notificationTokens.append(
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                MainActor.assumeIsolated {
+                    selfBox.value?.handleAppDidBecomeActive()
+                }
+            }
+        )
+        #endif
+    }
+
+    @MainActor
+    private func handleTransportEvent(_ event: BLEClient.Event) {
+        switch event {
+        case .stateChanged(let state):
+            handleBluetoothStateChange(state)
+
+        case .discovered(let discovery):
+            let device = PeripheralDevice(
+                id: discovery.id,
+                name: discovery.name,
+                rssi: discovery.rssi,
+                advertisementServiceUUIDs: discovery.advertisementServiceUUIDs,
+                peripheral: discovery.peripheral.value
+            )
+
+            if connectionState == .reconnecting,
+               let lastConnectedPeripheralUUID,
+               discovery.id.uuidString == lastConnectedPeripheralUUID {
+                connect(to: device)
+            } else {
+                upsertDiscoveredDevice(device)
+            }
+
+        case .connected(let connection):
+            handleConnected(connection)
+
+        case .failedToConnect(let failure):
+            handleConnectionFailure(failure)
+
+        case .disconnected(let disconnection):
+            Task { @MainActor [weak self] in
+                await self?.handleDisconnect(disconnection)
+            }
+
+        case .storedPeripheralNotFound:
+            connectionState = .disconnected
+            scanForDevices()
+
+        case .deviceInfoUpdated(let info):
+            deviceInfo = info
+            firmwareVersion = info.fw
+            scheduleExternalStateSync()
+
+        case .selectedViewUpdated(let view):
+            guard selectedView != view else { return }
+            selectedView = view
+            scheduleExternalStateSync()
+
+        case .configurationUpdated(let configuration):
+            apply(configuration: configuration)
+
+        case .liveTemperatureUpdated(let celsius):
+            applyLiveTemperature(celsius)
+
+        case .historyDownloadStarted:
+            isDownloadingHistory = true
+
+        case .historyDownloaded(let history):
+            isDownloadingHistory = false
+            apply(history: history)
+
+        case .historyDownloadFailed(let message):
+            isDownloadingHistory = false
+            logger.warning("Temperature history download failed: \(message)")
+
+        case .brightnessUpdated(let value):
+            brightness = value
+
+        case .otaResponseUpdated(let response):
+            otaStatusMessage = response.statusMessage
+            if response.resetsProgress {
+                otaProgress = 0
+            }
+
+        case .luxUpdated(let value):
+            luxValue = value
+
+        case .scrollTextUpdated(let text):
+            customMessage = text
+            scheduleExternalStateSync()
+
+        case .strobeUpdated(let state):
+            strobeEnabled = state.enabled
+            strobeCycleMs = state.cycleMs
+            strobeColor = Color(state.rgb)
+
+        case .rssiUpdated(let rssi):
+            if signalStrength != rssi {
+                signalStrength = rssi
+                scheduleExternalStateSync()
+            }
+
+        case .pairingRequired:
+            presentError("Pairing required. Enter the passkey shown on the device.")
+
+        case .transportError(let message):
+            logger.error("BLE transport error: \(message)")
+            presentError(message)
+        }
+    }
+
+    @MainActor
+    private func handleBluetoothStateChange(_ state: CBManagerState) {
+        bluetoothState = state
+
+        switch state {
+        case .poweredOn:
+            if !didAttemptAutoReconnect, let lastConnectedPeripheralUUID {
+                didAttemptAutoReconnect = true
+                connectionState = .reconnecting
+                client.connectToStoredUUID(lastConnectedPeripheralUUID)
+            } else if !isConnected && !isScanning {
+                connectionState = .disconnected
+                scanForDevices()
+            }
+
+        case .poweredOff:
+            clearConnectionState()
+            connectionState = .bluetoothOff
+            didAttemptAutoReconnect = false
+
+        case .unauthorized, .unsupported, .resetting, .unknown:
+            clearConnectionState()
+            connectionState = .unknown
+            didAttemptAutoReconnect = false
+
+        @unknown default:
+            clearConnectionState()
+            connectionState = .unknown
+            didAttemptAutoReconnect = false
+        }
+
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    private func handleConnected(_ connection: PeripheralConnection) {
+        let peripheral = connection.peripheral.value
+        let uuid = peripheral.identifier.uuidString
+
+        targetPeripheral = peripheral
+        connectionState = .connected
+        isScanning = false
+        connectingPeripheral = nil
+        isManualDisconnect = false
+        didAttemptAutoReconnect = false
+        deviceInfo = nil
+
+        lastConnectedPeripheralUUID = uuid
+        store.setLastConnectedPeripheralUUID(uuid)
+        previouslyConnectedDevices = store.upsert(id: uuid, name: connection.name ?? "Unknown")
+
+        startRSSIMonitoring()
+        scheduleExternalStateSync()
+
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+        Task { [weak self] in
+            await self?.startLumiFur_WidgetLiveActivity()
+        }
+        #endif
+    }
+
+    @MainActor
+    private func handleConnectionFailure(_ failure: PeripheralFailure) {
+        if targetPeripheral?.identifier.uuidString == failure.id {
+            targetPeripheral = nil
+        }
+
+        connectingPeripheral = nil
+        connectionState = .failed
+        didAttemptAutoReconnect = false
+        scheduleExternalStateSync()
+
+        if !isScanning {
+            scanForDevices()
+        }
+    }
+
+    @MainActor
+    private func handleDisconnect(_ disconnection: PeripheralDisconnection) async {
+        let wasManualDisconnect = isManualDisconnect
+        isManualDisconnect = false
+
+        clearConnectionState()
+        connectionState = .disconnected
+        connectingPeripheral = nil
+        scheduleExternalStateSync()
+
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+        let finalState = createContentState(connected: false, status: ConnectionState.disconnected.rawValue)
+
+        if wasManualDisconnect {
+            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+        } else if disconnection.message != nil {
+            let dismissalDate = Date().addingTimeInterval(15 * 60)
+            await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
+        } else {
+            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+        }
+        #endif
+
+        if !wasManualDisconnect, autoReconnectEnabled, let lastConnectedPeripheralUUID {
+            connectionState = .reconnecting
+            client.connectToStoredUUID(lastConnectedPeripheralUUID)
+        } else if !wasManualDisconnect {
+            scanForDevices()
+        }
+    }
+
+    // MARK: State mutation helpers
+
+    @MainActor
+    private func apply(configuration: AccessoryConfiguration) {
+        autoBrightness = configuration.autoBrightness
+        accelerometerEnabled = configuration.accelerometerEnabled
+        sleepModeEnabled = configuration.sleepModeEnabled
+        auroraModeEnabled = configuration.auroraModeEnabled
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    private func applyLiveTemperature(_ celsius: Double) {
+        currentTempC = celsius
+
+        if lastPublishedTempC == nil || abs(celsius - (lastPublishedTempC ?? celsius)) >= liveTempChangeThresholdC {
+            lastPublishedTempC = celsius
+            temperature = temperatureString
+        }
+
+        appendTemperatureSample(TemperatureData(timestamp: Date(), temperature: celsius))
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    private func apply(history: [TemperatureData]) {
+        let cappedHistory = Array(history.suffix(maxTemperatureDataPoints))
+        temperatureData = cappedHistory
+        currentTempC = cappedHistory.last?.temperature
+        lastPublishedTempC = currentTempC
+        temperature = temperatureString
+        scheduleExternalStateSync()
+    }
+
+    @MainActor
+    private func appendTemperatureSample(_ sample: TemperatureData) {
+        temperatureData.append(sample)
+
+        let cutoff = Date().addingTimeInterval(-10 * 60)
+        if let firstRetained = temperatureData.firstIndex(where: { $0.timestamp >= cutoff }), firstRetained > 0 {
+            temperatureData.removeFirst(firstRetained)
+        } else if temperatureData.first?.timestamp ?? .distantFuture < cutoff {
+            temperatureData.removeAll(keepingCapacity: true)
+            temperatureData.append(sample)
+        }
+
+        if temperatureData.count > maxTemperatureDataPoints {
+            temperatureData.removeFirst(temperatureData.count - maxTemperatureDataPoints)
+        }
+    }
+
+    @MainActor
+    private func upsertDiscoveredDevice(_ device: PeripheralDevice) {
+        if let existingIndex = discoveredDevices.firstIndex(where: { $0.id == device.id }) {
+            discoveredDevices[existingIndex] = device
+        } else {
+            discoveredDevices.append(device)
+        }
+    }
+
+    @MainActor
+    private func clearConnectionState() {
+        targetPeripheral = nil
+        deviceInfo = nil
+        currentTempC = nil
+        lastPublishedTempC = nil
+        temperature = "--"
+        temperatureData.removeAll(keepingCapacity: true)
+        signalStrength = -100
+        firmwareVersion = "N/A"
+        luxValue = 0
+        isScanning = false
+        isDownloadingHistory = false
+        client.stopRSSIMonitoring()
+    }
+
+    @MainActor
+    private func presentError(_ message: String) {
+        errorMessage = message
+        showError = true
+    }
+
+    @MainActor
+    func currentConfiguration() -> AccessoryConfiguration {
+        AccessoryConfiguration(
+            autoBrightness: autoBrightness,
+            accelerometerEnabled: accelerometerEnabled,
+            sleepModeEnabled: sleepModeEnabled,
+            auroraModeEnabled: auroraModeEnabled
+        )
+    }
+
+    // MARK: OTA helpers
+
+    @MainActor
+    private func runOTAUpdate(firmwareData: Data, generation: UInt64) async throws {
+        try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaStart(size: firmwareData.count))
+        try await Task.sleep(nanoseconds: 300_000_000)
+
         let mtu = 185
         let chunkSize = mtu - 3
-
         var offset = 0
 
         while offset < firmwareData.count {
@@ -684,1930 +794,43 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
             let end = min(offset + chunkSize, firmwareData.count)
             let chunk = firmwareData.subdata(in: offset..<end)
-
-            // Packet: [0x02] + chunk
-            var packet = Data([0x02])
-            packet.append(chunk)
-
-            await writeWithResponse(packet, peripheral: peripheral, characteristic: characteristic)
+            try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaChunk(chunk))
 
             offset = end
-            otaBytesSent = offset
-            otaProgress = Double(offset) / Double(max(totalOTASize, 1))
+            otaProgress = Double(offset) / Double(max(firmwareData.count, 1))
             otaStatusMessage = "Uploading... \(Int(otaProgress * 100))%"
         }
-    }
 
-    @MainActor
-    private func endOTAUpdate(peripheral: CBPeripheral,
-                              characteristic: CBCharacteristic,
-                              generation: UInt64) async {
-        guard otaGeneration == generation else { return }
-
+        try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaFinish())
         otaStatusMessage = "Finalizing OTA..."
-
-        let endPacket = Data([0x03])
-        await writeWithResponse(endPacket, peripheral: peripheral, characteristic: characteristic)
-
-        otaStatusMessage = "OTA Complete — Rebooting..."
         otaInProgress = false
     }
 
+    // MARK: Notifications
+
     @MainActor
-    func abortOTAUpdate() {
-        otaTask?.cancel()
-        otaGeneration &+= 1
-        otaInProgress = false
-
-        otaWriteContinuation?.resume()
-        otaWriteContinuation = nil
-
-        otaProgress = 0.0
-        otaStatusMessage = "OTA Aborted"
-
-        // If your peripheral expects abort on OTA characteristic, keep this.
-        // Otherwise use commandCharacteristic (depends on your firmware protocol).
-        guard let peripheral = targetPeripheral,
-              let characteristic = otaCharacteristic else { return }
-
-        let abortPacket = Data([0x04])
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-
-        bleAsync { _ in
-            pBox.value.writeValue(abortPacket, for: cBox.value, type: .withResponse)
-        }
-    }
-    
-    @MainActor
-    func scanForDevices() {
-        // 1️⃣ Special case: SwiftUI previews
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            // Fake "scan" for the preview canvas
-            logger.info("SwiftUI preview: faking scanForDevices()")
-
-            isScanning = false
-            connectionState = .disconnected   // or .scanning if you have that case
-
-            // Populate some mock devices so the UI has something to show
-            discoveredDevices = [
-                .mock,
-                PeripheralDevice(
-                    id: UUID(),
-                    name: "LumiFur-BBBB",
-                    rssi: -68,
-                    advertisementServiceUUIDs: ["FFF0"],
-                    peripheral: nil
-                )
-            ]
-
-            return
-        }
-
-        // 2️⃣ Normal runtime behaviour (device / sim running app)
-        guard centralManager.state == .poweredOn else {
-            logger.warning("Cannot scan: Bluetooth is not powered on.")
-            connectionState = .bluetoothOff
-            return
-        }
-
-        // UI state: MainActor
-        discoveredDevices.removeAll()
-        connectionState = .scanning
-        isScanning = true
-
-        // BLE call: bleQueue
-        bleAsync { [serviceUUID] manager in
-            manager.scanForPeripherals(
-                withServices: [serviceUUID],
-                options: [CBCentralManagerScanOptionAllowDuplicatesKey: NSNumber(value: false)]
-            )
-        }
+    private func handleChangeViewIntent(_ notification: Notification) {
+        guard let nextView = notification.userInfo?["nextView"] as? Int else { return }
+        setView(nextView)
     }
 
     @MainActor
-    func stopScan() {
-        guard centralManager.state == .poweredOn else { return }
+    private func handleAppDidBecomeActive() {
+        guard isConnected else { return }
 
-        bleAsync { manager in
-            manager.stopScan()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+        Task { [weak self] in
+            await self?.startLumiFur_WidgetLiveActivity()
         }
-
-        isScanning = false
-        if connectionState == .scanning { connectionState = .disconnected }
-    }
-    
-    @MainActor
-    func connect(to device: PeripheralDevice) {
-        guard centralManager.state == .poweredOn else {
-            logger.warning("Cannot connect: Bluetooth is not powered on.")
-            connectionState = .bluetoothOff
-            return
-        }
-
-        // 2️⃣ Real app: be defensive about centralManager existing
-            guard let manager = centralManager else {
-                logger.error("connect(to:) called before centralManager was initialized.")
-                connectionState = .unknown
-                return
-            }
-
-            guard manager.state == .poweredOn else {
-                logger.warning("Cannot connect: Bluetooth is not powered on.")
-                connectionState = .bluetoothOff
-                return
-            }
-
-            // 3️⃣ We must have a real CBPeripheral to connect
-            guard let peripheral = device.peripheral else {
-                // This really shouldn’t happen in the *real* app.
-                logger.warning("connect(to:) called with device that has nil CBPeripheral; aborting connect.")
-                return
-            }
-
-        
-        stopScan()
-
-        connectingPeripheral = device
-        connectionState = .connecting
-        targetPeripheral = device.peripheral
-        targetPeripheral?.delegate = self
-        isManualDisconnect = false
-
-        let peripheralBox = UncheckedSendableBox(peripheral)
-
-        bleAsync { manager in
-            manager.connect(peripheralBox.value, options: nil)
-        }
-    }
-
-    @MainActor
-    func disconnect() {
-        isManualDisconnect = true
-
-        guard let p = targetPeripheral else { return }
-        let peripheralBox = UncheckedSendableBox(p)
-
-        bleAsync { manager in
-            manager.cancelPeripheralConnection(peripheralBox.value)
-        }
-    }
-    func connectToStoredPeripheral(_ stored: StoredPeripheral) { // Uses definition
-        DispatchQueue.main.async { self._connectToStoredPeripheral(stored) }
-    }
-    
-    // 2) In your “button” action, change + write + schedule all in one place:
-    func setView(_ view: Int) {
-        guard view >= 1 && view <= 50, view != selectedView else { return }
-        logger.info("Setting view to \(view)")
-        // Update model
-        self.selectedView = view
-        // Send to peripheral immediately
-        writeViewToCharacteristic()
-        // Debounced widget / LiveActivity update
-        //scheduleLiveActivityUpdate()
-    }
-    
-    // 3) Same for face buttons:
-    func faceButtonTapped(_ faceIndex: Int) {
-        setView(faceIndex)
-    }
-    
-    @MainActor
-    func sendScrollText(_ text: String) {
-        guard let peripheral = targetPeripheral,
-              let characteristic = scrollTextCharacteristic else {
-            logger.warning("Cannot send scroll text: peripheral or scrollTextCharacteristic not available.")
-            return
-        }
-        // Opcode 0x01 + text bytes (max 63 to fit 64 with terminator on device)
-        let utf8 = text.data(using: .utf8) ?? Data()
-        let maxPayload = 63
-        let payload: Data = utf8.prefix(maxPayload)
-        var packet = Data([0x01])
-        packet.append(payload)
-
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-        
-        let props = characteristic.properties
-        guard props.contains(.write) || props.contains(.writeWithoutResponse) else {
-            self.logger.error("Scroll text characteristic is not writable (props=\(props.rawValue)).")
-            return
-        }
-        let writeType: CBCharacteristicWriteType = props.contains(.write) ? .withResponse : .withoutResponse
-        
-        bleAsync { [packet, writeType] _ in
-            pBox.value.writeValue(packet, for: cBox.value, type: writeType)
-        }
-    }
-
-    @MainActor
-    func sendScrollSpeed(_ speed: UInt8) {
-        guard let peripheral = targetPeripheral,
-              let characteristic = scrollTextCharacteristic else {
-            logger.warning("Cannot send scroll speed: peripheral or scrollTextCharacteristic not available.")
-            return
-        }
-        // Opcode 0x02 + clamped speed (1…100)
-        let clamped = max(1, min(100, Int(speed)))
-        let packet = Data([0x02, UInt8(clamped)])
-
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-        
-        let props = characteristic.properties
-        guard props.contains(.write) || props.contains(.writeWithoutResponse) else {
-            self.logger.error("Scroll speed characteristic is not writable (props=\(props.rawValue)).")
-            return
-        }
-        let writeType: CBCharacteristicWriteType = props.contains(.write) ? .withResponse : .withoutResponse
-        
-        bleAsync { [packet, writeType] _ in
-            pBox.value.writeValue(packet, for: cBox.value, type: writeType)
-        }
-    }
-    
-    @MainActor
-    func startRSSIMonitoring() {
-        _startRSSIMonitoring()
-    }
-    @MainActor
-    private func _startRSSIMonitoring() {
-        rssiUpdateTimer?.invalidate()
-        
-        rssiUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                        guard let self = self else { return }
-                        guard let p = self.targetPeripheral, p.state == .connected else { return }
-                        
-                        let pBox = UncheckedSendableBox(p)
-                        self.bleAsync { _ in
-                            pBox.value.readRSSI()
-                        }
-                    }
-        }
-    }
-    @MainActor
-    func stopRSSIMonitoring() {
-        _stopRSSIMonitoring()
-    }
-
-    @MainActor
-    private func _stopRSSIMonitoring() {
-        // Bump generation so any in-flight timer tick becomes a no-op
-        rssiMonitoringGeneration &+= 1
-
-        guard let timer = rssiUpdateTimer else { return } // already stopped
-        timer.invalidate()
-        rssiUpdateTimer = nil
-
-        logger.debug("RSSI monitoring stopped (gen=\(self.rssiMonitoringGeneration)).")
-    }
-    
-    // MARK: - Watch Sync (ADD THIS NEW METHOD)
-    
-    /// The single function that triggers a sync to the watch.
-    func syncStateToWatch() {
-        // Build a digest of the values that matter for the watch
-        let digest = makeWatchStateDigest()
-        // If nothing changed since last send, skip
-        if let last = lastSentWatchDigest, last == digest {
-            return
-        }
-        lastSentWatchDigest = digest
-        // Proceed with actual sync
-        WatchConnectivityManager.shared.syncStateToWatch(from: self) // Pass self to the watch manager to be packaged and sent
-    }
-    
-    // MARK: - Private Methods (Executed on BLE Queue)
-    
-    /// Internal scan logic, runs on bleQueue
-    private func _scanForDevices() {
-        guard !isScanning else {
-            logger.debug("Scan already in progress—skipping duplicate scan call.")
-            return
-        }
-        
-        guard centralManager.state == .poweredOn else {
-            logger.warning("Cannot scan: Bluetooth is not powered on")
-            DispatchQueue.main.async { self.connectionState = .bluetoothOff
-            } // Fixed enum case
-            return
-        }
-        
-        // Reset UI state
-        DispatchQueue.main.async {
-            self.discoveredDevices.removeAll()
-            self.connectionState = .scanning
-            self.isScanning = true
-        }
-        
-        logger.info("Starting BLE scan on bleQueue...")
-        centralManager.scanForPeripherals(
-            withServices: [self.serviceUUID],
-            options: [CBCentralManagerScanOptionAllowDuplicatesKey: NSNumber(value: false)])
-    }
-    
-    /// Internal stop scan logic, runs on bleQueue
-    private func _stopScan() {
-        guard centralManager.state == .poweredOn else { return }
-        centralManager.stopScan()
-        logger.info("Stopped BLE scan on bleQueue.")
-        DispatchQueue.main.async {
-            self.isScanning = false
-            if self.connectionState == .scanning {
-                self.connectionState = .disconnected
-            }
-        }
-    }
-    
-    /// Internal connect logic, runs on bleQueue
-    private func _connect(to device: PeripheralDevice) {
-        guard centralManager.state == .poweredOn else {
-            logger.warning("Cannot connect: Bluetooth is not powered on.")
-            DispatchQueue.main.async {
-                self.connectionState = .bluetoothOff
-            }
-            return
-        }
-
-        // Must have a real CBPeripheral to connect
-        guard let peripheralToConnect = device.peripheral else {
-            logger.warning("Cannot connect: PeripheralDevice has nil CBPeripheral (id: \(device.id), name: \(device.name)).")
-            return
-        }
-
-        _stopScan()
-
-        // Update UI-related state on the main thread
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.connectingPeripheral = device
-            self.connectionState = .connecting
-            self.targetPeripheral = peripheralToConnect
-        }
-
-        isManualDisconnect = false
-        logger.info("Attempting to connect to \(device.name) (\(device.id)) on bleQueue...")
-
-        // Configure delegate and start connection with a non-optional peripheral
-        peripheralToConnect.delegate = self
-        centralManager.connect(peripheralToConnect, options: nil)
-    }
-    
-    /// Internal disconnect logic, runs on bleQueue
-    private func _disconnect() {
-        if let peripheral = targetPeripheral {
-            logger.log("Cancelling connection to peripheral: \(peripheral.name ?? "Unknown") (\(peripheral.identifier.uuidString)) on bleQueue")
-            centralManager.cancelPeripheralConnection(peripheral)
-        } else {
-            logger.warning("Disconnect called but targetPeripheral is nil on bleQueue.")
-        }
-    }
-    
-    // MARK: - Encoding Helper
-    /// Encodes accessory settings into a single Data payload.
-    func encodedAccessorySettingsPayload(
-        autoBrightness: Bool,
-        accelerometerEnabled: Bool,
-        sleepModeEnabled: Bool,
-        auroraModeEnabled: Bool
-    ) -> Data {
-        return Data([
-            autoBrightness ? 1 : 0,
-            accelerometerEnabled ? 1 : 0,
-            sleepModeEnabled ? 1 : 0,
-            auroraModeEnabled ? 1 : 0
-        ])
-    }
-    
-    /// Internal method to write the selected view, runs on bleQueue
-    @MainActor
-    private func writeViewToCharacteristic() {
-        guard let peripheral = targetPeripheral,
-              let characteristic = targetCharacteristic else {
-            logger.warning("Cannot write view: peripheral or view characteristic not available.")
-            return
-        }
-
-        let view = selectedView
-        let data = Data([UInt8(view)])
-
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-
-        bleAsync { _ in
-            pBox.value.writeValue(data, for: cBox.value, type: .withResponse)
-        }
-    }
-    
-    @MainActor
-    private func writeStrobeSettings(_ settings: StrobeSettingsPayload) {
-        guard let peripheral = targetPeripheral,
-              let ch = strobeSettingsCharacteristic else {
-            logger.debug("Strobe write skipped: peripheral/characteristic missing")
-            return
-        }
-
-        let props = ch.properties
-        guard props.contains(.write) || props.contains(.writeWithoutResponse) else {
-            logger.error("Strobe characteristic is not writable (props=\(props.rawValue)).")
-            return
-        }
-
-        let writeType: CBCharacteristicWriteType = props.contains(.write) ? .withResponse : .withoutResponse
-
-        // Firmware expects two separate writes:
-        // 0x01 + [R,G,B]
-        // 0x02 + [speedLo,speedHi] (UInt16 LE)
-        let colorPacket = settings.encodeColorPacketRGB()
-        let speedPacket = settings.encodeSpeedPacket()
-
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(ch)
-
-        bleAsync { _ in
-            pBox.value.writeValue(colorPacket, for: cBox.value, type: writeType)
-            pBox.value.writeValue(speedPacket, for: cBox.value, type: writeType)
-        }
-    }
-    
-    /// Internal method to write config, runs on bleQueue
-    @MainActor
-    func writeConfigToCharacteristic() {
-        guard let peripheral = targetPeripheral,
-              let characteristic = configCharacteristic else {
-            logger.warning("Cannot write config: peripheral or config characteristic not available.")
-            return
-        }
-
-        let payload = encodedAccessorySettingsPayload(
-            autoBrightness: autoBrightness,
-            accelerometerEnabled: accelerometerEnabled,
-            sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
-        )
-
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-
-        bleAsync { _ in
-            pBox.value.writeValue(payload, for: cBox.value, type: .withResponse)
-        }
-    }
-    /// Internal method to find characteristic, runs on bleQueue
-    private func getCharacteristic(uuid: CBUUID) -> CBCharacteristic? {
-        return targetPeripheral?.services?
-            .first { $0.uuid == self.serviceUUID }?
-            .characteristics?
-            .first { $0.uuid == uuid }
-    }
-    
-    // MARK: - CBCentralManagerDelegate Methods (Called on bleQueue)
-    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        let state = central.state
-        Task { @MainActor [weak self] in
-            self?.handleCentralStateUpdate(state)
-        }
-    }
-
-    @MainActor
-    private func handleCentralStateUpdate(_ state: CBManagerState) {
-        // 1) Compute desired new state & flags on MainActor (safe)
-        var newState: ConnectionState = .unknown
-        var shouldScan = false
-        var shouldAttemptReconnect = false
-
-        switch state {
-        case .poweredOn:
-            newState = .disconnected
-            shouldScan = true
-
-            if !didAttemptAutoReconnect, lastConnectedPeripheralUUID != nil {
-                didAttemptAutoReconnect = true
-                shouldAttemptReconnect  = true
-                shouldScan              = false
-                newState                = .reconnecting
-            }
-
-        case .poweredOff:
-            newState = .bluetoothOff
-            stopScan()                      // ✅ MainActor-safe wrapper
-            didAttemptAutoReconnect = false
-
-        case .unauthorized:
-            newState = .unknown
-            logger.error("Bluetooth unauthorized.")
-            didAttemptAutoReconnect = false
-
-        case .unsupported:
-            newState = .unknown
-            logger.error("Bluetooth unsupported.")
-
-        case .resetting:
-            newState = .unknown
-            logger.warning("Bluetooth resetting.")
-            didAttemptAutoReconnect = false
-
-        case .unknown:
-            newState = .unknown
-            logger.warning("Bluetooth state unknown.")
-
-        @unknown default:
-            newState = .unknown
-            logger.warning("Bluetooth state @unknown default.")
-        }
-
-        // Snapshot the UUID once (MainActor-safe)
-        let uuidToTry = lastConnectedPeripheralUUID
-
-        // 2) Apply state updates (MainActor)
-        connectionState = newState
-
-        
-        if state != .poweredOn {
-            targetPeripheral = nil
-            discoveredDevices.removeAll()
-            connectingPeripheral = nil
-            isScanning = false
-            stopRSSIMonitoring()
-        }
-
-        // 3) Reconnect or scan (MainActor entrypoints)
-        if shouldAttemptReconnect, let uuid = uuidToTry {
-            logger.info("Auto-reconnect to \(uuid)")
-            _connectToStoredUUID(uuid)      // Make sure this method is MainActor-safe internally
-        } else if shouldScan, connectionState == .disconnected {
-            scanForDevices()               // ✅ MainActor-safe wrapper
-        }
-    }
-    
-    private func _connectToStoredUUID(_ uuidString: String) {
-        guard let uuid = UUID(uuidString: uuidString) else {
-            logger.error("Invalid UUID string for reconnect: \(uuidString)")
-            DispatchQueue.main.async {
-                           self.connectionState = .disconnected
-                           self._scanForDevices()
-                       }
-            return
-        }
-        logger.info("Retrieving peripheral for auto-reconnect: \(uuidString) on bleQueue")
-        let peripherals = centralManager.retrievePeripherals(withIdentifiers: [uuid])
-        if let peripheral = peripherals.first {
-            // Use PeripheralDevice initializer
-            let device = PeripheralDevice(id: peripheral.identifier, name: peripheral.name ?? "Unknown", rssi: self.signalStrength, advertisementServiceUUIDs: nil, peripheral: peripheral)
-            _connect(to: device)
-        } else {
-            logger.warning("Peripheral \(uuidString) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async {
-                            self.connectionState = .disconnected
-                            self._scanForDevices()
-                        }
-        }
-    }
-    nonisolated func centralManager(_ central: CBCentralManager,
-                                    didDiscover peripheral: CBPeripheral,
-                                    advertisementData: [String : Any],
-                                    rssi RSSI: NSNumber) {
-        // Build a Sendable snapshot to avoid cross-actor transfer of non-Sendable [String: Any]
-        let serviceUUIDs = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
-        let localName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
-        let isConnectable = (advertisementData[CBAdvertisementDataIsConnectable] as? NSNumber)?.boolValue
-        let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
-
-        let snapshot = AdvertisementSnapshot(
-            serviceUUIDs: serviceUUIDs,
-            localName: localName,
-            isConnectable: isConnectable,
-            manufacturerData: manufacturerData
-        )
-        Task { @MainActor [weak self] in
-            self?.handleDidDiscover(peripheral, snapshot: snapshot, rssi: RSSI)
-        }
-    }
-    
-    private struct AdvertisementSnapshot: Sendable {
-        let serviceUUIDs: [String]?
-        let localName: String?
-        let isConnectable: Bool?
-        let manufacturerData: Data?
-    }
-
-    @MainActor
-    private func handleDidDiscover(_ peripheral: CBPeripheral,
-                                   snapshot: AdvertisementSnapshot,
-                                   rssi RSSI: NSNumber) {
-        // Auto-reconnect path
-        if let lastUUID = lastConnectedPeripheralUUID,
-           peripheral.identifier.uuidString == lastUUID,
-           connectionState == .reconnecting {
-
-            logger.info("Auto-reconnect (via scan): found stored peripheral \(lastUUID), connecting.")
-            stopScan()
-
-            let device = PeripheralDevice(
-                id: peripheral.identifier,
-                name: peripheral.name ?? "Unknown",
-                rssi: RSSI.intValue,
-                advertisementServiceUUIDs: snapshot.serviceUUIDs,
-                peripheral: peripheral
-            )
-            connect(to: device)
-            return
-        }
-
-        // Normal discovery update
-        guard let name = peripheral.name, !name.isEmpty else { return }
-        let serviceUUIDs = snapshot.serviceUUIDs
-
-        let device = PeripheralDevice(
-            id: peripheral.identifier,
-            name: name,
-            rssi: RSSI.intValue,
-            advertisementServiceUUIDs: serviceUUIDs,
-            peripheral: peripheral
-        )
-        upsertDiscoveredDevice(device)
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        Task { @MainActor [weak self] in
-            self?.handleDidConnect(peripheral)
-        }
-    }
-
-    @MainActor
-    private func handleDidConnect(_ peripheral: CBPeripheral) {
-        logger.info("Connected to \(peripheral.name ?? "Unknown") (\(peripheral.identifier.uuidString))")
-
-        // UI/Model state
-        targetPeripheral = peripheral
-        peripheral.delegate = self
-        connectionState = .connected
-        isScanning = false
-        connectingPeripheral = nil
-        didAttemptAutoReconnect = false
-
-        // Persist
-        let uuidString = peripheral.identifier.uuidString
-        UserDefaults.standard.set(uuidString, forKey: "LastConnectedPeripheralUUID")
-        lastConnectedPeripheralUUID = uuidString
-        addToPreviouslyConnected(id: uuidString, name: peripheral.name ?? "Unknown")
-
-        // Kick off discovery on BLE queue (important!)
-        let pBox = UncheckedSendableBox(peripheral)
-        bleAsync { [serviceUUID] _ in
-            pBox.value.discoverServices([serviceUUID])
-        }
-
-        startRSSIMonitoring()
-
-        // Live Activity handling (your existing logic is fine)
-        if currentActivity?.activityState != .active {
-            Task { @MainActor in
-                await startLumiFur_WidgetLiveActivity()
-            }
-        }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager,
-                                    didFailToConnect peripheral: CBPeripheral,
-                                    error: Error?) {
-        Task { @MainActor [weak self] in
-            self?.handleDidFailToConnect(peripheral, error: error)
-        }
-    }
-
-    @MainActor
-    private func handleDidFailToConnect(_ peripheral: CBPeripheral, error: Error?) {
-        logger.error("Failed to connect to \(peripheral.name ?? "Unknown"): \(error?.localizedDescription ?? "Unknown")")
-        if targetPeripheral?.identifier == peripheral.identifier { targetPeripheral = nil }
-        connectingPeripheral = nil
-        connectionState = .failed
-        didAttemptAutoReconnect = false
-        if !isScanning { scanForDevices() }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager,
-                                    didDisconnectPeripheral peripheral: CBPeripheral,
-                                    error: Error?) {
-        Task { @MainActor [weak self] in
-            await self?.handleDidDisconnect(peripheralID: peripheral.identifier.uuidString,
-                                            peripheralName: peripheral.name,
-                                            error: error)
-        }
-    }
-
-    @MainActor
-    private func handleDidDisconnect(peripheralID: String,
-                                     peripheralName: String?,
-                                     error: Error?) async {
-        let wasManual = isManualDisconnect
-        isManualDisconnect = false
-
-        let name = peripheralName ?? "Unknown"
-        let errorDescription = error?.localizedDescription ?? "No error"
-        logger.info("Disconnected from \(name) (\(peripheralID)). Was manual: \(wasManual). Error: \(errorDescription).")
-
-        // Reset connection-specific state (compare by ID string so we don't need CBPeripheral here)
-        if targetPeripheral?.identifier.uuidString == peripheralID {
-            targetPeripheral = nil
-            currentTempC = nil
-            temperature = "--"
-            temperatureData.removeAll()
-            lastPublishedTempC = nil
-            
-            signalStrength = -100
-            firmwareVersion = "N/A"
-
-            configCharacteristic = nil
-            targetCharacteristic = nil
-            temperatureCharacteristic = nil
-            commandCharacteristic = nil
-            temperatureLogsCharacteristic = nil
-            brightnessCharacteristic = nil
-            otaCharacteristic = nil
-            luxCharacteristic = nil
-            scrollTextCharacteristic = nil
-            strobeSettingsCharacteristic = nil
-
-        }
-
-        connectionState = .disconnected
-        connectingPeripheral = nil
-        stopRSSIMonitoring()
-
-        // Live Activity handling
-        let finalState = createContentState(
-            connected: false,
-            status: ConnectionState.disconnected.rawValue
-        )
-
-        if wasManual {
-            logger.info("Manual disconnect → ending Live Activity immediately.")
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
-        } else if error != nil {
-            let dismissalDate = Date().addingTimeInterval(15 * 60)
-            logger.info("Unexpected disconnect (with error) → ending Live Activity at \(dismissalDate).")
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
-        } else {
-            logger.info("Graceful disconnect → ending Live Activity immediately.")
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
-        }
-
-        // Reconnect or scan
-        if !wasManual, autoReconnectEnabled,
-           let uuidToReconnect = lastConnectedPeripheralUUID {
-            logger.info("Auto-Reconnect ON → attempting reconnect to \(uuidToReconnect)")
-            connectionState = .reconnecting
-            didAttemptAutoReconnect = false
-            _connectToStoredUUID(uuidToReconnect)   // ensure this uses bleAsync internally
-        } else if !wasManual {
-            logger.info("Not auto-reconnecting; starting scan.")
-            if !isScanning { scanForDevices() }
-        }
-    }
-
-
-    // MARK: - CBPeripheralDelegate (called on bleQueue)
-
-    // Small helpers: run CBPeripheral ops on bleQueue without touching @MainActor state.
-    private func peripheralAsync(_ peripheral: CBPeripheral,
-                                 _ work: @escaping @Sendable (CBPeripheral) -> Void) {
-        let pBox = UncheckedSendableBox(peripheral)
-        bleQueue.async { [pBox] in
-            work(pBox.value)
-        }
-    }
-
-    private func peripheralServiceAsync(_ peripheral: CBPeripheral,
-                                        _ service: CBService,
-                                        _ work: @escaping @Sendable (CBPeripheral, CBService) -> Void) {
-        let pBox = UncheckedSendableBox(peripheral)
-        let sBox = UncheckedSendableBox(service)
-        bleQueue.async { [pBox, sBox] in
-            work(pBox.value, sBox.value)
-        }
-    }
-
-    private func peripheralCharAsync(_ peripheral: CBPeripheral,
-                                     _ characteristic: CBCharacteristic,
-                                     _ work: @escaping @Sendable (CBPeripheral, CBCharacteristic) -> Void) {
-        let pBox = UncheckedSendableBox(peripheral)
-        let cBox = UncheckedSendableBox(characteristic)
-        bleQueue.async { [pBox, cBox] in
-            work(pBox.value, cBox.value)
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        Task { @MainActor [weak self] in
-            self?.handleDidDiscoverServices(peripheral, error: error)
-        }
-    }
-
-    @MainActor
-    private func handleDidDiscoverServices(_ peripheral: CBPeripheral, error: Error?) {
-        if let error {
-            logger.error("Error discovering services: \(error.localizedDescription)")
-            showError(message: "Service discovery error")
-            return
-        }
-
-        guard let services = peripheral.services else { return }
-
-        guard let service = services.first(where: { $0.uuid == self.serviceUUID }) else {
-            logger.warning("Service \(self.serviceUUID) not found.")
-            showError(message: "Required service not found.")
-            disconnect() // use your MainActor wrapper that schedules cancel on bleQueue
-            return
-        }
-
-        let characteristicsToDiscover: [CBUUID] = [
-            viewCharUUID,
-            configCharUUID,
-            tempCharUUID,
-            commandCharUUID,
-            temperatureLogsCharUUID,
-            brightnessCharUUID,
-            deviceInfoCharUUID,
-            otaCharUUID,
-            luxCharUUID,
-            scrollTextCharUUID,
-            strobeSettingCharUUID
-        ]
-
-        // Actual discover call runs on bleQueue
-        peripheralServiceAsync(peripheral, service) { p, s in
-            p.discoverCharacteristics(characteristicsToDiscover, for: s)
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral,
-                                didDiscoverCharacteristicsFor service: CBService,
-                                error: Error?) {
-        Task { @MainActor [weak self] in
-            self?.handleDidDiscoverCharacteristics(peripheral, service: service, error: error)
-        }
-    }
-
-    @MainActor
-    private func handleDidDiscoverCharacteristics(_ peripheral: CBPeripheral,
-                                                 service: CBService,
-                                                 error: Error?) {
-        if let error {
-            logger.error("Error discovering characteristics for \(service.uuid): \(error.localizedDescription)")
-            showError(message: "Characteristic discovery error: \(error.localizedDescription)")
-            disconnect()
-            return
-        }
-
-        guard let characteristics = service.characteristics else {
-            logger.warning("No characteristics for service \(service.uuid).")
-            disconnect()
-            return
-        }
-
-        var foundAllRequired = true
-
-        for ch in characteristics {
-            logger.debug("Found characteristic \(ch.uuid)")
-
-            switch ch.uuid {
-            case deviceInfoCharUUID:
-                peripheralCharAsync(peripheral, ch) { p, c in p.readValue(for: c) }
-
-            case viewCharUUID:
-                targetCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
-                    p.readValue(for: c)
-                }
-
-            case configCharUUID:
-                configCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
-                    p.readValue(for: c)
-                }
-
-            case tempCharUUID:
-                temperatureCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c) }
-
-            case commandCharUUID:
-                commandCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c) }
-
-            case temperatureLogsCharUUID:
-                temperatureLogsCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c) }
-
-            case brightnessCharUUID:
-                brightnessCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
-                    p.readValue(for: c)
-                }
-
-            case otaCharUUID:
-                otaCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c) }
-
-            case luxCharUUID:
-                luxCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c) }
-                
-            case scrollTextCharUUID:
-                scrollTextCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in p.setNotifyValue(true, for: c)
-                    p.readValue(for: c) // read current text on connect
-                    // Removed the line: p.writeValue(Data(Text), for: c, type: .withResponse)
-                }
-                
-            case strobeSettingCharUUID:
-                strobeSettingsCharacteristic = ch
-                peripheralCharAsync(peripheral, ch) { p, c in
-                    let props = c.properties
-                    if props.contains(.notify) || props.contains(.indicate) {
-                        p.setNotifyValue(true, for: c)
-                    }
-                    if props.contains(.read) {
-                        p.readValue(for: c)
-                    }
-                }
-
-            default:
-                break
-            }
-        }
-
-        if targetCharacteristic == nil { logger.warning("Missing view characteristic"); foundAllRequired = false }
-        if configCharacteristic == nil { logger.warning("Missing config characteristic"); foundAllRequired = false }
-        if temperatureCharacteristic == nil { logger.warning("Missing temperature characteristic"); foundAllRequired = false }
-        if commandCharacteristic == nil { logger.warning("Missing command characteristic"); foundAllRequired = false }
-        if temperatureLogsCharacteristic == nil { logger.warning("Missing temperature logs characteristic"); foundAllRequired = false }
-        if brightnessCharacteristic == nil { logger.warning("Missing brightness characteristic"); foundAllRequired = false }
-        if otaCharacteristic == nil { logger.warning("Missing OTA characteristic"); foundAllRequired = false }
-        if strobeSettingsCharacteristic == nil { logger.warning("Missing strobe characteristic");
-            foundAllRequired = false }
-
-        guard foundAllRequired else {
-            logger.error("Essential characteristics missing; disconnecting.")
-            showError(message: "Essential characteristics missing.")
-            disconnect()
-            return
-        }
-
-        logger.info("All required characteristics discovered/configured.")
-
-        if let cmdChar = commandCharacteristic {
-            resetHistoryDownloadState()
-            requestTemperatureHistory(peripheral: peripheral, characteristic: cmdChar)
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral,
-                                didUpdateValueFor characteristic: CBCharacteristic,
-                                error: Error?) {
-        let uuid = characteristic.uuid
-        let data = characteristic.value
-        let peripheralID = peripheral.identifier.uuidString
-
-        Task { @MainActor [weak self] in
-            self?.handleDidUpdateValue(peripheralID: peripheralID,
-                                       uuid: uuid,
-                                       data: data,
-                                       error: error)
-        }
-    }
-
-    @MainActor
-    private func handleDidUpdateValue(peripheralID: String,
-                                      uuid: CBUUID,
-                                      data: Data?,
-                                      error: Error?) {
-        if let error {
-            if isPairingError(error) {
-                showError(message: "Pairing required. Enter the passkey shown on the device.")
-                return
-            }
-            logger.error("Error updating \(uuid): \(error.localizedDescription)")
-            showError(message: "Characteristic \(uuid.uuidString.prefix(4)) update error")
-            return
-        }
-
-        guard let data else {
-            logger.warning("Nil data for \(uuid) on \(peripheralID)")
-            return
-        }
-
-        switch uuid {
-            
-        case deviceInfoCharUUID:
-            if let jsonString = String(data: data, encoding: .utf8),
-               let jsonData = jsonString.data(using: .utf8) {
-                do {
-                    let info = try JSONDecoder().decode(DeviceInfo.self, from: jsonData)
-                    deviceInfo = info
-                    firmwareVersion = info.fw
-                } catch {
-                    logger.error("Failed to decode DeviceInfo: \(error.localizedDescription)")
-                }
-            }
-
-        case viewCharUUID:
-            handleViewUpdate(data: data)
-
-        case configCharUUID:
-            handleConfigUpdate(data: data)
-
-        case tempCharUUID:
-            guard !isDownloadingHistory else { return }
-            handleLiveTemperatureUpdate(data: data)
-
-        case temperatureLogsCharUUID:
-            handleHistoryChunk(data: data)
-
-        case commandCharUUID:
-            logger.info("Command RX: \(data.map { String(format: "%02x", $0) }.joined())")
-
-        case brightnessCharUUID:
-            if let val = data.first {
-                applyPeripheralUpdate {
-                    if brightness != val { brightness = val }
-                }
-            }
-
-        case otaCharUUID:
-            let bytes = data.map { String(format: "%02X", $0) }.joined(separator: " ")
-            logger.info("OTA response: \(bytes)")
-            if data.count == 2 {
-                let code = data[0], detail = data[1]
-                switch (code, detail) {
-                case (0x01, 0x00): otaStatusMessage = "OTA Started"
-                case (0x03, 0x00): otaStatusMessage = "OTA Complete — Rebooting..."
-                case (0x04, 0x00): otaStatusMessage = "OTA Aborted"
-                case (0xFF, _):
-                    otaStatusMessage = "OTA Error \(detail)"
-                    otaTimer?.invalidate()
-                    otaProgress = 0.0
-                default:
-                    otaStatusMessage = "OTA Unknown Response"
-                }
-            }
-
-        case luxCharUUID:
-            guard data.count >= 2 else { return }
-            let rawLux = UInt16(data[0]) | (UInt16(data[1]) << 8)
-            if abs(Int(rawLux) - Int(lastLuxValue)) >= Int(luxThreshold) {
-                lastLuxValue = rawLux
-                luxValue = rawLux
-            }
-            
-        case scrollTextCharUUID:
-            // Firmware echoes current text (null-terminated). Decode safely.
-            let rawBytes = [UInt8](data)
-            let trimmed = rawBytes.prefix { $0 != 0 }
-            let text = String(bytes: trimmed, encoding: .utf8)
-                       ?? String(bytes: trimmed, encoding: .ascii)
-                       ?? ""
-            applyPeripheralUpdate {
-                if customMessage != text { customMessage = text }
-            }
-        
-        case strobeSettingCharUUID:
-            handleStrobeSettingsUpdate(data: data)
-                    
-            
-        default:
-            logger.warning("Unhandled characteristic \(uuid)")
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral,
-                                didReadRSSI RSSI: NSNumber,
-                                error: Error?) {
-        Task { @MainActor [weak self] in
-            self?.handleDidReadRSSI(value: RSSI.intValue, error: error, peripheralID: peripheral.identifier.uuidString)
-        }
-    }
-
-    @MainActor
-    private func handleDidReadRSSI(value: Int, error: Error?, peripheralID: String) {
-        if let error {
-            logger.error("RSSI read error for \(peripheralID): \(error.localizedDescription)")
-            return
-        }
-        signalStrength = value
-    }
-    
-    nonisolated func peripheral(_ peripheral: CBPeripheral,
-                                didWriteValueFor characteristic: CBCharacteristic,
-                                error: Error?) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-
-            if let error {
-                if self.isPairingError(error) {
-                    self.showError(message: "Pairing required. Enter the passkey shown on the device.")
-                } else {
-                    self.logger.error("Error writing value to \(characteristic.uuid): \(error.localizedDescription)")
-                    self.showError(message: "Error writing command.")
-                }
-
-                // Unblock OTA sender so it can fail/cancel cleanly
-                self.otaWriteContinuation?.resume()
-                self.otaWriteContinuation = nil
-                self.otaInProgress = false
-                return
-            }
-
-            // Resume OTA “await write” when the ACK corresponds to the OTA pipe.
-            // Your OTA packets are written to commandCharacteristic.
-            if self.otaInProgress, characteristic.uuid == self.commandCharUUID {
-                self.otaWriteContinuation?.resume()
-                self.otaWriteContinuation = nil
-            }
-
-            self.logger.debug("Successfully wrote value to \(characteristic.uuid).")
-        }
-    }
-    
-    nonisolated func peripheral(
-        _ peripheral: CBPeripheral,
-        didUpdateNotificationStateFor characteristic: CBCharacteristic,
-        error: Error?
-    ) {
-        let uuid = characteristic.uuid
-        let isNotifying = characteristic.isNotifying
-        let pid = peripheral.identifier.uuidString
-        let errDesc = error?.localizedDescription
-
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-
-            if let errDesc {
-                self.logger.error("Error changing notification state for \(uuid) on \(pid): \(errDesc)")
-                return
-            }
-
-            if isNotifying {
-                self.logger.info("Notifications ENABLED for \(uuid) on \(pid).")
-            } else {
-                self.logger.info("Notifications DISABLED for \(uuid) on \(pid). This might be an issue if unexpected.")
-            }
-        }
-    }
-    
-    // MARK: - Data Handling Helpers (Called on bleQueue)
-    
-    
-    // Peripheral-originated updates should not echo back over BLE.
-    @MainActor
-    private func handleViewUpdate(data: Data) {
-        guard let viewValue = data.first.map({ Int($0) }) else {
-            logger.warning("Invalid view update bytes: \(data.map { String(format: "%02x", $0) }.joined())")
-            return
-        }
-
-        guard selectedView != viewValue else { return }
-        applyPeripheralUpdate {
-            selectedView = viewValue
-        }
-    }
-    
-    @MainActor
-    private func handleConfigUpdate(data: Data) {
-        guard data.count >= 4 else {
-            logger.warning("Config data too short: \(data.count) bytes (need 4).")
-            return
-        }
-
-        let autoB  = data[0] == 1
-        let accel  = data[1] == 1
-        let sleep  = data[2] == 1
-        let aurora = data[3] == 1
-
-        applyPeripheralUpdate {
-            // Only assign if changed to avoid extra didSet churn
-            if autoBrightness != autoB { autoBrightness = autoB }
-            if accelerometerEnabled != accel { accelerometerEnabled = accel }
-            if sleepModeEnabled != sleep { sleepModeEnabled = sleep }
-            if auroraModeEnabled != aurora { auroraModeEnabled = aurora }
-        }
-    }
-    // Inside AccessoryViewModel…
-    @MainActor
-    private func handleLiveTemperatureUpdate(data: Data) {
-        guard data.count >= 2 else {
-            logger.warning("Temp payload too short: \(data.count)")
-            temperature = "?"
-            return
-        }
-
-        let raw: Int16 = data.withUnsafeBytes { $0.load(as: Int16.self) }
-        let fixed10 = Int16(littleEndian: raw)
-        let tempValue = Double(fixed10) / 10.0
-
-        // Always update numeric current value
-        currentTempC = tempValue
-
-        // Only update the displayed string if it changed enough
-        if lastPublishedTempC == nil || abs(tempValue - (lastPublishedTempC ?? tempValue)) >= liveTempChangeThresholdC {
-            lastPublishedTempC = tempValue
-            temperature = temperatureString
-        }
-
-        // ✅ Always append a chart sample (this is what makes motion smooth)
-        didReceive(TemperatureData(timestamp: Date(), temperature: tempValue))
-    }
-    
-    private struct HistoryDL {
-        var totalChunks: Int = 0
-        var receivedChunks: Int = 0
-        var interval: TimeInterval = 60
-        var oldestTimestamp: Date = .distantPast
-        var points: [TemperatureData] = []
-        var expectedTotalPoints: Int = 0
-    }
-
-    private var historyDL: HistoryDL?
-    
-    @MainActor
-    private func handleHistoryChunk(data: Data) {
-        guard data.count >= 1 else { return }
-
-        let type = data[0]
-
-        switch type {
-        case 0xA0: // START
-            guard data.count >= 8 else {
-                logger.warning("START pkt too short: \(data.count)")
-                return
-            }
-
-            let intervalSeconds = Int(data[2])
-            let totalPoints: UInt16 = data.withUnsafeBytes { raw in
-                raw.load(fromByteOffset: 4, as: UInt16.self)
-            }
-            let startAgeMinutes: UInt16 = data.withUnsafeBytes { raw in
-                raw.load(fromByteOffset: 6, as: UInt16.self)
-            }
-
-            let interval = TimeInterval(intervalSeconds)
-            let oldest = Date().addingTimeInterval(-TimeInterval(UInt16(littleEndian: startAgeMinutes)) * 60)
-
-            // Estimate totalChunks based on your MAX_POINTS_PER_CHUNK on iOS side if you want,
-            // but ESP32 also provides totalChunks in DATA packets, so we’ll trust that later.
-            historyDL = HistoryDL(
-                totalChunks: 0,
-                receivedChunks: 0,
-                interval: interval,
-                oldestTimestamp: oldest,
-                points: [],
-                expectedTotalPoints: Int(UInt16(littleEndian: totalPoints))
-            )
-
-            logger.info("History START: points=\(Int(UInt16(littleEndian: totalPoints))) interval=\(intervalSeconds)s oldest=\(oldest)")
-
-        case 0xA1: // DATA
-            guard data.count >= 4 else {
-                logger.warning("DATA pkt too short: \(data.count)")
-                return
-            }
-            guard var dl = historyDL else {
-                logger.warning("DATA before START; ignoring")
-                return
-            }
-            // let chunkIndex = Int(data[1])
-            let totalChunks = Int(data[2])
-            let pointsInChunk = Int(data[3])
-
-            if dl.totalChunks == 0 { dl.totalChunks = totalChunks }
-            if dl.totalChunks != totalChunks {
-                logger.warning("Inconsistent totalChunks \(dl.totalChunks) vs \(totalChunks); resetting")
-                historyDL = nil
-                return
-            }
-
-            // Payload begins at byte 4
-            let neededBytes = 4 + pointsInChunk * 2
-            guard data.count >= neededBytes else {
-                logger.warning("DATA pkt length mismatch: got \(data.count), need \(neededBytes)")
-                return
-            }
-
-            // Compute base index in overall series (oldest→newest) assuming chunks arrive in order.
-            // If you want to handle out-of-order, we can store and reorder, but BLE notify is almost always in-order.
-            let baseIndex = dl.points.count
-
-            data.withUnsafeBytes { raw in
-                for i in 0..<pointsInChunk {
-                    let off = 4 + i * 2
-                    let v = raw.load(fromByteOffset: off, as: Int16.self)
-                    let fixed10 = Int16(littleEndian: v)
-                    let tempC = Double(fixed10) / 10.0
-
-                    let ts = dl.oldestTimestamp.addingTimeInterval(Double(baseIndex + i) * dl.interval)
-                    dl.points.append(TemperatureData(timestamp: ts, temperature: tempC))
-                }
-            }
-
-            dl.receivedChunks += 1
-            historyDL = dl
-
-            if dl.receivedChunks == dl.totalChunks {
-                // Finalize once
-                let finalPoints = dl.points
-                historyDL = nil
-
-                temperatureData = finalPoints
-                isDownloadingHistory = false
-                currentTempC = finalPoints.last?.temperature
-                temperature = temperatureString
-                logger.info("Loaded \(finalPoints.count) history points.")
-            } else {
-                // Optional progress updates (cheap)
-                isDownloadingHistory = true
-                totalHistoryChunksExpected = dl.totalChunks
-            }
-
-        default:
-            logger.warning("Unknown history pkt type: \(type)")
-        }
-    }
-    
-    private func processCompletedHistoryDownload() {
-        let chunksToProcess = self.receivedHistoryChunks
-        let totalChunks = self.totalHistoryChunksExpected ?? 0
-        
-        guard totalChunks > 0, chunksToProcess.count == totalChunks else { logger.error("Mismatch in expected (\(totalChunks)) and received (\(chunksToProcess.count)) chunks during final processing.")
-            DispatchQueue.main.async { [weak self] in
-                self?.resetHistoryDownloadState() }
-            return
-        }
-        
-        var decodedHistoryPoints: [TemperatureData] = []
-        var errorOccurred = false
-        let processingStartTime = Date() // Use as reference for "now" when calculating timestamps
-        
-        // Assuming chunks are 0-indexed and should be processed in order
-        for i in 0..<totalChunks {
-            guard let chunkData = chunksToProcess[i] else {
-                logger.error("Missing chunk data for index \(i) during processing.")
-                errorOccurred = true
-                break
-            }
-            
-            let floatSize = MemoryLayout<Float>.stride
-            let floatCount = chunkData.count / floatSize
-            for j in 0..<floatCount {
-                let byteOffset = j * floatSize
-                let tempValue = chunkData.withUnsafeBytes { $0.load(fromByteOffset: byteOffset, as: Float.self) }
-                let pointsInThisChunkRemaining = floatCount - 1 - j
-                var pointsInFutureChunks = 0
-                if i < totalChunks - 1 {
-                    let avgPointsPerChunk = 5 // Placeholder, as in original logic
-                    pointsInFutureChunks = (totalChunks - 1 - i) * avgPointsPerChunk
-                }
-                let pointsIndexFromNewest = decodedHistoryPoints.count + pointsInThisChunkRemaining + pointsInFutureChunks
-                
-                let interval: TimeInterval = 60.0 // 1 minute per point
-                let estimatedTimestamp = processingStartTime.addingTimeInterval(-Double(pointsIndexFromNewest) * interval)
-                
-                decodedHistoryPoints.append(TemperatureData(timestamp: estimatedTimestamp, temperature: Double(tempValue)))
-            }
-            // if errorOccurred { break }
-        }
-        
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            if !errorOccurred {
-                // Sort by timestamp just in case reconstruction wasn't perfectly ordered
-                let sortedHistory = decodedHistoryPoints.sorted(by: { $0.timestamp < $1.timestamp })
-                self.temperatureData = sortedHistory
-                logger.info("Successfully processed and loaded \(self.temperatureData.count) historical temperature points.")
-                
-            } else {
-                logger.error("Error occurred during history processing. Data may be incomplete or incorrect.")
-                // Potentially clear temperatureData or leave as is.
-                // self.temperatureData.removeAll()
-            }
-            self.resetHistoryDownloadState() // Always reset state, on main thread
-        }
+        #endif
     }
-    
-    private func requestTemperatureHistory(peripheral: CBPeripheral, characteristic: CBCharacteristic) { // Called on bleQueue
-        let commandData = Data([requestHistoryCommand])
-        logger.info("Requesting temperature history from \(peripheral.identifier.uuidString) using char \(characteristic.uuid)...")
-        peripheral.writeValue(commandData, for: characteristic, type: .withResponse) // Use .withResponse if peripheral ACKs
-    }
-    
-    /*
-     ; guard byteOffset + floatSize <= chunkData.count else { errorOccurred = true; break }
-     let floatBytes = chunkData.subdata(in: byteOffset..<byteOffset + floatSize); let tempValue = floatBytes.withUnsafeBytes { $0.load(as: Float.self) }
-     let interval: TimeInterval = 60.0; let totalPoints = decodedHistoryPoints.count + (floatCount - 1 - j) + ((totalChunks - 1 - i) * 5)
-     let estimatedTimestamp = processingStartTime.addingTimeInterval(-Double(totalPoints) * interval)
-     decodedHistoryPoints.append(TemperatureData(timestamp: estimatedTimestamp, temperature: Double(tempValue)))
-     }
-     if errorOccurred { break }
-     }
-     if !errorOccurred {
-     DispatchQueue.main.async { [weak self] in
-     guard let self = self else { return }
-     var combinedData = decodedHistoryPoints + self.temperatureData
-     if combinedData.count > self.maxTemperatureDataPoints { combinedData.removeFirst(combinedData.count - self.maxTemperatureDataPoints) }
-     self.temperatureData = combinedData; self.resetHistoryDownloadState()
-     }
-     } else { DispatchQueue.main.async { [weak self] in self?.resetHistoryDownloadState() } }
-     }
-     private func requestTemperatureHistory(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
-     let commandData = Data([requestHistoryCommand])
-     peripheral.writeValue(commandData, for: characteristic, type: .withResponse)
-     }
-     */
-    
-    
-    
-    
-    // MARK: - State Update Helpers (Called on Main Thread)
-    private func upsertDiscoveredDevice(_ device: PeripheralDevice) {
-        if let index = discoveredDevices.firstIndex(where: { $0.id == device.id }) {
-            discoveredDevices[index] = device
-        } else {
-            discoveredDevices.append(device)
-        }
-    }
+}
 
-    private func resetHistoryDownloadState() {
-        
-        isDownloadingHistory = false
-        receivedHistoryChunks.removeAll()
-        totalHistoryChunksExpected = nil
-        logger.info("History download state reset.")
-    }
-    
-    private func isPairingError(_ error: Error) -> Bool {
-        let ns = error as NSError
-        if ns.domain == CBATTErrorDomain,
-           let code = CBATTError.Code(rawValue: ns.code) {
-            return code == .insufficientAuthentication
-                || code == .insufficientEncryption
-                || code == .insufficientAuthorization
-        }
-        if ns.domain == CBErrorDomain,
-           let code = CBError.Code(rawValue: ns.code) {
-            return code == .peerRemovedPairingInformation
-        }
-        return false
-    }
+// MARK: - Preview Helpers
 
-    
-    private func showError(message: String) { // Must be called on Main Thread
-        logger.error("Displaying error to user: \(message)")
-        errorMessage = message
-        showError = true // This will trigger UI updates
-    }
-    
-    
-    
-    // MARK: - Persistence Helpers (Function now correctly uses the defined StoredPeripheral)
-    private func addToPreviouslyConnected(id: String, name: String) { // Called on bleQueue
-        let newDevice = StoredPeripheral(id: id, name: name)
-        // Load, modify, save should be atomic or careful with threading if called from multiple places.
-        // Currently, only called from didConnect (bleQueue).
-        var storedDevices = loadStoredPeripherals() // This reads from UserDefaults, can be slow.
-        
-        if let existingIndex = storedDevices.firstIndex(where: { $0.id == newDevice.id }) {
-            // Optional: Update name if it changed? For now, just ensure it exists.
-            storedDevices[existingIndex] = newDevice
-            logger.debug("Device \(id) already in previouslyConnectedDevices. Name: \(storedDevices[existingIndex].name)")
-        } else {
-            storedDevices.append(newDevice)
-            saveStoredPeripherals(storedDevices) // This writes to UserDefaults.
-            logger.info("Added \(name) (\(id)) to previouslyConnectedDevices.")
-            DispatchQueue.main.async { [weak self] in // Update published property on main
-                self?.previouslyConnectedDevices = storedDevices
-            }
-        }
-    }
-    
-    // This function now correctly uses the defined StoredPeripheral
-    func loadStoredPeripherals() -> [StoredPeripheral] { // Can be called from any thread, UserDefaults is thread-safe for reads
-        guard let data = UserDefaults.standard.data(forKey: "PreviouslyConnectedPeripherals") else {
-            logger.info("No previously connected peripherals found in UserDefaults.")
-            return []
-        }
-        do {
-            let stored = try JSONDecoder().decode([StoredPeripheral].self, from: data)
-            logger.info("Loaded \(stored.count) previously connected peripherals.")
-            return stored
-        } catch {
-            logger.error("Failed to decode previously connected peripherals: \(error.localizedDescription)")
-            return []
-        }
-    }
-    
-    // This function now correctly uses the defined StoredPeripheral
-    func saveStoredPeripherals(_ devices: [StoredPeripheral]) { // Can be called from any thread, UserDefaults is thread-safe for writes
-        do {
-            let data = try JSONEncoder().encode(devices)
-            UserDefaults.standard.set(data, forKey: "PreviouslyConnectedPeripherals")
-            // logger.debug("Saved \(devices.count) previously connected peripherals to UserDefaults.")
-        } catch {
-            logger.error("Failed to encode previously connected peripherals: \(error.localizedDescription)")
-        }
-    }
-    
-    private func _connectToStoredPeripheral(_ stored: StoredPeripheral) { // Called on bleQueue
-        guard let uuid = UUID(uuidString: stored.id) else {
-            logger.error("Invalid UUID string for stored peripheral: \(stored.id) (\(stored.name))");
-            DispatchQueue.main.async { [weak self] in
-                self?.connectionState = .disconnected
-                self?._scanForDevices() // Fallback to scan
-            }
-            return
-        }
-        
-        let peripherals = centralManager.retrievePeripherals(withIdentifiers: [uuid])
-        if let peripheral = peripherals.first {
-            // Use PeripheralDevice initializer
-            let device = PeripheralDevice(id: peripheral.identifier, name: peripheral.name ?? stored.name, rssi: -100, advertisementServiceUUIDs: nil, peripheral: peripheral)
-            _connect(to: device)
-        } else {
-            logger.warning("Stored peripheral \(uuid) not found by retrievePeripherals. Starting scan.")
-            DispatchQueue.main.async { [weak self] in
-                self?.connectionState = .disconnected
-            }
-            _scanForDevices()
-        }
-        
-    }
-    
-    // MARK: - Widget & Live Activity Update Helpers (Called on Main Thread)
-    @MainActor
-    private func updateWidgetAndActivity() {
-        updateWidgetData()
-        scheduleLiveActivityUpdate()
-    }
-    
-    private func updateWidgetData() { // Called on Main Thread
-        
-        guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
-            logger.error("❌ Couldn’t open shared defaults")
-            return
-        }
-        
-        defaults.set(isConnected, forKey: SharedDataKeys.isConnected)
-        defaults.set(connectionStatus, forKey: SharedDataKeys.connectionStatus)
-        defaults.set(connectedDeviceName, forKey: SharedDataKeys.controllerName)
-        defaults.set(temperature, forKey: SharedDataKeys.temperature)
-        defaults.set(signalStrength, forKey: SharedDataKeys.signalStrength)
-        defaults.set(selectedView, forKey: SharedDataKeys.selectedView)
-        // --- Fixed: Use correct keys from SharedDataKeys ---
-        defaults.set(autoBrightness, forKey: SharedDataKeys.autoBrightness)
-        defaults.set(accelerometerEnabled, forKey: SharedDataKeys.accelerometerEnabled)
-        defaults.set(sleepModeEnabled, forKey: SharedDataKeys.sleepModeEnabled)
-        defaults.set(auroraModeEnabled, forKey: SharedDataKeys.auroraModeEnabled)
-        defaults.set(customMessage, forKey: SharedDataKeys.customMessage)
-        
-        // Save a limited history for the widget
-        saveTemperatureHistoryToUserDefaults(defaults: defaults)
-        
-        WidgetCenter.shared.reloadAllTimelines()
-        
-    }
-    
-    private func saveTemperatureHistoryToUserDefaults(defaults: UserDefaults) { // Called on Main Thread
-        
-        let historyToSave = Array(temperatureData.suffix(50)) // Keep last 50 points for widget
-        do {
-            let encodedData = try
-            JSONEncoder().encode(historyToSave)
-            defaults.set(encodedData, forKey: SharedDataKeys.temperatureHistory)
-        }
-        catch {
-            logger.error("Failed to encode temperature history for widget: \(error)") }
-    }
-    
-    // MARK: - Live Activity Management (Called on Main Thread)
-    private func createContentState(connected: Bool? = nil, status: String? = nil) -> LumiFur_WidgetAttributes.ContentState { // Called on Main Thread
-        
-        let recentTemperatures = temperatureData.suffix(50).map { $0.temperature } // Double values
-        
-        return LumiFur_WidgetAttributes.ContentState(
-            connectionStatus: status ?? self.connectionStatus,
-            signalStrength: self.signalStrength,
-            temperature: self.temperature, // This is the String representation
-            selectedView: self.selectedView,
-            isConnected: connected ?? self.isConnected,
-            isScanning: self.isScanning,
-            temperatureChartData: Array(recentTemperatures), // Pass the Double array
-            sleepModeEnabled: self.sleepModeEnabled,
-            auroraModeEnabled: self.auroraModeEnabled,
-            customMessage: self.customMessage
-        )
-    }
-    
-    // — at class scope —
-    private var isCreatingActivity = false // Protects startLumiFur_WidgetLiveActivity
-    
-    // — replace your startLumiFur_WidgetLiveActivity() with this —
-    @available(iOS 16.1, *)
-    @MainActor
-    func startLumiFur_WidgetLiveActivity() async {
-        // 0) Prevent re-entrant calls
-        guard !isCreatingActivity else {
-            logger.info("Already creating or managing a Live Activity; skipping start call.")
-            return
-        }
-        isCreatingActivity = true
-        defer { isCreatingActivity = false } // Ensure flag is reset
-        
-        await endAllLumiFurActivities()  // Clean up any existing/stray activities first
-        
-        // 2) If *we* already have an active or stale LA, bail
-        if let activity = currentActivity,
-           (activity.activityState == .active || activity.activityState == .stale) {
-            logger.info("Live Activity \(activity.id) already managed and active/stale. Updating.")
-            await updateLumiFur_WidgetLiveActivityIfNeeded() // Just update it
-            return
-        }
-        
-        // 3) Adopt any system-outstanding LA of our type
-        if let strayActivity = Activity<LumiFur_WidgetAttributes>.activities.first {
-            logger.info("Adopting stray Live Activity \(strayActivity.id) (state: \(activityStateDescription(strayActivity.activityState))).")
-            currentActivity = strayActivity
-            activityStateTask?.cancel()
-            activityStateTask = Task { await self.monitorActivityState(activity: strayActivity) }
-            await updateLumiFur_WidgetLiveActivityIfNeeded() // Update the adopted activity
-            return
-        }
-        
-        // 4) Final gating
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            logger.error("Live Activities disabled by user.")
-            return
-        }
-        guard let connectedPeripheral = targetPeripheral, isConnected
-        else {
-            logger.warning("No device connected—won’t start Live Activity.")
-            return
-        }
-        
-        // 5) Fire the new activity
-        do {
-            let attributes = LumiFur_WidgetAttributes(name: connectedPeripheral.name ?? "LumiFur Device")
-            let initialState = createContentState()// Create fresh state on main actor
-            
-            let newActivity = try Activity<LumiFur_WidgetAttributes>.request(
-                attributes: attributes,
-                content: .init(state: initialState, staleDate: nil),
-                pushType: nil
-            )
-            logger.info("Started Live Activity: \(newActivity.id)")
-            currentActivity = newActivity
-            lastSentState = initialState // Initialize lastSentState
-            
-            // 6) Watch its lifecycle
-            activityStateTask?.cancel() // Cancel any previous monitor task
-            
-            activityStateTask = Task { await self.monitorActivityState(activity: newActivity) }
-        } catch {
-            logger.error("Failed to start Live Activity: \(error.localizedDescription)")
-            currentActivity = nil
-        }
-    }
-    
-    @available(iOS 16.1, *)
-    @MainActor
-    private func monitorActivityState(activity: Activity<LumiFur_WidgetAttributes>) async {
-        logger.info("Monitoring state for Live Activity \(activity.id)...")
-        for await stateUpdate in activity.activityStateUpdates {
-            logger.info("Live Activity \(activity.id) state update: \(activityStateDescription(stateUpdate))") // Use helper
-            if stateUpdate == .dismissed || stateUpdate == .ended { // .stale means it's still visible but not updating
-                logger.info("Live Activity \(activity.id) dismissed or ended. Clearing local reference.")
-                if self.currentActivity?.id == activity.id {
-                    self.currentActivity = nil
-                    self.activityStateTask?.cancel() // Cancel this monitor task itself
-                    self.activityStateTask = nil
-                    self.lastSentState = nil
-                }
-                break // Exit loop as activity is no longer active
-            }
-        }
-        // Fallback if loop finishes without explicit clear (e.g. task cancellation)
-        if self.currentActivity?.id == activity.id && (activity.activityState == .dismissed || activity.activityState == .ended) {
-            self.currentActivity = nil
-            self.activityStateTask = nil
-            self.lastSentState = nil
-        }
-        logger.info("Stopped monitoring Live Activity \(activity.id). Final state: \(activityStateDescription(activity.activityState))")
-    }
-    
-    private var lastSentState: LumiFur_WidgetAttributes.ContentState?
-    private var pendingUpdateTask: Task<Void, Never>? = nil
-    // Last watch payload digest sent; used to avoid redundant syncs when only timestamps change
-    private var lastSentWatchDigest: WatchStateDigest? = nil
-    
-    /*
-     func faceButtonTapped(_ faceIndex: Int) {
-     guard faceIndex != selectedView else { return }
-     selectedView = faceIndex
-     scheduleLiveActivityUpdate()
-     }
-     */
-    
-    @MainActor
-    func scheduleLiveActivityUpdate() {
-        pendingUpdateTask?.cancel()
-        pendingUpdateTask = Task {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            await updateLumiFur_WidgetLiveActivityIfNeeded()
-        }
-    }
-    
-    @MainActor
-    private func updateLumiFur_WidgetLiveActivityIfNeeded() async {
-        guard let activity = currentActivity,
-              activity.activityState == .active else { return }
-        
-        // create state off‑main if it’s heavy
-        let newState = createContentState() // Create state on MainActor
-        
-        guard newState != lastSentState else {
-            // logger.debug("Live Activity state unchanged, no update sent.")
-            return
-        }
-        lastSentState = newState
-        
-        let content = ActivityContent(
-            state: newState,
-            staleDate: nil, // Or Date().addingTimeInterval(5 * 60) if updates are infrequent
-            relevanceScore: isConnected ? 100 : (isConnecting ? 75 : 50) // Adjust relevance
-        )
-        await activity.update(content)
-    }
-    
-    
-    @MainActor
-    @available(iOS 16.1, *)
-    private func endLiveActivity(finalContent: LumiFur_WidgetAttributes.ContentState? = nil, dismissalPolicy: ActivityUIDismissalPolicy = .default) async {
-        guard let activity = currentActivity else { return }
-        
-        logger.info("Ending Live Activity \(activity.id) policy: \(String(describing: dismissalPolicy))") // Use helper
-        
-        activityStateTask?.cancel() // Stop monitoring its state
-        activityStateTask = nil
-        
-        let finalActivityContent = finalContent.map { ActivityContent(state: $0, staleDate: nil) }
-        
-        await activity.end(finalActivityContent, dismissalPolicy: dismissalPolicy)
-        logger.info("Requested end for LA \(activity.id). State: \(activityStateDescription(activity.activityState))") // Use helper
-        
-        // Clear local reference as we've initiated its end
-        self.currentActivity = nil
-        self.lastSentState = nil
-    }
-    
-    @available(iOS 16.1, *)
-    @MainActor
-    private func endAllLumiFurActivities(dismissalPolicy: ActivityUIDismissalPolicy = .immediate) async {
-        for activity in Activity<LumiFur_WidgetAttributes>.activities { await activity.end(nil, dismissalPolicy: dismissalPolicy)
-        }
-        if let current = self.currentActivity, Activity<LumiFur_WidgetAttributes>.activities.first(where: { $0.id == current.id }) == nil {
-            self.currentActivity = nil
-            self.activityStateTask?.cancel()
-            self.activityStateTask = nil
-            self.lastSentState = nil
-        }
-    }
-    
-    // MARK: - Intent Handling (Called on Main Thread via Notification)
-    @objc private func handleChangeViewIntent(_ notification: Notification) {
-        guard Thread.isMainThread else { DispatchQueue.main.async { self.handleChangeViewIntent(notification) }
-            return
-        }
-        if let userInfo = notification.userInfo, let nextView = userInfo["nextView"] as? Int {
-            logger.info("Received ChangeViewIntent for view: \(nextView)")
-            self.setView(nextView) // This handles UI update, writing to peripheral, and LA update
-        } else {
-            logger.warning("Received ChangeViewIntent with invalid or missing userInfo.")
-        }
-    }
-    
-    /*
 #if DEBUG
-    /// An initializer specifically for creating configured instances for SwiftUI Previews or tests.
-    /// This initializer allows us to set the internal state that our get-only computed properties depend on.
-    convenience init(
-        isConnected: Bool,
-        isScanning: Bool = false,
-        firmwareVersion: String = "N/A",
-        discoveredDevices: [PeripheralDevice] = [], // Assuming PeripheralDevice is your model
-        errorMessage: String? = nil
-    ) {
-        self.init() // Call the main designated initializer of the class.
-        
-        if isConnected {
-            self.targetPeripheral = PeripheralDevice.mock.peripheral
-        }
-        
-        self.firmwareVersion = firmwareVersion
-        self.discoveredDevices = discoveredDevices
-        
-        if let errorMessage = errorMessage {
-            self.errorMessage = errorMessage
-            self.showError = true
-        }
-    }
-#endif // DEBUG
-    */
-    // MARK: Strobe UI actions
-    private var lastSentStrobe: StrobeSettingsPayload?
-
-    private struct ParsedStrobeSettings: Equatable {
-        let enabled: Bool
-        let rgb: RGB8
-        let cycleMs: UInt16
-    }
-
-    private func parseStrobeSettings(_ data: Data) -> ParsedStrobeSettings? {
-        // --- Binary format: 6 bytes [E][R][G][B][S_lo][S_hi]
-        if data.count == 6 {
-            let bytes = [UInt8](data)
-            let enabled = bytes[0] != 0
-            let rgb = RGB8(r: bytes[1], g: bytes[2], b: bytes[3])
-            let cycleMs = UInt16(bytes[4]) | (UInt16(bytes[5]) << 8)
-            let clamped = UInt16(max(20, min(2000, Int(cycleMs))))
-            return ParsedStrobeSettings(enabled: enabled, rgb: rgb, cycleMs: clamped)
-        }
-
-        // --- ASCII format: "E=1;C=#RRGGBB;S=120" (or similar)
-        if let str = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) {
-            return parseStrobeSettingsASCII(str)
-        }
-
-        return nil
-    }
-
-    private func parseStrobeSettingsASCII(_ str: String) -> ParsedStrobeSettings? {
-        // Very forgiving parser
-        let parts = str
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .split(separator: ";")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-
-        var enabled: Bool?
-        var rgb: RGB8?
-        var speed: UInt16?
-
-        for p in parts {
-            if p.hasPrefix("E=") || p.hasPrefix("e=") {
-                let v = p.dropFirst(2)
-                enabled = (v == "1" || v.lowercased() == "true" || v.lowercased() == "on")
-            } else if p.hasPrefix("C=") || p.hasPrefix("c=") {
-                let v = String(p.dropFirst(2))
-                rgb = RGB8(hex: v)
-            } else if p.hasPrefix("S=") || p.hasPrefix("s=") {
-                let v = p.dropFirst(2)
-                if let n = UInt16(v) { speed = n }
-            }
-        }
-
-        guard let e = enabled, let c = rgb else { return nil }
-        let clamped = UInt16(max(20, min(2000, Int(speed ?? 120))))
-        return ParsedStrobeSettings(enabled: e, rgb: c, cycleMs: clamped)
-    }
-    @MainActor
-    private func handleStrobeSettingsUpdate(data: Data) {
-        // Firmware notify/read payload is JSON:
-        // {"color":"RRGGBB","speedMs":123}
-        guard let fw = FWStrobeSettings.decode(from: data) else {
-            // Keep logs low-noise; the BLE layer can deliver empty/intermediate values.
-            logger.debug("Strobe settings payload not decodable as FWStrobeSettings")
-            return
-        }
-
-        applyPeripheralUpdate {
-            // Speed
-            if self.strobeCycleMs != fw.speedMs { self.strobeCycleMs = fw.speedMs }
-            if self.strobeEnabled != fw.enabled { self.strobeEnabled = fw.enabled }
-
-            // Color
-            if let rgb = fw.rgb {
-                let c = Color(rgb)
-                if self.strobeColor != c { self.strobeColor = c }
-            }
-        }
-    }
-    
-}// End of AccessoryViewModel
-
-
-/// Debug / preview helpers for SwiftUI and tests.
-#if DEBUG
+@MainActor
 extension AccessoryViewModel {
-    /// Convenience initializer for SwiftUI previews / tests.
     convenience init(
         isConnected: Bool,
         isScanning: Bool = false,
@@ -2615,90 +838,54 @@ extension AccessoryViewModel {
         discoveredDevices: [PeripheralDevice] = [],
         errorMessage: String? = nil
     ) {
-        self.init()
+        self.init(client: BLEClient(), store: StoredPeripheralStore())
 
-        // Shape the BLE "status" surface that the UI reads.
         if isConnected {
-            self.connectionState = .connected
+            connectionState = .connected
+        } else if isScanning {
+            connectionState = .scanning
+        } else {
+            connectionState = .disconnected
         }
-        if isScanning {
-            self.connectionState = .scanning
-        }
+
         self.firmwareVersion = firmwareVersion
         self.discoveredDevices = discoveredDevices
 
         if let errorMessage {
             self.errorMessage = errorMessage
-            self.showError = true
-
+            showError = true
         }
-
-        // DO NOT touch isConnected (it's get-only)
-        // DO NOT call real Bluetooth APIs.
     }
 
     static var previewDisconnected: AccessoryViewModel {
-        AccessoryViewModel(
-            isConnected: false,
-            firmwareVersion: "N/A",
-            discoveredDevices: []
-        )
+        AccessoryViewModel(isConnected: false)
     }
 
     static var previewScanning: AccessoryViewModel {
-        AccessoryViewModel(
-            isConnected: false,
-            isScanning: true,
-            firmwareVersion: "N/A",
-            discoveredDevices: []
-        )
+        AccessoryViewModel(isConnected: false, isScanning: true)
     }
-    
+
     static var previewConnected: AccessoryViewModel {
         AccessoryViewModel(
             isConnected: true,
             firmwareVersion: "2.1.0",
-            discoveredDevices: [.mock]
+            discoveredDevices: [
+                PeripheralDevice(
+                    id: UUID(),
+                    name: "LumiFur-1234",
+                    rssi: -55,
+                    advertisementServiceUUIDs: ["FFF0"],
+                    peripheral: nil
+                )
+            ]
         )
     }
 
     static var previewError: AccessoryViewModel {
         AccessoryViewModel(
             isConnected: false,
-            firmwareVersion: "N/A",
-            discoveredDevices: [],
             errorMessage: "Failed to connect. The device is out of range."
         )
     }
 }
-#endif // DEBUG
-
-// MARK: - Helper Extensions
-/*
- @available(iOS 16.1, *)
- func activityStateDescription(_ state: ActivityState) -> String {
- switch state {
- case .active: return "active"
- case .dismissed: return "dismissed"
- case .ended: return "ended"
- case .stale: return "stale"
- case .pending: return "pending" // ??????
- @unknown default: return "unknown"
- }
- }
-*/
-/*
- @available(iOS 16.1, *)
- func dismissalPolicyDescription(_ policy: ActivityUIDismissalPolicy) -> String {
- switch policy {
- case .default: return "default"
- case .immediate: return "immediate"
- case .after(Date): return "after date"
- @unknown default: return "unknown policy"
- }
- }
- */
-
-
-
-
+#endif

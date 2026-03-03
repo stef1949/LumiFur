@@ -10,7 +10,7 @@ import SwiftUI
 import UIKit
 #endif
 
-struct RGB8: Equatable {
+struct RGB8: Equatable, Sendable {
     let r: UInt8
     let g: UInt8
     let b: UInt8
@@ -26,7 +26,7 @@ extension RGB8 {
     var bytes: [UInt8] { [r, g, b] }
 }
 
-struct StrobeSettingsPayload: Equatable {
+struct StrobeSettingsPayload: Equatable, Sendable {
     let enabled: Bool
     let rgb: RGB8
     let cycleMs: UInt16
@@ -120,7 +120,7 @@ extension Color {
 
 /// Firmware notify/read payload:
 /// {"color":"RRGGBB","speedMs":123}
-struct FWStrobeSettings: Decodable, Equatable {
+struct FWStrobeSettings: Decodable, Equatable, Sendable {
     let color: String
     let speedMs: UInt16
 

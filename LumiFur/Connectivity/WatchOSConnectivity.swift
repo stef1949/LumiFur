@@ -142,26 +142,37 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     private func applyAccessorySettingsFromMessage(_ message: [String: Any]) {
+        var didChangeConfiguration = false
+
         // AccessoryViewModel updates
         if let autoBrightness = message["autoBrightness"] as? Bool {
             accessoryViewModel.autoBrightness = autoBrightness
+            didChangeConfiguration = true
             print("iOS: Updated autoBrightness to \(autoBrightness)")
         }
         if let accelerometer = message["accelerometer"] as? Bool {
             accessoryViewModel.accelerometerEnabled = accelerometer
+            didChangeConfiguration = true
             print("iOS: Updated accelerometerEnabled to \(accelerometer)")
         }
         if let sleepMode = message["sleepMode"] as? Bool {
             accessoryViewModel.sleepModeEnabled = sleepMode
+            didChangeConfiguration = true
             print("iOS: Updated sleepModeEnabled to \(sleepMode)")
         }
-        if let auroraMode = message["auroraMode"] as? Bool {
+        if let auroraMode = (message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool) {
             accessoryViewModel.auroraModeEnabled = auroraMode
+            didChangeConfiguration = true
             print("iOS: Updated auroraModeEnabled to \(auroraMode)")
         }
         if let customMessage = message["customMessage"] as? String {
             accessoryViewModel.customMessage = customMessage
+            accessoryViewModel.sendScrollText(customMessage)
             print("iOS: Updated customMessage to \"\(customMessage)\"")
+        }
+
+        if didChangeConfiguration {
+            accessoryViewModel.writeConfigToCharacteristic()
         }
         
         // Update AppStorage-backed keys through UserDefaults
@@ -175,7 +186,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         if let sleepMode = message["sleepMode"] as? Bool {
             defaults.set(sleepMode, forKey: "sleepMode")
         }
-        if let auroraMode = message["auroraMode"] as? Bool {
+        if let auroraMode = (message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool) {
             // Note: your key is "arouraMode" (typo preserved to match your app)
             defaults.set(auroraMode, forKey: "arouraMode")
         }
@@ -376,4 +387,3 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 }
 
 #endif
-

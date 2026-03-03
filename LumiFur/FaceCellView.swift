@@ -12,14 +12,37 @@ struct FaceCellView: View, Equatable {
     let auroraModeEnabled: Bool
     let overlayColor: Color
     let backgroundColor: Color
+    let showsMenuButton: Bool
+    let onMenuTap: (() -> Void)?
     let action: (FaceItem) -> Void
+
+    init(
+        item: FaceItem,
+        isSelected: Bool,
+        auroraModeEnabled: Bool,
+        overlayColor: Color,
+        backgroundColor: Color,
+        showsMenuButton: Bool = false,
+        onMenuTap: (() -> Void)? = nil,
+        action: @escaping (FaceItem) -> Void
+    ) {
+        self.item = item
+        self.isSelected = isSelected
+        self.auroraModeEnabled = auroraModeEnabled
+        self.overlayColor = overlayColor
+        self.backgroundColor = backgroundColor
+        self.showsMenuButton = showsMenuButton
+        self.onMenuTap = onMenuTap
+        self.action = action
+    }
 
     static func == (lhs: FaceCellView, rhs: FaceCellView) -> Bool {
         lhs.item == rhs.item &&
         lhs.isSelected == rhs.isSelected &&
         lhs.auroraModeEnabled == rhs.auroraModeEnabled &&
         lhs.overlayColor == rhs.overlayColor &&
-        lhs.backgroundColor == rhs.backgroundColor
+        lhs.backgroundColor == rhs.backgroundColor &&
+        lhs.showsMenuButton == rhs.showsMenuButton
     }
 
     var body: some View {
@@ -27,20 +50,34 @@ struct FaceCellView: View, Equatable {
         let bgStyle = AnyShapeStyle(backgroundColor)
         let overlayStyle = AnyShapeStyle(overlayColor)
 
-        Button {
-            let gen = UIImpactFeedbackGenerator(style: .heavy)
-            gen.prepare()
-            gen.impactOccurred()
-            action(item)
-        } label: {
-            contentView
-                .foregroundStyle(fgStyle)
-                .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                    content.blur(radius: phase.isIdentity ? 0 : 5)
+        ZStack(alignment: .topTrailing) {
+            Button {
+                let gen = UIImpactFeedbackGenerator(style: .heavy)
+                gen.prepare()
+                gen.impactOccurred()
+                action(item)
+            } label: {
+                contentView
+                    .foregroundStyle(fgStyle)
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        content.blur(radius: phase.isIdentity ? 0 : 5)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .buttonStyle(.plain)
+
+            if showsMenuButton, let onMenuTap {
+                Button(action: onMenuTap) {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(isSelected ? backgroundColor : overlayColor)
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: Circle())
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .buttonStyle(.plain)
+                .padding(10)
+            }
         }
-        .buttonStyle(.plain)
         .frame(maxWidth: 160, maxHeight: 160)
         .aspectRatio(1, contentMode: .fit)
         .background {

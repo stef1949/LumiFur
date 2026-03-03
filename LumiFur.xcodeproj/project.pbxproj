@@ -22,6 +22,11 @@
 		354B42862F02B62800074B7F /* AccessoryTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42852F02B62800074B7F /* AccessoryTypes.swift */; };
 		354B42882F02B62800074B7F /* UncheckedSendableBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42872F02B62800074B7F /* UncheckedSendableBox.swift */; };
 		354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42892F02B62B00074B7F /* ActivityHelpers.swift */; };
+		354B428E2F02B62B00074B7F /* AccessoryCommandEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */; };
+		354B42902F02B62B00074B7F /* AccessoryNotificationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */; };
+		354B42922F02B62B00074B7F /* StoredPeripheralStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */; };
+		354B42942F02B62B00074B7F /* BLEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42932F02B62B00074B7F /* BLEClient.swift */; };
+		354B42962F02B62B00074B7F /* AccessoryViewModel+Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */; };
 		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; platformFilter = ios; };
 		3555D6C22F55C15E00EB6256 /* StrobeControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */; };
 		3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */; };
@@ -156,6 +161,11 @@
 		354B42852F02B62800074B7F /* AccessoryTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryTypes.swift; sourceTree = "<group>"; };
 		354B42872F02B62800074B7F /* UncheckedSendableBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UncheckedSendableBox.swift; sourceTree = "<group>"; };
 		354B42892F02B62B00074B7F /* ActivityHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityHelpers.swift; sourceTree = "<group>"; };
+		354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryCommandEncoder.swift; sourceTree = "<group>"; };
+		354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryNotificationParser.swift; sourceTree = "<group>"; };
+		354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredPeripheralStore.swift; sourceTree = "<group>"; };
+		354B42932F02B62B00074B7F /* BLEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEClient.swift; sourceTree = "<group>"; };
+		354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryViewModel+Activity.swift"; sourceTree = "<group>"; };
 		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrobeControlsView.swift; sourceTree = "<group>"; };
 		3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RRGGBBHelper.swift; sourceTree = "<group>"; };
@@ -328,8 +338,13 @@
 			isa = PBXGroup;
 			children = (
 				3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */,
+				354B42932F02B62B00074B7F /* BLEClient.swift */,
+				354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */,
+				354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */,
 				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
+				354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */,
 				354B42852F02B62800074B7F /* AccessoryTypes.swift */,
+				354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */,
 				354B42872F02B62800074B7F /* UncheckedSendableBox.swift */,
 				354B42892F02B62B00074B7F /* ActivityHelpers.swift */,
 			);
@@ -660,7 +675,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					3591DD502D5FB695009A3A94 = {
 						CreatedOnToolsVersion = 16.2;
@@ -793,7 +808,9 @@
 				358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */,
 				355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
+				354B42942F02B62B00074B7F /* BLEClient.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
+				354B42962F02B62B00074B7F /* AccessoryViewModel+Activity.swift in Sources */,
 				3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */,
 				35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */,
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
@@ -811,6 +828,8 @@
 				355853DF2EF71DAC001666E6 /* InfoView.swift in Sources */,
 				357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */,
 				354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */,
+				354B428E2F02B62B00074B7F /* AccessoryCommandEncoder.swift in Sources */,
+				354B42902F02B62B00074B7F /* AccessoryNotificationParser.swift in Sources */,
 				358151A92E16D23B003CE8A3 /* ConnectionState.swift in Sources */,
 				35E4D4042DF88E38004EB85E /* WhatsNew.swift in Sources */,
 				35D04CA72DB29DAA00199C5D /* SharedKeys.swift in Sources */,
@@ -823,6 +842,7 @@
 				355853DD2EF71D48001666E6 /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
 				354B42862F02B62800074B7F /* AccessoryTypes.swift in Sources */,
+				354B42922F02B62B00074B7F /* StoredPeripheralStore.swift in Sources */,
 				352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */,
 				354470452DA55F0E0061FD83 /* SharedOptions.swift in Sources */,
 				3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */,
@@ -1092,7 +1112,6 @@
 		35DA3A7F2C8739FD0039D19D /* Debug configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_OPTIMIZATION = time;
@@ -1129,7 +1148,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6.3.2;
+				CURRENT_PROJECT_VERSION = 6.3.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1160,7 +1179,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 11.1;
+				MARKETING_VERSION = 11.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1177,7 +1196,6 @@
 		35DA3A802C8739FD0039D19D /* Release configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_OPTIMIZATION = space;
@@ -1214,7 +1232,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6.3.2;
+				CURRENT_PROJECT_VERSION = 6.3.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1238,7 +1256,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 11.1;
+				MARKETING_VERSION = 11.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -1261,7 +1279,6 @@
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFur.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6.3.4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1300,7 +1317,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 11.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1325,7 +1341,6 @@
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFurRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6.3.4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1364,7 +1379,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 11.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
