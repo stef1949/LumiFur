@@ -93,12 +93,16 @@ struct FaceGridView: View {
                                 .aspectRatio(1, contentMode: .fit)
                                 .font(.system(size: 30))
                                 .foregroundStyle(isSelected ? Color.black : Color.white)
+                                .contentShape(RoundedRectangle(cornerRadius: 15))
+                                .accessibilityLabel(Text("Face \(viewNumber)"))
+                                .accessibilityHint(Text("Double tap to select. Swipe left or right to change faces."))
                         }
                         //.backgroundStyle(.clear)
                         .glassEffect(.regular.tint(isSelected ? Color.white : Color.clear).interactive(),
                                      in: RoundedRectangle(cornerRadius: 15)
                         )
                         .aspectRatio(1, contentMode: .fit)
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
             }
@@ -119,10 +123,10 @@ private func faceView(for face: SharedOptions.ProtoAction) -> some View {
 }
 
 // MARK: - Wrist Flick Detection (watchOS)
-@MainActor
-final class WristFlickDetector: ObservableObject {
+@MainActor final class WristFlickDetector: ObservableObject {
     private let motionManager = CMMotionManager()
-    private let queue = OperationQueue()
+    
+    private let updateHz: Double = 50
     
     // Cooldown to prevent rapid repeats
     private var lastFlickTime: TimeInterval = 0
@@ -138,21 +142,19 @@ final class WristFlickDetector: ObservableObject {
     func start() {
         guard motionManager.isDeviceMotionAvailable else { return }
         if motionManager.isDeviceMotionActive { return }
-        
-        queue.qualityOfService = .userInteractive
-        motionManager.deviceMotionUpdateInterval = 1.0 / 50.0
-        
-        motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: queue) { [weak self] motion, _ in
+
+        motionManager.deviceMotionUpdateInterval = 1.0 / updateHz
+
+        motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: .main) { [weak self] motion, _ in
             guard let self, let motion else { return }
 
             // userAcceleration removes gravity (best for flick detection)
             let ax = motion.userAcceleration.x
             let now = Date().timeIntervalSince1970
 
-            // Cooldown gate on main actor
+            // Cooldown gate (runs on CoreMotion queue)
             if now - self.lastFlickTime < self.cooldownSeconds { return }
 
-            // On Apple Watch, a lateral wrist flick often shows as a spike in X user acceleration.
             if ax <= -self.accelerationThreshold {
                 self.lastFlickTime = now
                 self.onFlickLeft?()
@@ -191,7 +193,7 @@ struct DeviceView: View {
     @StateObject private var wristFlickDetector = WristFlickDetector()
     
     // AppStorage to persist on watch
-    @AppStorage("wristFlickEnabled") private var wristFlickEnabled: Bool = true
+    @AppStorage("wristFlickEnabled") private var wristFlickEnabled: Bool = false
     /*
      @State private var selectedView: Int? = nil
      @State private var autoBrightness: Bool = false
@@ -355,10 +357,14 @@ struct DeviceView: View {
                         }
                     }
                     .gesture(
-                        DragGesture(minimumDistance: 10)
+                        DragGesture(minimumDistance: 15)
                             .onEnded { value in
-                                // Swipe gesture still works regardless of wrist-flick setting
-                                handleSwipeToChangeView(value.translation.width)
+                                // Only treat as a horizontal swipe if horizontal movement dominates and clears a safe threshold
+                                let dx = value.translation.width
+                                let dy = value.translation.height
+                                if abs(dx) > 40 && abs(dx) > abs(dy) {
+                                    handleSwipeToChangeView(dx)
+                                }
                             }
                     )
                 } else {
@@ -383,7 +389,7 @@ struct DeviceView: View {
                                 .onChange(of: connectivityManager.autoBrightness) { _, newValue in
                                     // Send a specific message for this one setting
                                     print("Toggle changed. Sending autoBrightness: \(newValue)")
-                                    sendMessage(["autoBrightness": newValue])
+                                    WatchConnectivityManager.shared.sendMessage(["autoBrightness": newValue])
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
@@ -393,7 +399,7 @@ struct DeviceView: View {
                                 .disabled(!WCSession.default.isReachable)
                             Toggle("Accelerometer", isOn: $connectivityManager.accelerometerEnabled)
                                 .onChange(of: connectivityManager.accelerometerEnabled) { _, newValue in
-                                    sendMessage(["accelerometer": newValue])
+                                    WatchConnectivityManager.shared.sendMessage(["accelerometer": newValue])
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
@@ -403,7 +409,7 @@ struct DeviceView: View {
                                 .disabled(!WCSession.default.isReachable)
                             Toggle("Sleep Mode", isOn: $connectivityManager.sleepModeEnabled)
                                 .onChange(of: connectivityManager.sleepModeEnabled) { _, newValue in
-                                    sendMessage(["sleepMode": newValue])
+                                    WatchConnectivityManager.shared.sendMessage(["sleepMode": newValue])
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
@@ -413,7 +419,7 @@ struct DeviceView: View {
                             
                             Toggle("Aroura Mode", isOn: $connectivityManager.auroraModeEnabled)
                                 .onChange(of: connectivityManager.auroraModeEnabled) { _, newValue in
-                                    sendMessage(["arouraMode": newValue])
+                                    WatchConnectivityManager.shared.sendMessage(["arouraMode": newValue])
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
@@ -527,7 +533,7 @@ private struct StatusView: View {
     guard isConnectedOrConnecting(connectivityManager.connectionStatus) else { return }
     
     // Require a minimum swipe distance to avoid accidental changes
-    let threshold: CGFloat = 30
+    let threshold: CGFloat = 40
     guard abs(translationWidth) > threshold else { return }
     
     // Determine direction: swipe left -> next, swipe right -> previous
@@ -553,7 +559,7 @@ private struct StatusView: View {
         "view": next
     ]
     
-    print("Swipe changing view from \\(current) -> \\(next). Sending: \\(payload)")
+    print("Swipe changing view from \(current) -> \(next). Sending: \(payload)")
     WatchConnectivityManager.shared.sendMessage(payload) { reply in
         print("Reply:", reply)
     } errorHandler: { error in
@@ -561,13 +567,6 @@ private struct StatusView: View {
     }
 }
 
-private func sendMessage(_ message: [String: Any]) {
-    if WCSession.default.isReachable {
-        WCSession.default.sendMessage(message, replyHandler: nil) { error in
-            print("Error sending message: \(error)")
-        }
-    }
-}
 
 struct ContentView: View {
     @State private var selected: Item? = .device
@@ -748,5 +747,7 @@ extension WatchConnectivityManager {
 }
 
 #endif
+
+
 
 

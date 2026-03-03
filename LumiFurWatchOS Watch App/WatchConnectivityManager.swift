@@ -13,6 +13,13 @@ import Combine
 import SwiftUI
 import WatchKit
 
+/// Swift 6 concurrency helper: allows passing non-Sendable values across actor hops intentionally.
+/// Use sparingly and only when you fully control access/mutation.
+struct UncheckedSendableBox<T>: @unchecked Sendable {
+    let value: T
+    init(_ value: T) { self.value = value }
+}
+
 struct TemperatureSample: Identifiable, Equatable {
     let timestamp: Date
     let temperatureC: Double
@@ -67,7 +74,27 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     // MARK: - Public Sending Methods
-    func sendMessage(
+    /// Thread-safe: may be called from any queue/actor.
+    nonisolated func sendMessage(
+        _ message: [String: Any],
+        replyHandler: (([String: Any]) -> Void)? = nil,
+        errorHandler: ((Error) -> Void)? = nil
+    ) {
+        let boxedMessage = UncheckedSendableBox(message)
+        let boxedReply   = UncheckedSendableBox(replyHandler)
+        let boxedError   = UncheckedSendableBox(errorHandler)
+
+        Task { @MainActor in
+            self._sendMessageOnMain(
+                boxedMessage.value,
+                replyHandler: boxedReply.value,
+                errorHandler: boxedError.value
+            )
+        }
+    }
+
+    @MainActor
+    private func _sendMessageOnMain(
         _ message: [String: Any],
         replyHandler: (([String: Any]) -> Void)? = nil,
         errorHandler: ((Error) -> Void)? = nil
@@ -82,7 +109,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             errorHandler?(WCError(.companionAppNotInstalled))
             return
         }
-        
+
         if session.isReachable {
             session.sendMessage(message, replyHandler: replyHandler) { error in
                 print("WatchOS: Error sending message: \(error.localizedDescription)")
@@ -129,8 +156,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         sendMessage(
             ["command": "getData"],
             replyHandler: { [weak self] response in
-                // WCSession calls this on a background queue -> hop to main
-                DispatchQueue.main.async {
+                // WCSession calls this on a background queue -> hop to main actor
+                Task { @MainActor in
                     guard let self else { return }
                     print("WatchOS: Received sync response: \(response)")
                     self.updateCompanionInfo(from: response)
@@ -144,20 +171,20 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     // MARK: - WCSessionDelegate Methods
-    
-    func session(
+
+    nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-        // Delegate callbacks are on a background queue -> hop to main
-        DispatchQueue.main.async {
+        // Delegate callbacks are on a background queue -> hop to main actor
+        Task { @MainActor in
             switch activationState {
             case .activated:
                 self.connectionStatus = "Connected"
                 self.isReachable = self.session.isReachable
                 print("WatchOS: WCSession activated.")
-                
+
                 let receivedContext = self.session.receivedApplicationContext
                 if !receivedContext.isEmpty {
                     self.updateCompanionInfo(from: receivedContext)
@@ -175,16 +202,16 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 self.isReachable = false
                 print("WatchOS: WCSession unknown state.")
             }
-            
+
             if let error = error {
                 print("WatchOS: Activation error: \(error.localizedDescription)")
                 self.connectionStatus = "Error"
             }
         }
     }
-    
-    func sessionReachabilityDidChange(_ session: WCSession) {
-        DispatchQueue.main.async {
+
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        Task { @MainActor in
             print("WatchOS: Reachability changed: \(self.session.isReachable)")
             self.isReachable = self.session.isReachable
             if self.session.activationState == .activated {
@@ -194,43 +221,48 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             }
         }
     }
-    
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         print("WatchOS: Received message: \(message)")
-        DispatchQueue.main.async {
-            self.updateAccessorySettings(from: message)
-            self.messageSubject.send(message)
+        let boxedMessage = UncheckedSendableBox(message)
+        Task { @MainActor in
+            self.updateAccessorySettings(from: boxedMessage.value)
+            self.messageSubject.send(boxedMessage.value)
         }
     }
-    
-    func session(
+
+    nonisolated func session(
         _ session: WCSession,
         didReceiveMessage message: [String : Any],
         replyHandler: @escaping ([String : Any]) -> Void
     ) {
         print("WatchOS: Received message with reply handler: \(message)")
-        
-        DispatchQueue.main.async {
-            var replyData: [String: Any] = [:]
-            if let command = message["command"] as? String, command == "getData" {
-                replyData["status"] = "getData not supported on watchOS"
-            }
-            
-            self.updateAccessorySettings(from: message)
-            self.messageSubject.send(message)
-            
-            replyHandler(replyData)
+
+        // Prepare reply data without touching main-actor state
+        var replyData: [String: Any] = [:]
+        if let command = message["command"] as? String, command == "getData" {
+            replyData["status"] = "getData not supported on watchOS"
+        }
+
+        let boxedMessage = UncheckedSendableBox(message)
+        let boxedReplyHandler = UncheckedSendableBox(replyHandler)
+
+        Task { @MainActor in
+            self.updateAccessorySettings(from: boxedMessage.value)
+            self.messageSubject.send(boxedMessage.value)
+            boxedReplyHandler.value(replyData)
         }
     }
-    
-    func session(
+
+    nonisolated func session(
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String : Any]
     ) {
         print("WatchOS: Received application context: \(applicationContext)")
-        DispatchQueue.main.async {
-            self.updateCompanionInfo(from: applicationContext)
-            self.updateAccessorySettings(from: applicationContext)
+        let boxedContext = UncheckedSendableBox(applicationContext)
+        Task { @MainActor in
+            self.updateCompanionInfo(from: boxedContext.value)
+            self.updateAccessorySettings(from: boxedContext.value)
         }
     }
     
@@ -338,7 +370,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     func applicationDidBecomeActive() {
         print("WatchOS: App became active.")
         // This should already be on main, but be defensive:
-        DispatchQueue.main.async {
+        Task { @MainActor in
             if self.session.activationState == .activated {
                 self.requestSyncFromiOS()
                 let context = self.session.receivedApplicationContext
@@ -357,4 +389,3 @@ extension WCError {
         self.init(_nsError: NSError(domain: "WCErrorDomain", code: code.rawValue, userInfo: userInfo))
     }
 }
-

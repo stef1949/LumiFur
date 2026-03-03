@@ -29,9 +29,47 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var isScanning: Bool = false
     @Published var discoveredDevices: [PeripheralDevice] = [] // Uses definition above
     //@Published var temperature: String = "--" { didSet { updateWidgetAndActivityOnMain() } }
-    @Published var temperature: String = "--"
-    //@Published var temperatureData: [TemperatureData] = [] { didSet { updateWidgetAndActivityOnMain() } }
-    @Published var temperatureData: [TemperatureData] = []
+    // Temperature is stored as a real value; UI formatting is derived.
+    @Published private(set) var currentTempC: Double? = nil
+
+    /// Kept as a published string for existing UI/widget bindings.
+    @Published private(set) var temperature: String = "--"
+
+    /// Rolling chart data (bounded window).
+    @Published private(set) var temperatureData: [TemperatureData] = []
+
+    /// Derived, always consistent with `currentTempC`.
+    var temperatureString: String {
+        guard let t = currentTempC else { return "--" }
+        return String(format: "%.1f°C", t)
+    }
+
+    // Noise gate for live temperature updates.
+    private var lastPublishedTempC: Double? = nil
+    private let liveTempChangeThresholdC: Double = 0.1
+
+    // Public publisher of a bounded sliding window, throttled to reduce UI churn.
+    // IMPORTANT: derived from `$temperatureData` so new subscribers immediately get the latest array.
+    lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
+        $temperatureData
+            .map { [weak self] all in
+                guard let self else { return all }
+
+                // Keep a rolling time window (5 minutes)
+                let cutoff = Date().addingTimeInterval(-5 * 60)
+                var data = all.filter { $0.timestamp >= cutoff }
+
+                // Safety hard cap
+                if data.count > self.maxTemperatureDataPoints {
+                    data.removeFirst(data.count - self.maxTemperatureDataPoints)
+                }
+
+                return data
+            }
+            .throttle(for: .seconds(5.0), scheduler: RunLoop.main, latest: true)
+            .receive(on: RunLoop.main)
+            .eraseToAnyPublisher()
+    }()
     
     @Published var brightness: UInt8 = 255 // No didSet, handled by .sink
     private var brightnessCharacteristic: CBCharacteristic?
@@ -70,30 +108,24 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
-    // 1) Raw incoming temperature readings
-    //private let rawTempSubject = PassthroughSubject<TemperatureData, Never>()
-    
-    // 2) Public publisher of a down-sampled, 3-minute sliding window, throttled to 1 Hz
-        // This publisher should be the only temperature data source observed by chart views.
-    lazy var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> = {
-        // The source of truth is now the @Published property itself.
-        // Its publisher ($temperatureData) emits the entire array whenever it's mutated.
-        return $temperatureData
-            // Throttle updates to prevent the UI from refreshing too frequently.
-            .throttle(for: .seconds(5.0), scheduler: DispatchQueue.main, latest: true)
-            // Ensure the final data is delivered on the main thread, where UI updates must occur.
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
-    }()
-    
+    @MainActor
     private func didReceive(_ newDataPoint: TemperatureData) {
-        // This is the line that actually triggers the UI update in the chart.
         temperatureData.append(newDataPoint)
-        
-        // Optional: You might want to prune old data to prevent the array from growing forever.
-        // For example, keep only the last 5 minutes of data.
-        let fiveMinutesAgo = Date().addingTimeInterval(-5 * 60)
-        temperatureData.removeAll { $0.timestamp < fiveMinutesAgo }
+
+        // Keep a rolling 10-minute window
+        let cutoff = Date().addingTimeInterval(-10 * 60)
+        if let firstKept = temperatureData.firstIndex(where: { $0.timestamp >= cutoff }) {
+            if firstKept > 0 {
+                temperatureData.removeFirst(firstKept)
+            }
+        } else {
+            temperatureData.removeAll(keepingCapacity: true)
+        }
+
+        // Safety hard cap
+        if temperatureData.count > maxTemperatureDataPoints {
+            temperatureData.removeFirst(temperatureData.count - maxTemperatureDataPoints)
+        }
     }
     
     @Published var errorMessage: String = ""
@@ -106,6 +138,22 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     // User options - didSet triggers writes + UI updates
     @Published var selectedView: Int = 1
+    
+    // Strobe Variables
+    @Published var strobeEnabled: Bool = false
+    @Published var strobeCycleMs: UInt16 = 120
+    @Published var strobeColor: Color = .white
+
+    /// UI entrypoint for strobe settings. Debounced + deduped via `strobeSettingsSubject`.
+    @MainActor
+    func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
+        // Clamp to sane range; firmware accepts UInt16 but UI can misfire.
+        let clamped = UInt16(max(1, min(10_000, Int(cycleMs))))
+        let rgb = color.toRGB8() ?? RGB8(r: 255, g: 255, b: 255)
+        strobeSettingsSubject.send(
+            StrobeSettingsPayload(enabled: enabled, rgb: rgb, cycleMs: clamped)
+        )
+    }
     
     // MARK: - OTA State Tracking
     @Published var otaStatusMessage: String = "Idle"
@@ -207,7 +255,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             return discoveredDevices.first
         }
-        #endif
+#endif // DEBUG
 
         guard isConnected, let target = targetPeripheral else { return nil }
         return discoveredDevices.first { $0.id == target.identifier }
@@ -219,7 +267,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             return discoveredDevices.first?.name
         }
-        #endif
+#endif // DEBUG
 
         return targetPeripheral?.name
     }
@@ -242,6 +290,9 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private var otaCharacteristic: CBCharacteristic? // For OTA Updates
     
     private var luxCharacteristic: CBCharacteristic?
+    
+    //MARK: Strobe variables
+    private var strobeSettingsCharacteristic: CBCharacteristic? // For Strobe Settings
     
     private var rssiUpdateTimer: Timer?
     private var isManualDisconnect: Bool = false
@@ -268,6 +319,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     private let scrollTextCharUUID = CBUUID(string: "7f9b8b12-1234-4c55-9b77-a19d55aa0011")
     
+    private let strobeSettingCharUUID = CBUUID(string: "7f9b8b12-1234-4c55-9b77-a19d55aa0033")
+    
+    // MARK: - Strobe write pipeline (debounced)
+    private let strobeSettingsSubject = PassthroughSubject<StrobeSettingsPayload, Never>()
+    
         // Threshold to filter insignificant changes
         private let luxThreshold: UInt16 = 5
         private var lastLuxValue: UInt16 = 0
@@ -278,7 +334,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var isDownloadingHistory: Bool = false
     private var receivedHistoryChunks: [Int: Data] = [:]
     private var totalHistoryChunksExpected: Int? = nil
-    private let maxTemperatureDataPoints = 200
+    private let maxTemperatureDataPoints = 600 //200
     
     // MARK: - Live Activity
     private var currentActivity: Activity<LumiFur_WidgetAttributes>? = nil
@@ -311,6 +367,15 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             // Return here so we do *not* create CBCentralManager
             return
         }
+        
+        strobeSettingsSubject
+            .removeDuplicates()
+            .debounce(for: .milliseconds(120), scheduler: DispatchQueue.main)
+            .sink { [weak self] settings in
+                self?.writeStrobeSettings(settings)
+            }
+            .store(in: &cancellables)
+        
 
         // Real app behaviour (sim / device runs)
         centralManager = CBCentralManager(delegate: self, queue: bleQueue)
@@ -332,6 +397,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
 
+    func bind(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
+        //self.peripheral = peripheral
+        self.strobeSettingsCharacteristic = characteristic
+    }
+    
     // MARK: Setup Helpers
     private func configureCombinePipelines() {
         // Brightness → BLE write (skip if it originated from peripheral)
@@ -362,7 +432,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
-        #endif
+        #endif // canImport(UIKit)
     }
 
 
@@ -540,7 +610,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             await self.startLumiFur_WidgetLiveActivity()
         }
     }
-    #endif
+    #endif // canImport(UIKit)
     
     // MARK: - Public Methods (Called from UI - Main Thread)
     
@@ -1032,6 +1102,36 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
+    @MainActor
+    private func writeStrobeSettings(_ settings: StrobeSettingsPayload) {
+        guard let peripheral = targetPeripheral,
+              let ch = strobeSettingsCharacteristic else {
+            logger.debug("Strobe write skipped: peripheral/characteristic missing")
+            return
+        }
+
+        let props = ch.properties
+        guard props.contains(.write) || props.contains(.writeWithoutResponse) else {
+            logger.error("Strobe characteristic is not writable (props=\(props.rawValue)).")
+            return
+        }
+
+        let writeType: CBCharacteristicWriteType = props.contains(.write) ? .withResponse : .withoutResponse
+
+        // Firmware expects two separate writes:
+        // 0x01 + [R,G,B]
+        // 0x02 + [speedLo,speedHi] (UInt16 LE)
+        let colorPacket = settings.encodeColorPacketRGB()
+        let speedPacket = settings.encodeSpeedPacket()
+
+        let pBox = UncheckedSendableBox(peripheral)
+        let cBox = UncheckedSendableBox(ch)
+
+        bleAsync { _ in
+            pBox.value.writeValue(colorPacket, for: cBox.value, type: writeType)
+            pBox.value.writeValue(speedPacket, for: cBox.value, type: writeType)
+        }
+    }
     
     /// Internal method to write config, runs on bleQueue
     @MainActor
@@ -1313,7 +1413,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         // Reset connection-specific state (compare by ID string so we don't need CBPeripheral here)
         if targetPeripheral?.identifier.uuidString == peripheralID {
             targetPeripheral = nil
+            currentTempC = nil
             temperature = "--"
+            temperatureData.removeAll()
+            lastPublishedTempC = nil
+            
             signalStrength = -100
             firmwareVersion = "N/A"
 
@@ -1326,8 +1430,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             otaCharacteristic = nil
             luxCharacteristic = nil
             scrollTextCharacteristic = nil
+            strobeSettingsCharacteristic = nil
 
-            temperatureData.removeAll()
         }
 
         connectionState = .disconnected
@@ -1430,7 +1534,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             deviceInfoCharUUID,
             otaCharUUID,
             luxCharUUID,
-            scrollTextCharUUID
+            scrollTextCharUUID,
+            strobeSettingCharUUID
         ]
 
         // Actual discover call runs on bleQueue
@@ -1517,6 +1622,18 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     p.readValue(for: c) // read current text on connect
                     // Removed the line: p.writeValue(Data(Text), for: c, type: .withResponse)
                 }
+                
+            case strobeSettingCharUUID:
+                strobeSettingsCharacteristic = ch
+                peripheralCharAsync(peripheral, ch) { p, c in
+                    let props = c.properties
+                    if props.contains(.notify) || props.contains(.indicate) {
+                        p.setNotifyValue(true, for: c)
+                    }
+                    if props.contains(.read) {
+                        p.readValue(for: c)
+                    }
+                }
 
             default:
                 break
@@ -1530,6 +1647,8 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         if temperatureLogsCharacteristic == nil { logger.warning("Missing temperature logs characteristic"); foundAllRequired = false }
         if brightnessCharacteristic == nil { logger.warning("Missing brightness characteristic"); foundAllRequired = false }
         if otaCharacteristic == nil { logger.warning("Missing OTA characteristic"); foundAllRequired = false }
+        if strobeSettingsCharacteristic == nil { logger.warning("Missing strobe characteristic");
+            foundAllRequired = false }
 
         guard foundAllRequired else {
             logger.error("Essential characteristics missing; disconnecting.")
@@ -1654,7 +1773,11 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             applyPeripheralUpdate {
                 if customMessage != text { customMessage = text }
             }
-
+        
+        case strobeSettingCharUUID:
+            handleStrobeSettingsUpdate(data: data)
+                    
+            
         default:
             logger.warning("Unhandled characteristic \(uuid)")
         }
@@ -1782,13 +1905,20 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
 
         let raw: Int16 = data.withUnsafeBytes { $0.load(as: Int16.self) }
-        let fixed10 = Int16(littleEndian: raw)          // ESP32 is little-endian
+        let fixed10 = Int16(littleEndian: raw)
         let tempValue = Double(fixed10) / 10.0
 
-        temperature = String(format: "%.1f°C", tempValue)
+        // Always update numeric current value
+        currentTempC = tempValue
 
-        let newPoint = TemperatureData(timestamp: Date(), temperature: tempValue)
-        didReceive(newPoint)
+        // Only update the displayed string if it changed enough
+        if lastPublishedTempC == nil || abs(tempValue - (lastPublishedTempC ?? tempValue)) >= liveTempChangeThresholdC {
+            lastPublishedTempC = tempValue
+            temperature = temperatureString
+        }
+
+        // ✅ Always append a chart sample (this is what makes motion smooth)
+        didReceive(TemperatureData(timestamp: Date(), temperature: tempValue))
     }
     
     private struct HistoryDL {
@@ -1802,6 +1932,7 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 
     private var historyDL: HistoryDL?
     
+    @MainActor
     private func handleHistoryChunk(data: Data) {
         guard data.count >= 1 else { return }
 
@@ -1889,17 +2020,15 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 let finalPoints = dl.points
                 historyDL = nil
 
-                DispatchQueue.main.async { [weak self] in
-                    self?.temperatureData = finalPoints
-                    self?.isDownloadingHistory = false
-                    self?.logger.info("Loaded \(finalPoints.count) history points.")
-                }
+                temperatureData = finalPoints
+                isDownloadingHistory = false
+                currentTempC = finalPoints.last?.temperature
+                temperature = temperatureString
+                logger.info("Loaded \(finalPoints.count) history points.")
             } else {
                 // Optional progress updates (cheap)
-                DispatchQueue.main.async { [weak self] in
-                    self?.isDownloadingHistory = true
-                    self?.totalHistoryChunksExpected = dl.totalChunks
-                }
+                isDownloadingHistory = true
+                totalHistoryChunksExpected = dl.totalChunks
             }
 
         default:
@@ -2393,6 +2522,84 @@ class AccessoryViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 #endif // DEBUG
     */
+    // MARK: Strobe UI actions
+    private var lastSentStrobe: StrobeSettingsPayload?
+
+    private struct ParsedStrobeSettings: Equatable {
+        let enabled: Bool
+        let rgb: RGB8
+        let cycleMs: UInt16
+    }
+
+    private func parseStrobeSettings(_ data: Data) -> ParsedStrobeSettings? {
+        // --- Binary format: 6 bytes [E][R][G][B][S_lo][S_hi]
+        if data.count == 6 {
+            let bytes = [UInt8](data)
+            let enabled = bytes[0] != 0
+            let rgb = RGB8(r: bytes[1], g: bytes[2], b: bytes[3])
+            let cycleMs = UInt16(bytes[4]) | (UInt16(bytes[5]) << 8)
+            let clamped = UInt16(max(20, min(2000, Int(cycleMs))))
+            return ParsedStrobeSettings(enabled: enabled, rgb: rgb, cycleMs: clamped)
+        }
+
+        // --- ASCII format: "E=1;C=#RRGGBB;S=120" (or similar)
+        if let str = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) {
+            return parseStrobeSettingsASCII(str)
+        }
+
+        return nil
+    }
+
+    private func parseStrobeSettingsASCII(_ str: String) -> ParsedStrobeSettings? {
+        // Very forgiving parser
+        let parts = str
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(separator: ";")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+
+        var enabled: Bool?
+        var rgb: RGB8?
+        var speed: UInt16?
+
+        for p in parts {
+            if p.hasPrefix("E=") || p.hasPrefix("e=") {
+                let v = p.dropFirst(2)
+                enabled = (v == "1" || v.lowercased() == "true" || v.lowercased() == "on")
+            } else if p.hasPrefix("C=") || p.hasPrefix("c=") {
+                let v = String(p.dropFirst(2))
+                rgb = RGB8(hex: v)
+            } else if p.hasPrefix("S=") || p.hasPrefix("s=") {
+                let v = p.dropFirst(2)
+                if let n = UInt16(v) { speed = n }
+            }
+        }
+
+        guard let e = enabled, let c = rgb else { return nil }
+        let clamped = UInt16(max(20, min(2000, Int(speed ?? 120))))
+        return ParsedStrobeSettings(enabled: e, rgb: c, cycleMs: clamped)
+    }
+    @MainActor
+    private func handleStrobeSettingsUpdate(data: Data) {
+        // Firmware notify/read payload is JSON:
+        // {"color":"RRGGBB","speedMs":123}
+        guard let fw = FWStrobeSettings.decode(from: data) else {
+            // Keep logs low-noise; the BLE layer can deliver empty/intermediate values.
+            logger.debug("Strobe settings payload not decodable as FWStrobeSettings")
+            return
+        }
+
+        applyPeripheralUpdate {
+            // Speed
+            if self.strobeCycleMs != fw.speedMs { self.strobeCycleMs = fw.speedMs }
+            if self.strobeEnabled != fw.enabled { self.strobeEnabled = fw.enabled }
+
+            // Color
+            if let rgb = fw.rgb {
+                let c = Color(rgb)
+                if self.strobeColor != c { self.strobeColor = c }
+            }
+        }
+    }
     
 }// End of AccessoryViewModel
 
@@ -2464,7 +2671,7 @@ extension AccessoryViewModel {
         )
     }
 }
-#endif
+#endif // DEBUG
 
 // MARK: - Helper Extensions
 /*
@@ -2491,5 +2698,7 @@ extension AccessoryViewModel {
  }
  }
  */
+
+
 
 

@@ -24,7 +24,7 @@ struct AppIcon: Identifiable, Equatable {
 // MARK: - Available icons
 
 let appIcons: [AppIcon] = [
-    AppIcon(iconName: nil,            assetName: "AppIcon",       displayName: "Default"),
+    AppIcon(iconName: nil,            assetName: "LumFur2026Logo-iOS-Default-1024x1024@1x.png",       displayName: "Default"),
     AppIcon(iconName: "bluegreen",    assetName: "bluegreen",     displayName: "Blue Green"),
     AppIcon(iconName: "glassrainbow", assetName: "glassrainbow",  displayName: "Glass Rainbow"),
     AppIcon(iconName: "lilaclight",   assetName: "lilaclight",    displayName: "Lilac Light"),

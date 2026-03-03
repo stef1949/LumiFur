@@ -5,13 +5,6 @@
 //  Created by Stephan Ritchie on 2/14/25.
 //
 
-//
-//  WatchOSConnectivity.swift
-//  LumiFur
-//
-//  Created by Stephan Ritchie on 2/14/25.
-//
-
 import Foundation
 import SwiftUI
 import Combine
@@ -19,7 +12,6 @@ import Combine
 #if canImport(WatchConnectivity) && os(iOS) && !targetEnvironment(macCatalyst)
 import WatchConnectivity
 import UIKit
-
 
 /// Wraps non-Sendable values when you *know* the framework hands you an immutable snapshot.
 struct UncheckedSendable<T>: @unchecked Sendable {

@@ -63,7 +63,8 @@ struct SharedOptions {
         .emoji("🌀"),
         .emoji("꩜"),
         .symbol("bubble.and.pencil"),
-        .emoji("🦖")
+        .emoji("🦖"),
+        .symbol("laser.burst")
     ]
 }
 

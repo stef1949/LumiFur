@@ -282,6 +282,7 @@ struct ContentView: View {
             connectionState: bleModel.connectionState,
             toolbarStatusText: bleModel.connectionState.toolbarStatusText,
             signalStrength: bleModel.signalStrength,
+            //luxValue: Double(bleModel.luxValue)
             luxValue: Int(bleModel.luxValue)
         )
     }
@@ -432,44 +433,64 @@ struct ContentView: View {
 
         ZStack {
             if selectedSidebarItem == .dashboard {
-                VStack {
-                    /*
-                    HStack{
-                        HeaderView(
-                            connectionState: bleModel.connectionState,
-                            connectionStatus: bleModel.connectionStatus,
-                            signalStrength: bleModel.signalStrength,
-                            luxValue: Double(bleModel.luxValue)
-                        )
-                    }
-                     */
-                    //ledArraySection
-                    //.border(.green)
-                    
-                    FaceGridSection(
-                        selectedView: bleModel.selectedView,
-                        onSetView: { bleModel.setView($0) },
-                        auroraModeEnabled: auroraModeEnabled
-                        //items: SharedOptions.protoActionOptions3
-                    )
-                    //.zIndex(-1)
-                    
-                    ChartView(
-                        isExpanded: $isChartsExpanded,
-                        accessoryViewModel: bleModel,
-                        selectedUnits: selectedUnitsBinding
-                    )
-                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                    .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
-                    .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                isChartsExpanded.toggle()
+                GeometryReader { proxy in
+                    let isLandscape = proxy.size.width > proxy.size.height
+                    Group {
+                        if isLandscape {
+                            HStack(spacing: 16) {
+                                FaceGridSection(
+                                    selectedView: bleModel.selectedView,
+                                    onSetView: { bleModel.setView($0) },
+                                    auroraModeEnabled: auroraModeEnabled
+                                )
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                                ChartView(
+                                    isExpanded: $isChartsExpanded,
+                                    accessoryViewModel: bleModel,
+                                    selectedUnits: selectedUnitsBinding
+                                )
+                                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+                                .frame(
+                                    width: proxy.size.width * 0.33,
+                                    alignment: .top
+                                )
+                                .frame(maxHeight: .infinity)
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        isChartsExpanded.toggle()
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                        } else {
+                            VStack {
+                                FaceGridSection(
+                                    selectedView: bleModel.selectedView,
+                                    onSetView: { bleModel.setView($0) },
+                                    auroraModeEnabled: auroraModeEnabled
+                                )
+
+                                ChartView(
+                                    isExpanded: $isChartsExpanded,
+                                    accessoryViewModel: bleModel,
+                                    selectedUnits: selectedUnitsBinding
+                                )
+                                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+                                .frame(maxHeight: isChartsExpanded ? 160 : 55)
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        isChartsExpanded.toggle()
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.bottom)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
                             }
                         }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    // This animation smoothly handles the frame height change.
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                    }
                 }
                 .onAppear(perform: prepareHaptics)
                 .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		35062EA82E107A590012AC60 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35062EA72E107A590012AC60 /* MarkdownUI */; };
+		350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
 		35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35197ABE2DA1A17100BE0EE3 /* MarkdownUI */; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
 		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
@@ -22,6 +23,8 @@
 		354B42882F02B62800074B7F /* UncheckedSendableBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42872F02B62800074B7F /* UncheckedSendableBox.swift */; };
 		354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42892F02B62B00074B7F /* ActivityHelpers.swift */; };
 		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; platformFilter = ios; };
+		3555D6C22F55C15E00EB6256 /* StrobeControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */; };
+		3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */; };
 		355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */; };
 		355853662EF483E2001666E6 /* LEDPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853652EF483E2001666E6 /* LEDPreviewModel.swift */; };
 		355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853682EF4BAD4001666E6 /* ConnectionUI.swift */; };
@@ -154,6 +157,8 @@
 		354B42872F02B62800074B7F /* UncheckedSendableBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UncheckedSendableBox.swift; sourceTree = "<group>"; };
 		354B42892F02B62B00074B7F /* ActivityHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityHelpers.swift; sourceTree = "<group>"; };
 		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrobeControlsView.swift; sourceTree = "<group>"; };
+		3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RRGGBBHelper.swift; sourceTree = "<group>"; };
 		3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewOLD.swift; sourceTree = "<group>"; };
 		355853652EF483E2001666E6 /* LEDPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewModel.swift; sourceTree = "<group>"; };
 		355853682EF4BAD4001666E6 /* ConnectionUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionUI.swift; sourceTree = "<group>"; };
@@ -322,6 +327,7 @@
 		354B428C2F02B9F400074B7F /* avm */ = {
 			isa = PBXGroup;
 			children = (
+				3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */,
 				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
 				354B42852F02B62800074B7F /* AccessoryTypes.swift */,
 				354B42872F02B62800074B7F /* UncheckedSendableBox.swift */,
@@ -454,6 +460,7 @@
 				35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */,
 				358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */,
 				358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */,
+				3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */,
 				3580941E2E2BF0A0005DB779 /* ChartView.swift */,
 				35AE1A442D5D207F00FDD29E /* liveActivity.swift */,
 				355853E22EF71DEE001666E6 /* About Page */,
@@ -714,6 +721,7 @@
 		3591DD4F2D5FB695009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */,
 			);
 		};
 		3591DD5E2D5FB697009A3A94 /* Resources */ = {
@@ -786,6 +794,7 @@
 				355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
+				3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */,
 				35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */,
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
 				35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */,
@@ -809,6 +818,7 @@
 				355853DC2EF71D3E001666E6 /* MeshGradient.swift in Sources */,
 				355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */,
 				354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */,
+				3555D6C22F55C15E00EB6256 /* StrobeControlsView.swift in Sources */,
 				355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */,
 				355853DD2EF71D48001666E6 /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
@@ -892,15 +902,16 @@
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
 				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to discover LumiFur microcontroller";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -926,15 +937,16 @@
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
 				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to discover LumiFur microcontroller";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1031,8 +1043,9 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.statuswidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.statuswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1066,7 +1079,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.statuswidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.statuswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1246,7 +1259,9 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFur.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 6.3.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1266,7 +1281,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Richies 3D Ltd. All rights reserved.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
@@ -1285,8 +1300,9 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1308,6 +1324,7 @@
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFurRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 6.3.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1327,7 +1344,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Richies 3D Ltd. All rights reserved.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
@@ -1346,7 +1363,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;

@@ -113,12 +113,13 @@ private func releaseRow(for release: GitHubRelease) -> some View {
         }
         
         Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided.")
-            .font(.body)
-            .foregroundStyle(.secondary)
+            .font(.headline)
+            .foregroundStyle(.green)
+            .backgroundStyle(.clear)
             .lineLimit(4)
             .frame(maxWidth: .infinity, alignment: .leading)
         
-        if let body = release.body, body.count > 250 {
+        if let body = release.body, body.count > 50 {
             Button("Read More...") {
                 print("Show full body for release: \(release.displayName)")
             }
