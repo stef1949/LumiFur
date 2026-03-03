@@ -26,9 +26,9 @@ class AccessoryViewModel: ObservableObject {
     @Published var connectionState: ConnectionState = .disconnected
     @Published var isScanning = false
     @Published var discoveredDevices: [PeripheralDevice] = []
-    @Published private(set) var currentTempC: Double?
+    private(set) var currentTempC: Double?
     @Published private(set) var temperature = "--"
-    @Published private(set) var temperatureData: [TemperatureData] = []
+    private(set) var temperatureData: [TemperatureData] = []
     @Published var brightness: UInt8 = 255
     @Published var luxValue: UInt16 = 0
     @Published var errorMessage = ""
@@ -88,7 +88,8 @@ class AccessoryViewModel: ObservableObject {
 
     /// A throttled chart publisher that keeps only a rolling five-minute window.
     var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> {
-        $temperatureData
+        temperatureDataSubject
+            .receive(on: Self.chartProcessingQueue)
             .map { [maxTemperatureDataPoints] all in
                 let cutoff = Date().addingTimeInterval(-5 * 60)
                 var window = all.filter { $0.timestamp >= cutoff }
@@ -99,6 +100,8 @@ class AccessoryViewModel: ObservableObject {
 
                 return window
             }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
             .throttle(for: .seconds(5), scheduler: RunLoop.main, latest: true)
             .eraseToAnyPublisher()
     }
@@ -131,13 +134,17 @@ class AccessoryViewModel: ObservableObject {
     private let isRunningPreview: Bool
     private let maxTemperatureDataPoints = 600
     private let liveTempChangeThresholdC = 0.1
+    private let defaultRSSIInterval: TimeInterval = 1.0
+    private let idleRSSIInterval: TimeInterval = 10.0
     private let changeViewIntentNotification = Notification.Name("com.richies3d.LumiFur.ChangeViewIntentTriggered")
     private var notificationTokens: [NSObjectProtocol] = []
     private var bluetoothState: CBManagerState
+    private let temperatureDataSubject = CurrentValueSubject<[TemperatureData], Never>([])
     private var lastPublishedTempC: Double?
     private var lastConnectedPeripheralUUID: String?
     private var didAttemptAutoReconnect = false
     private var isManualDisconnect = false
+    private var isAppActive = true
     var pendingExternalUpdateTask: Task<Void, Never>?
     var pendingWatchSyncTask: Task<Void, Never>?
     var lastSentStateDigest: StateDigest?
@@ -147,6 +154,10 @@ class AccessoryViewModel: ObservableObject {
     private var otaTask: Task<Void, Never>?
     private var otaGeneration: UInt64 = 0
     private var otaInProgress = false
+    private static let chartProcessingQueue = DispatchQueue(
+        label: "com.richies3d.lumifur.chart-processing",
+        qos: .utility
+    )
 
     #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
     var currentActivity: Activity<LumiFur_WidgetAttributes>?
@@ -377,7 +388,7 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     func startRSSIMonitoring() {
-        client.startRSSIMonitoring()
+        client.startRSSIMonitoring(interval: preferredRSSIMonitoringInterval())
     }
 
     @MainActor
@@ -473,11 +484,24 @@ class AccessoryViewModel: ObservableObject {
                 }
             }
         )
+        notificationTokens.append(
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.willResignActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                MainActor.assumeIsolated {
+                    selfBox.value?.handleAppWillResignActive()
+                }
+            }
+        )
         #endif
     }
 
     @MainActor
     private func handleTransportEvent(_ event: BLEClient.Event) {
+        IdleCPUDiagnostics.shared.recordTransportEvent(event.idleCPUCounterName)
+
         switch event {
         case .stateChanged(let state):
             handleBluetoothStateChange(state)
@@ -515,8 +539,8 @@ class AccessoryViewModel: ObservableObject {
             scanForDevices()
 
         case .deviceInfoUpdated(let info):
-            deviceInfo = info
-            firmwareVersion = info.fw
+            assignIfChanged("deviceInfo", current: &deviceInfo, newValue: info)
+            assignIfChanged("firmwareVersion", current: &firmwareVersion, newValue: info.fw)
             scheduleExternalStateSync()
 
         case .selectedViewUpdated(let view):
@@ -531,18 +555,18 @@ class AccessoryViewModel: ObservableObject {
             applyLiveTemperature(celsius)
 
         case .historyDownloadStarted:
-            isDownloadingHistory = true
+            assignIfChanged("isDownloadingHistory", current: &isDownloadingHistory, newValue: true)
 
         case .historyDownloaded(let history):
-            isDownloadingHistory = false
+            assignIfChanged("isDownloadingHistory", current: &isDownloadingHistory, newValue: false)
             apply(history: history)
 
         case .historyDownloadFailed(let message):
-            isDownloadingHistory = false
+            assignIfChanged("isDownloadingHistory", current: &isDownloadingHistory, newValue: false)
             logger.warning("Temperature history download failed: \(message)")
 
         case .brightnessUpdated(let value):
-            brightness = value
+            assignIfChanged("brightness", current: &brightness, newValue: value)
 
         case .otaResponseUpdated(let response):
             otaStatusMessage = response.statusMessage
@@ -551,20 +575,22 @@ class AccessoryViewModel: ObservableObject {
             }
 
         case .luxUpdated(let value):
-            luxValue = value
+            applyLuxValueIfNeeded(value)
 
         case .scrollTextUpdated(let text):
-            customMessage = text
-            scheduleExternalStateSync()
+            if assignIfChanged("customMessage", current: &customMessage, newValue: text) {
+                scheduleExternalStateSync()
+            }
 
         case .strobeUpdated(let state):
-            strobeEnabled = state.enabled
-            strobeCycleMs = state.cycleMs
+            assignIfChanged("strobeEnabled", current: &strobeEnabled, newValue: state.enabled)
+            assignIfChanged("strobeCycleMs", current: &strobeCycleMs, newValue: state.cycleMs)
             strobeColor = Color(state.rgb)
 
         case .rssiUpdated(let rssi):
-            if signalStrength != rssi {
+            if shouldPublishRSSI(rssi) {
                 signalStrength = rssi
+                IdleCPUDiagnostics.shared.recordPublishedChange("signalStrength")
                 scheduleExternalStateSync()
             }
 
@@ -689,24 +715,49 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     private func apply(configuration: AccessoryConfiguration) {
-        autoBrightness = configuration.autoBrightness
-        accelerometerEnabled = configuration.accelerometerEnabled
-        sleepModeEnabled = configuration.sleepModeEnabled
-        auroraModeEnabled = configuration.auroraModeEnabled
-        scheduleExternalStateSync()
+        let didChangeAutoBrightness = assignIfChanged(
+            "autoBrightness",
+            current: &autoBrightness,
+            newValue: configuration.autoBrightness
+        )
+        let didChangeAccelerometer = assignIfChanged(
+            "accelerometerEnabled",
+            current: &accelerometerEnabled,
+            newValue: configuration.accelerometerEnabled
+        )
+        let didChangeSleepMode = assignIfChanged(
+            "sleepModeEnabled",
+            current: &sleepModeEnabled,
+            newValue: configuration.sleepModeEnabled
+        )
+        let didChangeAuroraMode = assignIfChanged(
+            "auroraModeEnabled",
+            current: &auroraModeEnabled,
+            newValue: configuration.auroraModeEnabled
+        )
+
+        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+            scheduleExternalStateSync()
+        }
     }
 
     @MainActor
     private func applyLiveTemperature(_ celsius: Double) {
         currentTempC = celsius
+        IdleCPUDiagnostics.shared.recordPublishedChange("currentTempC")
+        let previousTemperature = temperature
 
         if lastPublishedTempC == nil || abs(celsius - (lastPublishedTempC ?? celsius)) >= liveTempChangeThresholdC {
             lastPublishedTempC = celsius
             temperature = temperatureString
+            IdleCPUDiagnostics.shared.recordPublishedChange("temperature")
         }
 
         appendTemperatureSample(TemperatureData(timestamp: Date(), temperature: celsius))
-        scheduleExternalStateSync()
+
+        if temperature != previousTemperature {
+            scheduleExternalStateSync()
+        }
     }
 
     @MainActor
@@ -716,6 +767,8 @@ class AccessoryViewModel: ObservableObject {
         currentTempC = cappedHistory.last?.temperature
         lastPublishedTempC = currentTempC
         temperature = temperatureString
+        IdleCPUDiagnostics.shared.recordPublishedChange("temperature")
+        publishTemperatureDataSnapshot()
         scheduleExternalStateSync()
     }
 
@@ -734,6 +787,8 @@ class AccessoryViewModel: ObservableObject {
         if temperatureData.count > maxTemperatureDataPoints {
             temperatureData.removeFirst(temperatureData.count - maxTemperatureDataPoints)
         }
+
+        publishTemperatureDataSnapshot()
     }
 
     @MainActor
@@ -753,6 +808,7 @@ class AccessoryViewModel: ObservableObject {
         lastPublishedTempC = nil
         temperature = "--"
         temperatureData.removeAll(keepingCapacity: true)
+        publishTemperatureDataSnapshot()
         signalStrength = -100
         firmwareVersion = "N/A"
         luxValue = 0
@@ -816,13 +872,85 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     private func handleAppDidBecomeActive() {
+        isAppActive = true
         guard isConnected else { return }
+        startRSSIMonitoring()
 
         #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
         Task { [weak self] in
             await self?.startLumiFur_WidgetLiveActivity()
         }
         #endif
+    }
+
+    @MainActor
+    private func handleAppWillResignActive() {
+        isAppActive = false
+        stopRSSIMonitoring()
+    }
+
+    @MainActor
+    private func publishTemperatureDataSnapshot() {
+        IdleCPUDiagnostics.shared.recordPublishedChange("temperatureData")
+        temperatureDataSubject.send(temperatureData)
+    }
+
+    @MainActor
+    private func preferredRSSIMonitoringInterval() -> TimeInterval {
+        guard isAppActive else { return idleRSSIInterval }
+
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: "rssiMonitoringEnabled") else {
+            return idleRSSIInterval
+        }
+
+        let configured = defaults.double(forKey: "rssiUpdateInterval")
+        return configured > 0 ? configured : defaultRSSIInterval
+    }
+
+    @MainActor
+    private func shouldPublishRSSI(_ rssi: Int) -> Bool {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "rssiMonitoringEnabled") {
+            return signalStrength != rssi
+        }
+
+        return signalStrengthBucket(for: signalStrength) != signalStrengthBucket(for: rssi)
+    }
+
+    @MainActor
+    private func signalStrengthBucket(for rssi: Int) -> Int {
+        let normalized = Double(rssi + 100) / 30
+        return min(max(Int(normalized * 4), 0), 4)
+    }
+
+    @MainActor
+    private func applyLuxValueIfNeeded(_ value: UInt16) {
+        guard luxBucket(for: luxValue) != luxBucket(for: value) else { return }
+        luxValue = value
+        IdleCPUDiagnostics.shared.recordPublishedChange("luxValue")
+    }
+
+    @MainActor
+    private func luxBucket(for value: UInt16) -> Int {
+        let minLux = 1.0
+        let maxLux = 4097.0
+        let clamped = min(max(Double(value), minLux), maxLux)
+        let progress = (log10(clamped) - log10(minLux)) / (log10(maxLux) - log10(minLux))
+        return Int((progress * 24).rounded(.down))
+    }
+
+    @discardableResult
+    @MainActor
+    private func assignIfChanged<Value: Equatable>(
+        _ key: String,
+        current: inout Value,
+        newValue: Value
+    ) -> Bool {
+        guard current != newValue else { return false }
+        current = newValue
+        IdleCPUDiagnostics.shared.recordPublishedChange(key)
+        return true
     }
 }
 

@@ -31,6 +31,8 @@ struct StatusSectionView: View, Equatable {
     }
 
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("StatusSectionView")
+
         HStack(spacing: 8) {
             // Lux badge (render only when connected); otherwise keep layout with a lightweight placeholder
             if connectionState == .connected {
@@ -102,4 +104,3 @@ struct StatusSectionView: View, Equatable {
         return (logValue - logMin) / (logMax - logMin)
     }
 }
-

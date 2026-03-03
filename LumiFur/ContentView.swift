@@ -288,6 +288,8 @@ struct ContentView: View {
     }
     
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("ContentView")
+
         #if os(macOS)
             NavigationSplitView {
                 List(SidebarItem.allCases, selection: $selectedSidebarItem) {
@@ -358,6 +360,7 @@ struct ContentView: View {
                                     signalStrength: toolbarModel.signalStrength,
                                     luxValue: Double(toolbarModel.luxValue)
                                 )
+                                .equatable()
                                 //.animation(.smooth(duration: 0.25), value: bleModel.connectionState)
                                 //.animation(.smooth(duration: 0.25), value: bleModel.connectionState.toolbarStatusText)
                                 .fixedSize(horizontal: true, vertical: false) // allow grow/shrink naturally
@@ -448,9 +451,11 @@ struct ContentView: View {
 
                                 ChartView(
                                     isExpanded: $isChartsExpanded,
-                                    accessoryViewModel: bleModel,
+                                    seedData: bleModel.temperatureData,
+                                    temperaturePublisher: bleModel.temperatureChartPublisher,
                                     selectedUnits: selectedUnitsBinding
                                 )
+                                .equatable()
                                 .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
                                 .frame(
                                     width: proxy.size.width * 0.33,
@@ -477,9 +482,11 @@ struct ContentView: View {
 
                                 ChartView(
                                     isExpanded: $isChartsExpanded,
-                                    accessoryViewModel: bleModel,
+                                    seedData: bleModel.temperatureData,
+                                    temperaturePublisher: bleModel.temperatureChartPublisher,
                                     selectedUnits: selectedUnitsBinding
                                 )
+                                .equatable()
                                 .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
                                 .frame(maxHeight: isChartsExpanded ? 160 : 55)
                                 .onTapGesture {

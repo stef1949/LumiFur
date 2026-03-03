@@ -37,10 +37,12 @@ extension AccessoryViewModel {
 
     @MainActor
     func scheduleExternalStateSync() {
+        IdleCPUDiagnostics.shared.recordTaskFire("externalSync.schedule")
         pendingExternalUpdateTask?.cancel()
         pendingExternalUpdateTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard !Task.isCancelled else { return }
+            IdleCPUDiagnostics.shared.recordTaskFire("externalSync.fire")
             self?.performExternalStateSyncIfNeeded()
         }
 
@@ -67,6 +69,7 @@ extension AccessoryViewModel {
             let nanoseconds = UInt64((delay + 0.2) * 1_000_000_000)
             try? await Task.sleep(nanoseconds: nanoseconds)
             guard !Task.isCancelled else { return }
+            IdleCPUDiagnostics.shared.recordTaskFire("watchSync.fire")
             self?.syncStateToWatch()
         }
     }
@@ -194,6 +197,7 @@ extension AccessoryViewModel {
         pendingLiveActivityUpdateTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 200_000_000)
             guard !Task.isCancelled else { return }
+            IdleCPUDiagnostics.shared.recordTaskFire("liveActivity.fire")
             await self?.updateLumiFur_WidgetLiveActivityIfNeeded()
         }
     }

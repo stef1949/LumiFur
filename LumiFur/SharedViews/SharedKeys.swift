@@ -5,6 +5,7 @@
 //  Created by Stephan Ritchie on 4/18/25.
 //
 import Foundation
+import os
 import SwiftUI // Needed for Color if used in ConnectionState
 #if canImport(ActivityKit)
 import ActivityKit // Needed for ActivityAttributes
@@ -45,6 +46,110 @@ struct CPUUsageData: Identifiable, Codable, Sendable {
     let timestamp: Date
     let cpuUsage: Int
 }
+
+// MARK: - Debug Diagnostics
+
+#if DEBUG
+/// Debug-only counters for finding idle CPU churn. Enable with
+/// `LUMIFUR_IDLE_CPU_DIAGNOSTICS=1` in the app environment or a matching
+/// `UserDefaults` boolean.
+final class IdleCPUDiagnostics: @unchecked Sendable {
+    static let shared = IdleCPUDiagnostics()
+
+    static var isEnabled: Bool {
+        ProcessInfo.processInfo.environment["LUMIFUR_IDLE_CPU_DIAGNOSTICS"] == "1" ||
+        UserDefaults.standard.bool(forKey: "LUMIFUR_IDLE_CPU_DIAGNOSTICS")
+    }
+
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "LumiFur",
+        category: "IdleCPU"
+    )
+    private let queue = DispatchQueue(label: "com.richies3d.lumifur.idle-cpu")
+    private var counters: [String: Int] = [:]
+    private var flushTimer: DispatchSourceTimer?
+
+    private init() {
+        guard Self.isEnabled else { return }
+
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 1, repeating: 1)
+        timer.setEventHandler { [weak self] in
+            self?.flush()
+        }
+        flushTimer = timer
+        timer.resume()
+    }
+
+    deinit {
+        flushTimer?.cancel()
+    }
+
+    @inline(__always)
+    func recordViewBody(_ name: String) {
+        increment("view.\(name)")
+    }
+
+    @inline(__always)
+    func recordPublishedChange(_ name: String) {
+        increment("published.\(name)")
+    }
+
+    @inline(__always)
+    func recordTransportEvent(_ name: String) {
+        increment("ble.\(name)")
+    }
+
+    @inline(__always)
+    func recordTimerTick(_ name: String) {
+        increment("timer.\(name)")
+    }
+
+    @inline(__always)
+    func recordTaskFire(_ name: String) {
+        increment("task.\(name)")
+    }
+
+    private func increment(_ key: String) {
+        guard Self.isEnabled else { return }
+
+        queue.async { [weak self] in
+            self?.counters[key, default: 0] += 1
+        }
+    }
+
+    private func flush() {
+        guard !counters.isEmpty else { return }
+
+        let summary = counters
+            .sorted { lhs, rhs in
+                if lhs.value == rhs.value {
+                    return lhs.key < rhs.key
+                }
+                return lhs.value > rhs.value
+            }
+            .prefix(12)
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+
+        counters.removeAll(keepingCapacity: true)
+        logger.debug("Idle CPU counters/sec: \(summary, privacy: .public)")
+    }
+}
+#else
+final class IdleCPUDiagnostics {
+    static let shared = IdleCPUDiagnostics()
+    static let isEnabled = false
+
+    private init() {}
+
+    @inline(__always) func recordViewBody(_ name: String) {}
+    @inline(__always) func recordPublishedChange(_ name: String) {}
+    @inline(__always) func recordTransportEvent(_ name: String) {}
+    @inline(__always) func recordTimerTick(_ name: String) {}
+    @inline(__always) func recordTaskFire(_ name: String) {}
+}
+#endif
 
 // MARK: - Connection State Enum
 

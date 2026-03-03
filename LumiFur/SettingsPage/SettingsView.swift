@@ -89,6 +89,8 @@ struct SettingsView: View {
     // The body is now extremely simple. It just composes the new, smaller,
     // and more efficient view structs. The Swift compiler can process this much faster.
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("SettingsView")
+
         NavigationStack {
             List {
                 // Connection view is a self-contained component.

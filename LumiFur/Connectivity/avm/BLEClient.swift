@@ -138,6 +138,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
             let timer = DispatchSource.makeTimerSource(queue: self.queue)
             timer.schedule(deadline: .now() + interval, repeating: interval)
             timer.setEventHandler { [weak self] in
+                IdleCPUDiagnostics.shared.recordTimerTick("ble.rssi")
                 guard
                     let self,
                     let peripheral = self.targetPeripheral,
@@ -222,6 +223,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     // MARK: Private helpers
 
     private func emit(_ event: Event) {
+        IdleCPUDiagnostics.shared.recordTransportEvent("ble.emit.\(event.idleCPUCounterName)")
         Task { @MainActor [weak self] in
             self?.onEvent?(event)
         }
@@ -642,6 +644,34 @@ private enum AccessoryCharacteristic: Hashable {
     case lux
     case scrollText
     case strobeSettings
+}
+
+extension BLEClient.Event {
+    var idleCPUCounterName: String {
+        switch self {
+        case .stateChanged: return "stateChanged"
+        case .discovered: return "discovered"
+        case .connected: return "connected"
+        case .failedToConnect: return "failedToConnect"
+        case .disconnected: return "disconnected"
+        case .storedPeripheralNotFound: return "storedPeripheralNotFound"
+        case .deviceInfoUpdated: return "deviceInfoUpdated"
+        case .selectedViewUpdated: return "selectedViewUpdated"
+        case .configurationUpdated: return "configurationUpdated"
+        case .liveTemperatureUpdated: return "liveTemperatureUpdated"
+        case .historyDownloadStarted: return "historyDownloadStarted"
+        case .historyDownloaded: return "historyDownloaded"
+        case .historyDownloadFailed: return "historyDownloadFailed"
+        case .brightnessUpdated: return "brightnessUpdated"
+        case .otaResponseUpdated: return "otaResponseUpdated"
+        case .luxUpdated: return "luxUpdated"
+        case .scrollTextUpdated: return "scrollTextUpdated"
+        case .strobeUpdated: return "strobeUpdated"
+        case .rssiUpdated: return "rssiUpdated"
+        case .pairingRequired: return "pairingRequired"
+        case .transportError: return "transportError"
+        }
+    }
 }
 
 private struct CharacteristicRegistry {
