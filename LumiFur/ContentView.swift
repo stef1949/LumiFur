@@ -18,7 +18,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import os
 
-let actions = SharedOptions.protoActionOptions3
+let actions = SharedOptions.protoActionOptions
 let configs = SharedOptions.protoConfigOptions
 
 // IOS 18.0 features
@@ -50,7 +50,7 @@ final class iOSViewModel: ObservableObject {
 
                     if let view = messageData["view"] as? Int {
                         print("iOS ViewModel: Received 'setFace' command from watch for view: \(view)")
-                        self.bleModel.setView(view)          // ✅ FIXED
+                        self.bleModel.setView(view)
                         self.receivedFaceFromWatch = nil
                     } else if let face = messageData["faceValue"] as? String {
                         print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
@@ -150,9 +150,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     //@StateObject private var accessoryViewModel = AccessoryViewModel()
     
-    // 1. Declare this as an @ObservedObject. It will receive the instance
-        //    created in the App struct.
-    @ObservedObject var bleModel: AccessoryViewModel
+    let bleModel: AccessoryViewModel
     
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
@@ -163,7 +161,6 @@ struct ContentView: View {
     @AppStorage("customMessage") private var customMessage = false
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
-    @State var auroraModeEnabled = false
     @State private var customMessageText: String = ""
     @State private var showCustomMessagePopup = false
     
@@ -277,16 +274,6 @@ struct ContentView: View {
         }
     }
     
-    private var toolbarModel: ToolbarStatusModel {
-        .init(
-            connectionState: bleModel.connectionState,
-            toolbarStatusText: bleModel.connectionState.toolbarStatusText,
-            signalStrength: bleModel.signalStrength,
-            //luxValue: Double(bleModel.luxValue)
-            luxValue: Int(bleModel.luxValue)
-        )
-    }
-    
     var body: some View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("ContentView")
 
@@ -352,18 +339,7 @@ struct ContentView: View {
                                 }
                             }
                             ToolbarItem(placement: .topBarTrailing) {
-                                HeaderView(
-                                    connectionState: toolbarModel.connectionState,
-                                    // Use a stable status for width; don’t include fast-changing numbers
-                                    connectionStatus: toolbarModel.connectionState.toolbarStatusText,
-                                    // Still pass the real numbers, but HeaderView must not let them change width
-                                    signalStrength: toolbarModel.signalStrength,
-                                    luxValue: Double(toolbarModel.luxValue)
-                                )
-                                .equatable()
-                                //.animation(.smooth(duration: 0.25), value: bleModel.connectionState)
-                                //.animation(.smooth(duration: 0.25), value: bleModel.connectionState.toolbarStatusText)
-                                .fixedSize(horizontal: true, vertical: false) // allow grow/shrink naturally
+                                ToolbarStatusHost(bleModel: bleModel)
                             }
                         }
                 }
@@ -376,7 +352,9 @@ struct ContentView: View {
                 //Divider()
                 NavigationStack {
                     SettingsView(
-                        bleModel: bleModel, selectedMatrix: $matrixStyle
+                        bleModel: bleModel,
+                        selectedMatrix: $matrixStyle,
+                        isActive: selectedSidebarItem == .settings
                     )
                     .navigationTitle("Settings")
                 }
@@ -436,75 +414,14 @@ struct ContentView: View {
 
         ZStack {
             if selectedSidebarItem == .dashboard {
-                GeometryReader { proxy in
-                    let isLandscape = proxy.size.width > proxy.size.height
-                    Group {
-                        if isLandscape {
-                            HStack(spacing: 16) {
-                                FaceGridSection(
-                                    bleModel: bleModel,
-                                    selectedView: bleModel.selectedView,
-                                    onSetView: { bleModel.setView($0) },
-                                    auroraModeEnabled: auroraModeEnabled
-                                )
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                                ChartView(
-                                    isExpanded: $isChartsExpanded,
-                                    seedData: bleModel.temperatureData,
-                                    temperaturePublisher: bleModel.temperatureChartPublisher,
-                                    selectedUnits: selectedUnitsBinding
-                                )
-                                .equatable()
-                                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                                .frame(
-                                    width: proxy.size.width * 0.33,
-                                    alignment: .top
-                                )
-                                .frame(maxHeight: .infinity)
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        isChartsExpanded.toggle()
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-                            .padding(.bottom)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
-                        } else {
-                            VStack {
-                                FaceGridSection(
-                                    bleModel: bleModel,
-                                    selectedView: bleModel.selectedView,
-                                    onSetView: { bleModel.setView($0) },
-                                    auroraModeEnabled: auroraModeEnabled
-                                )
-
-                                ChartView(
-                                    isExpanded: $isChartsExpanded,
-                                    seedData: bleModel.temperatureData,
-                                    temperaturePublisher: bleModel.temperatureChartPublisher,
-                                    selectedUnits: selectedUnitsBinding
-                                )
-                                .equatable()
-                                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                                .frame(maxHeight: isChartsExpanded ? 160 : 55)
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        isChartsExpanded.toggle()
-                                    }
-                                }
-                                .padding(.horizontal)
-                                .padding(.bottom)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
-                            }
-                        }
-                    }
-                }
-                .onAppear(perform: prepareHaptics)
-                .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in
-                    handleWatchFaceSelection(face: newFace)
-                }
+                DashboardContentView(
+                    bleModel: bleModel,
+                    isChartsExpanded: $isChartsExpanded,
+                    selectedUnits: selectedUnitsBinding,
+                    receivedFaceFromWatch: viewModel.receivedFaceFromWatch,
+                    onPrepareHaptics: prepareHaptics,
+                    onHandleWatchFaceSelection: handleWatchFaceSelection
+                )
         } else {
             Text("Select an item from the sidebar")
                 .foregroundStyle(.secondary)
@@ -710,12 +627,11 @@ struct ContentView: View {
     
     // MARK: –––––––––––––––––––––––––––––––––
     // 1) Standalone grid view
-    struct FaceGridSection: View {
+    struct FaceGridSection: View, Equatable {
         // No longer observing the whole VM, but taking specific values/callbacks
-        @ObservedObject var bleModel: AccessoryViewModel
+        let bleModel: AccessoryViewModel
         let selectedView: Int
         let onSetView: (Int) -> Void  // Callback to update the selection
-        let auroraModeEnabled: Bool
         //let items: [SharedOptions.ProtoAction]  // Pass the data directly
         
         @Environment(\.colorScheme) private var colorScheme
@@ -739,7 +655,7 @@ struct ContentView: View {
         */
         
         // Access the static property directly and use .map to convert it.
-        @State private var items: [FaceItem] = SharedOptions.protoActionOptions3.map { FaceItem(content: $0) }
+        @State private var items: [FaceItem] = SharedOptions.protoActionOptions.map { FaceItem(content: $0) }
         
         
         // --- The rest of your view remains the same ---
@@ -749,6 +665,8 @@ struct ContentView: View {
         //@Namespace private var glassNamespace
         
         var body: some View {
+            let _ = IdleCPUDiagnostics.shared.recordViewBody("FaceGridSection")
+
             /*
              // --- DEBUG TEXT ---
              Text("Number of items: \(items.count)")
@@ -765,7 +683,6 @@ struct ContentView: View {
                                 // 3. Pass the item and selection state cleanly.
                                 item: item,
                                 isSelected: isSelectedFaceItem(item),
-                                auroraModeEnabled: auroraModeEnabled,
                                 overlayColor: lightColor,
                                 backgroundColor: darkColor,
                                 showsMenuButton: shouldShowStrobeMenu(for: item),
@@ -834,6 +751,10 @@ struct ContentView: View {
                 return false
             }
         }
+
+        static func == (lhs: FaceGridSection, rhs: FaceGridSection) -> Bool {
+            lhs.selectedView == rhs.selectedView
+        }
     }
     
     // MARK: - Helper Functions (Place handleWatchFaceSelection HERE)
@@ -846,7 +767,7 @@ struct ContentView: View {
         }
         
         // Find the index where the enum's String == selectedFace
-        if let index = SharedOptions.protoActionOptions3.firstIndex(where: {
+        if let index = SharedOptions.protoActionOptions.firstIndex(where: {
             action in
             switch action {
             case .emoji(let e): return e == selectedFace
@@ -860,7 +781,7 @@ struct ContentView: View {
             bleModel.setView(viewToSet)
         } else {
             print(
-                "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions3."
+                "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions."
             )
         }
     }
@@ -869,12 +790,109 @@ struct ContentView: View {
     /// so you can show it back in your SwiftUI view or send it to the watch.
     private func getFaceForView(_ view: Int) -> String {
         let idx = view - 1
-        guard SharedOptions.protoActionOptions3.indices.contains(idx) else {
+        guard SharedOptions.protoActionOptions.indices.contains(idx) else {
             return "❓"
         }
-        switch SharedOptions.protoActionOptions3[idx] {
+        switch SharedOptions.protoActionOptions[idx] {
         case .emoji(let e): return e
         case .symbol(let s): return s
+        }
+    }
+}
+
+private struct ToolbarStatusHost: View {
+    @ObservedObject var bleModel: AccessoryViewModel
+
+    private var toolbarModel: ToolbarStatusModel {
+        .init(
+            connectionState: bleModel.connectionState,
+            toolbarStatusText: bleModel.connectionState.toolbarStatusText,
+            signalStrength: bleModel.signalStrength,
+            luxValue: Int(bleModel.luxValue)
+        )
+    }
+
+    var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("ToolbarStatusHost")
+
+        HeaderView(
+            connectionState: toolbarModel.connectionState,
+            connectionStatus: toolbarModel.connectionState.toolbarStatusText,
+            signalStrength: toolbarModel.signalStrength,
+            luxValue: Double(toolbarModel.luxValue)
+        )
+        .equatable()
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+private struct DashboardContentView: View {
+    @ObservedObject var bleModel: AccessoryViewModel
+    @Binding var isChartsExpanded: Bool
+    let selectedUnits: Binding<TempUnit>
+    let receivedFaceFromWatch: String?
+    let onPrepareHaptics: () -> Void
+    let onHandleWatchFaceSelection: (String?) -> Void
+
+    var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("DashboardContentView")
+
+        GeometryReader { proxy in
+            let isLandscape = proxy.size.width > proxy.size.height
+
+            Group {
+                if isLandscape {
+                    HStack(spacing: 16) {
+                        faceGrid
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        chart(width: proxy.size.width * 0.33)
+                            .frame(maxHeight: .infinity)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                } else {
+                    VStack {
+                        faceGrid
+                        chart(width: nil)
+                            .frame(maxHeight: isChartsExpanded ? 160 : 55)
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                    }
+                }
+            }
+        }
+        .onAppear(perform: onPrepareHaptics)
+        .onChange(of: receivedFaceFromWatch) { _, newFace in
+            onHandleWatchFaceSelection(newFace)
+        }
+    }
+
+    private var faceGrid: some View {
+        ContentView.FaceGridSection(
+            bleModel: bleModel,
+            selectedView: bleModel.selectedView,
+            onSetView: bleModel.setView
+        )
+        .equatable()
+    }
+
+    @ViewBuilder
+    private func chart(width: CGFloat?) -> some View {
+        ChartView(
+            isExpanded: $isChartsExpanded,
+            seedData: bleModel.temperatureData,
+            temperaturePublisher: bleModel.temperatureChartPublisher,
+            selectedUnits: selectedUnits
+        )
+        .equatable()
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+        .frame(width: width, alignment: .top)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                isChartsExpanded.toggle()
+            }
         }
     }
 }

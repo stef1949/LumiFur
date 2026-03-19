@@ -52,7 +52,7 @@ struct FaceGridView: View {
     // The grid of face icons – same as your iOS protoActionOptions.
     // let faces: [String] = ["", "🏳️‍⚧️", "🌈", "🙂", "😳", "😎", "☠️"]
     
-    let faces: [SharedOptions.ProtoAction] = SharedOptions.protoActionOptions3
+    let faces: [SharedOptions.ProtoAction] = SharedOptions.protoActionOptions
     
     // Define a two-column grid.
     let columns: [GridItem] = [GridItem(.adaptive(minimum: 50, maximum: 100))]
@@ -542,7 +542,7 @@ private struct StatusView: View {
     
     // Determine current view (defaults to 1 if unknown)
     let current = max(1, connectivityManager.selectedView)
-    let maxView = SharedOptions.protoActionOptions3.count
+    let maxView = SharedOptions.protoActionOptions.count
     guard maxView > 0 else { return }
     
     // Compute next view and clamp to valid range

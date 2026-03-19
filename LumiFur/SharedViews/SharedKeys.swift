@@ -110,6 +110,11 @@ final class IdleCPUDiagnostics: @unchecked Sendable {
         increment("task.\(name)")
     }
 
+    @inline(__always)
+    func recordMainActorHop(_ name: String) {
+        increment("hop.\(name)")
+    }
+
     private func increment(_ key: String) {
         guard Self.isEnabled else { return }
 
@@ -148,6 +153,7 @@ final class IdleCPUDiagnostics {
     @inline(__always) func recordTransportEvent(_ name: String) {}
     @inline(__always) func recordTimerTick(_ name: String) {}
     @inline(__always) func recordTaskFire(_ name: String) {}
+    @inline(__always) func recordMainActorHop(_ name: String) {}
 }
 #endif
 

@@ -63,13 +63,6 @@ struct RootView: View {
     // Controls whether to show the splash screen
     @State private var showWhatsNew: Bool = false
     
-    @Environment(\.scenePhase) private var scenePhase
-    
-    // 1. Create your view model as a @StateObject here. This ties its lifecycle
-    //    to the app's lifecycle, not a specific view. It will be created
-    //    only once. We use the `.shared` instance you've already defined.
-    @StateObject private var accessoryManager = AccessoryViewModel.shared
-    
     //@State private var showSplash = true
     
     var body: some View {

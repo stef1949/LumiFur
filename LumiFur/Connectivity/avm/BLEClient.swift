@@ -224,6 +224,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
     private func emit(_ event: Event) {
         IdleCPUDiagnostics.shared.recordTransportEvent("ble.emit.\(event.idleCPUCounterName)")
+        IdleCPUDiagnostics.shared.recordMainActorHop("ble.emit")
         Task { @MainActor [weak self] in
             self?.onEvent?(event)
         }

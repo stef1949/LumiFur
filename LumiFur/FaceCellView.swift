@@ -9,7 +9,6 @@ import SwiftUI
 struct FaceCellView: View, Equatable {
     let item: FaceItem
     let isSelected: Bool
-    let auroraModeEnabled: Bool
     let overlayColor: Color
     let backgroundColor: Color
     let showsMenuButton: Bool
@@ -19,7 +18,6 @@ struct FaceCellView: View, Equatable {
     init(
         item: FaceItem,
         isSelected: Bool,
-        auroraModeEnabled: Bool,
         overlayColor: Color,
         backgroundColor: Color,
         showsMenuButton: Bool = false,
@@ -28,7 +26,6 @@ struct FaceCellView: View, Equatable {
     ) {
         self.item = item
         self.isSelected = isSelected
-        self.auroraModeEnabled = auroraModeEnabled
         self.overlayColor = overlayColor
         self.backgroundColor = backgroundColor
         self.showsMenuButton = showsMenuButton
@@ -39,7 +36,6 @@ struct FaceCellView: View, Equatable {
     static func == (lhs: FaceCellView, rhs: FaceCellView) -> Bool {
         lhs.item == rhs.item &&
         lhs.isSelected == rhs.isSelected &&
-        lhs.auroraModeEnabled == rhs.auroraModeEnabled &&
         lhs.overlayColor == rhs.overlayColor &&
         lhs.backgroundColor == rhs.backgroundColor &&
         lhs.showsMenuButton == rhs.showsMenuButton

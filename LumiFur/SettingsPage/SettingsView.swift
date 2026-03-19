@@ -63,15 +63,21 @@ struct SettingsView: View {
     @AppStorage("tempUnit") private var tempUnitRaw: String = TempUnit.celsius.rawValue
     
     @State private var isLedArrayExpanded: Bool = false
+    let isActive: Bool
     
     // Bindings passed from a parent view.
     @Binding var selectedMatrix: MatrixStyle
     
     // --- OPTIMIZATION 2: Centralized Initialization ---
     // The initializer correctly sets up all state and dependencies.
-    init(bleModel: AccessoryViewModel, selectedMatrix: Binding<MatrixStyle>) {
+    init(
+        bleModel: AccessoryViewModel,
+        selectedMatrix: Binding<MatrixStyle>,
+        isActive: Bool = true
+    ) {
         self.bleModel = bleModel
         self._selectedMatrix = selectedMatrix
+        self.isActive = isActive
         
         // Services are created once and injected into the ViewModel.
         let appService = GitHubService(owner: "stef1949", repo: "LumiFur")
@@ -91,96 +97,73 @@ struct SettingsView: View {
     var body: some View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("SettingsView")
 
-        NavigationStack {
-            List {
-                // Connection view is a self-contained component.
-                Section { // The List needs a Section to host the view
-                        UnifiedConnectionView(accessoryViewModel: bleModel)
-                        //.scrollContentBackground(.hidden)
+        List {
+            Section {
+                UnifiedConnectionView(accessoryViewModel: bleModel)
+            }
+
+            if bleModel.isConnected {
+                otaUpdateLink
+                    .sheet(isPresented: $showOTAUpdate) {
+                        OTAUpdateView(viewModel: bleModel)
+                            .presentationDetents([.medium, .large])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(46)
                     }
-                //.frame(maxWidth: .infinity, alignment: .center)
-                //.listRowBackground(Color.blue.opacity(0.0))
-                //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
-                //.scrollContentBackground(.hidden)
-                
-                // OTA Update link appears conditionally.
-                if bleModel.isConnected {
-                    otaUpdateLink
-                        .sheet(isPresented: $showOTAUpdate) {
-                            OTAUpdateView(viewModel: bleModel)
-                                .presentationDetents([.medium, .large])
-                                .presentationDragIndicator(.visible)
-                                .presentationCornerRadius(46)
-                                //.padding()
-                        }
-                }
-                
-                // Each section is now its own lightweight struct.
-                ConfigSection(
-                    bleModel: bleModel,
-                    autoBrightness: $autoBrightness,
-                    accelerometer: $accelerometer,
-                    sleepMode: $sleepMode,
-                    auroraMode: $auroraMode,
-                    selectedUnits: selectedUnitsBinding
-                )
-                
-                MatrixSection(
-                    isExpanded: $isLedArrayExpanded,
-                    selectedMatrix: $selectedMatrix
-                )
-                //.disabled(true)
-                
-                AdvancedSettingsSection(
-                    bleModel: bleModel,
-                    showAdvanced: $showAdvanced,
-                    fancyMode: $fancyMode
-                )
-                
-                AboutSection(
-                    firmwareVersion: bleModel.firmwareVersion,
-                    isConnected: bleModel.isConnected
-                )
-                
-                ReleaseNotesSection(
-                    appReleases: releaseViewModel.appReleases,
-                    controllerReleases: releaseViewModel.controllerReleases
-                )
-                
-                AppIconPickerSection()
-                
-                Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
-                    .textFieldStyle(.plain)
-                    .font(.caption)
             }
-            //.scrollContentBackground(.hidden)
-            .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    NavigationLink(destination: InfoView()) {
-                        Image(systemName: "info.circle")
-                    }
+
+            ConfigSection(
+                bleModel: bleModel,
+                autoBrightness: $autoBrightness,
+                accelerometer: $accelerometer,
+                sleepMode: $sleepMode,
+                auroraMode: $auroraMode,
+                selectedUnits: selectedUnitsBinding
+            )
+
+            MatrixSection(
+                isExpanded: $isLedArrayExpanded,
+                selectedMatrix: $selectedMatrix
+            )
+
+            AdvancedSettingsSection(
+                bleModel: bleModel,
+                showAdvanced: $showAdvanced,
+                fancyMode: $fancyMode
+            )
+
+            AboutSection(
+                firmwareVersion: bleModel.firmwareVersion,
+                isConnected: bleModel.isConnected
+            )
+
+            ReleaseNotesSection(
+                appReleases: releaseViewModel.appReleases,
+                controllerReleases: releaseViewModel.controllerReleases
+            )
+
+            AppIconPickerSection()
+
+            Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
+                .textFieldStyle(.plain)
+                .font(.caption)
+        }
+        .navigationTitle("Settings")
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                NavigationLink(destination: InfoView()) {
+                    Image(systemName: "info.circle")
                 }
             }
-            .alert("Connection Error", isPresented: $bleModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(bleModel.errorMessage)
-            }
-            .task {
-                // Data fetching logic remains centralized here.
-                if releaseViewModel.appReleases.isEmpty {
-                    await releaseViewModel.loadAppReleases()
-                }
-                if releaseViewModel.controllerReleases.isEmpty {
-                    await releaseViewModel.loadControllerReleases()
-                }
-            }
-            .onAppear {
-                if bleModel.isBluetoothReady && !bleModel.isConnected {
-                    bleModel.scanForDevices()
-                }
-            }
+        }
+        .alert("Connection Error", isPresented: $bleModel.showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(bleModel.errorMessage)
+        }
+        .task(id: isActive) {
+            guard isActive else { return }
+            await activateIfNeeded()
         }
     }
     
@@ -200,6 +183,21 @@ struct SettingsView: View {
             }
         }
         .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+    }
+
+    @MainActor
+    private func activateIfNeeded() async {
+        IdleCPUDiagnostics.shared.recordTaskFire("settings.activate")
+
+        if releaseViewModel.appReleases.isEmpty {
+            await releaseViewModel.loadAppReleases()
+        }
+        if releaseViewModel.controllerReleases.isEmpty {
+            await releaseViewModel.loadControllerReleases()
+        }
+        if bleModel.isBluetoothReady, !bleModel.isConnected, !bleModel.isScanning {
+            bleModel.scanForDevices()
+        }
     }
 
 }
