@@ -83,18 +83,12 @@ struct OTAUpdateView: View {
                             if selectedFile.startAccessingSecurityScopedResource() {
                                 defer { selectedFile.stopAccessingSecurityScopedResource() }
                                 let firmwareData = try Data(contentsOf: selectedFile)
-                                DispatchQueue.main.async {
-                                    viewModel.startOTAUpdate(firmwareData: firmwareData)
-                                }
+                                viewModel.startOTAUpdate(firmwareData: firmwareData)
                             } else {
-                                DispatchQueue.main.async {
-                                    viewModel.otaStatusMessage = "Cannot access selected file (security scope denied)."
-                                }
+                                viewModel.otaStatusMessage = "Cannot access selected file (security scope denied)."
                             }
                         } catch {
-                            DispatchQueue.main.async {
-                                viewModel.otaStatusMessage = "Failed to load firmware: \(error.localizedDescription)"
-                            }
+                            viewModel.otaStatusMessage = "Failed to load firmware: \(error.localizedDescription)"
                         }
                     }
                 }

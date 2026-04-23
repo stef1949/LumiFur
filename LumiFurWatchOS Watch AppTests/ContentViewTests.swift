@@ -25,7 +25,7 @@ final class ContentViewTests: XCTestCase {
 
     // MARK: - Item.displayName
     func testItemDisplayNameCases() {
-        let expected = ["Device", "Faces", "Settings"]
+        let expected = ["Device", "Faces", "Status", "Settings"]
         let actual = Item.allCases.map { $0.displayName }
         XCTAssertEqual(actual, expected)
     }
@@ -47,7 +47,7 @@ final class ContentViewTests: XCTestCase {
     @MainActor func testInitialConnectivityState() {
         let manager = WatchConnectivityManager.shared
         // Assuming default on init
-        XCTAssertEqual(manager.connectionStatus, "Not Connected")
+        XCTAssertEqual(manager.connectionStatus, "Disconnected")
         XCTAssertFalse(manager.isReachable)
     }
 }

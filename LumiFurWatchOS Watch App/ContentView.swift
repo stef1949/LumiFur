@@ -9,7 +9,13 @@ import SwiftUI
 import WatchConnectivity
 import CoreMotion
 import Charts
+import OSLog
 
+
+private let watchContentLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur.watch",
+    category: "ContentView"
+)
 
 
 // MARK: - Face Grid View
@@ -77,22 +83,14 @@ struct FaceGridView: View {
                             WKInterfaceDevice.current().play(.start)
                             let previousView = connectivityManager.selectedView
                             connectivityManager.selectedView = viewNumber
-                            // ✅ 4. The action now sends the 1-based view number.
-                            // This makes the watch speak the same "language" as the iOS app.
-                            let payload: [String: Any] = [
-                                "command": "setFace",
-                                "view": viewNumber // Send the integer view number
-                            ]
-                            
-                            print("\(face.rawValue) pressed - sending command: \(payload)...")
-                            WatchConnectivityManager.shared.sendMessage(payload) { reply in
-                                print("Reply:", reply)
-                            } errorHandler: { error in
-                                print("Error:", error)
+                            let command = WatchCommandPayload.setView(viewNumber)
+                            WatchConnectivityManager.shared.sendCommand(command, replyHandler: { _ in
+                            }, errorHandler: { error in
+                                watchContentLogger.error("Failed to send setView command: \(error.localizedDescription, privacy: .public)")
                                 Task { @MainActor in
                                     connectivityManager.selectedView = previousView
                                 }
-                            }
+                            })
                         } label: {
                             faceView(for: face)
                                 .aspectRatio(1, contentMode: .fit)
@@ -247,24 +245,17 @@ struct DeviceView: View {
             switch item {
             case .device:
                 // Connection controls
-                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                if !isConnectedOrConnecting(connectivityManager.controllerConnectionStatus) {
                     Button {
-                        // Send connect command using the manager
-                        let message = ["command": "connectToDevice"]
-                        print("Watch sending 'connectToDevice' command...")
-                        WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                            print("Connect command reply: \(reply)")
-                        }, errorHandler: { error in
-                            print("Connect command error: \(error.localizedDescription)")
-                        })
+                        WatchConnectivityManager.shared.sendCommand(.connect())
                     } label: {
                         Text("Connect")
                     }
                     //.padding(.top, 5)
                     .glassEffect(.regular.interactive())
-                    .disabled(!WCSession.default.isReachable)
+                    .disabled(!connectivityManager.isReachable)
                     
-                    if !WCSession.default.isReachable {
+                    if !connectivityManager.isReachable {
                         Text("iPhone not reachable")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -274,30 +265,11 @@ struct DeviceView: View {
                 } else {
                     VStack(spacing: 8) {
                         Button("Disconnect") {
-                            let message = ["command": "disconnectFromDevice"]
-                            print("Watch sending 'disconnectFromDevice' command...")
-                            WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                                print("Disconnect command reply: \(reply)")
-                            }, errorHandler: { error in
-                                print("Disconnect command error: \(error.localizedDescription)")
-                            })
+                            WatchConnectivityManager.shared.sendCommand(.disconnect())
                         }
                         .glassEffect(.regular.tint(.red).interactive())
-                        .disabled(!WCSession.default.isReachable)
-                        /*
-                         Button("Reconnect") {
-                         let message = ["command": "connectToDevice"]
-                         print("Watch sending 'connectToDevice' command (reconnect)...")
-                         WatchConnectivityManager.shared.sendMessage(message, replyHandler: { reply in
-                         print("Reconnect command reply: \(reply)")
-                         }, errorHandler: { error in
-                         print("Reconnect command error: \(error.localizedDescription)")
-                         })
-                         }
-                         .glassEffect(.regular.interactive())
-                         .disabled(!WCSession.default.isReachable)
-                         */
-                        if !WCSession.default.isReachable {
+                        .disabled(!connectivityManager.isReachable)
+                        if !connectivityManager.isReachable {
                             Text("iPhone not reachable")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -306,11 +278,11 @@ struct DeviceView: View {
                     .padding(.top, 5)
                 }
             case .faces:
-                if isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                if isConnectedOrConnecting(connectivityManager.controllerConnectionStatus) {
                     ZStack {
                         VStack {
                             FaceGridView()
-                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .disabled(!isConnectedOrConnecting(connectivityManager.controllerConnectionStatus))
                         }
                         .overlay(alignment: .bottom){
                             HStack {
@@ -379,7 +351,7 @@ struct DeviceView: View {
                 StatusView()
             case .settings:
                 
-                if !isConnectedOrConnecting(connectivityManager.connectionStatus) {
+                if !isConnectedOrConnecting(connectivityManager.controllerConnectionStatus) {
                     Toggle("Wrist Flick to Change Face", isOn: $wristFlickEnabled)
                         .padding(15)
                         .glassEffect(.regular.interactive())
@@ -392,46 +364,48 @@ struct DeviceView: View {
                         List {
                             Toggle("Auto Brightness", isOn: $connectivityManager.autoBrightness)
                                 .onChange(of: connectivityManager.autoBrightness) { _, newValue in
-                                    // Send a specific message for this one setting
-                                    print("Toggle changed. Sending autoBrightness: \(newValue)")
-                                    WatchConnectivityManager.shared.sendMessage(["autoBrightness": newValue])
+                                    _ = newValue
+                                    connectivityManager.sendAccessorySettings()
                                 }
-                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .disabled(!isConnectedOrConnecting(connectivityManager.controllerConnectionStatus))
                                 .padding(15)
                                 .glassEffect(.regular
                                     .interactive())
                                 .listRowBackground(Color.clear)
-                                .disabled(!WCSession.default.isReachable)
+                                .disabled(!connectivityManager.isReachable)
                             Toggle("Accelerometer", isOn: $connectivityManager.accelerometerEnabled)
                                 .onChange(of: connectivityManager.accelerometerEnabled) { _, newValue in
-                                    WatchConnectivityManager.shared.sendMessage(["accelerometer": newValue])
+                                    _ = newValue
+                                    connectivityManager.sendAccessorySettings()
                                 }
-                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .disabled(!isConnectedOrConnecting(connectivityManager.controllerConnectionStatus))
                                 .padding(15)
                                 .glassEffect(.regular
                                     .interactive())
                                 .listRowBackground(Color.clear)
-                                .disabled(!WCSession.default.isReachable)
+                                .disabled(!connectivityManager.isReachable)
                             Toggle("Sleep Mode", isOn: $connectivityManager.sleepModeEnabled)
                                 .onChange(of: connectivityManager.sleepModeEnabled) { _, newValue in
-                                    WatchConnectivityManager.shared.sendMessage(["sleepMode": newValue])
+                                    _ = newValue
+                                    connectivityManager.sendAccessorySettings()
                                 }
-                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .disabled(!isConnectedOrConnecting(connectivityManager.controllerConnectionStatus))
                                 .padding(15)
                                 .glassEffect(.regular.interactive())
                                 .listRowBackground(Color.clear)
-                                .disabled(!WCSession.default.isReachable)
+                                .disabled(!connectivityManager.isReachable)
                             
                             Toggle("Aurora Mode", isOn: $connectivityManager.auroraModeEnabled)
                                 .onChange(of: connectivityManager.auroraModeEnabled) { _, newValue in
-                                    WatchConnectivityManager.shared.sendMessage(["auroraMode": newValue])
+                                    _ = newValue
+                                    connectivityManager.sendAccessorySettings()
                                 }
-                                .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
+                                .disabled(!isConnectedOrConnecting(connectivityManager.controllerConnectionStatus))
                                 .padding(15)
                                 .glassEffect(.regular
                                     .interactive())
                                 .listRowBackground(Color.clear)
-                                .disabled(!WCSession.default.isReachable)
+                                .disabled(!connectivityManager.isReachable)
                             
                             // Wrist-flick option (watch-local, so no sendMessage)
                             Toggle("Wrist Flick to Change Face", isOn: $wristFlickEnabled)
@@ -554,7 +528,7 @@ private struct StatusView: View {
 @MainActor  func handleSwipeToChangeView(_ translationWidth: CGFloat) {
     let connectivityManager = WatchConnectivityManager.shared
     // Only act if we're connected/connecting
-    guard isConnectedOrConnecting(connectivityManager.connectionStatus) else { return }
+    guard isConnectedOrConnecting(connectivityManager.controllerConnectionStatus) else { return }
     
     // Require a minimum swipe distance to avoid accidental changes
     let threshold: CGFloat = 40
@@ -578,21 +552,14 @@ private struct StatusView: View {
     WKInterfaceDevice.current().play(.click)
     connectivityManager.selectedView = next
     
-    // Send the same command as tapping a face, using the 1-based view number
-    let payload: [String: Any] = [
-        "command": "setFace",
-        "view": next
-    ]
-    
-    print("Swipe changing view from \(current) -> \(next). Sending: \(payload)")
-    WatchConnectivityManager.shared.sendMessage(payload) { reply in
-        print("Reply:", reply)
-    } errorHandler: { error in
-        print("Error:", error)
+    let command = WatchCommandPayload.setView(next)
+    WatchConnectivityManager.shared.sendCommand(command, replyHandler: { _ in
+    }, errorHandler: { error in
+        watchContentLogger.error("Failed to send swipe setView command: \(error.localizedDescription, privacy: .public)")
         Task { @MainActor in
             connectivityManager.selectedView = current
         }
-    }
+    })
 }
 
 
@@ -775,5 +742,3 @@ extension WatchConnectivityManager {
 }
 
 #endif
-
-

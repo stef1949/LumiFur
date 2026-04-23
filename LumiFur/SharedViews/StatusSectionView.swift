@@ -36,8 +36,9 @@ struct StatusSectionView: View, Equatable {
         HStack(spacing: 8) {
             // Lux badge (render only when connected); otherwise keep layout with a lightweight placeholder
             if connectionState == .connected {
-                LuxBadgeView(progress: luxProgress)
+                LuxBadgeView(progress: luxProgress, luxValue: luxValue)
                     .equatable()
+                    .padding(.horizontal, 4)
             } else {
                 Color.clear
                     .frame(width: 22, height: 22)
@@ -71,18 +72,32 @@ struct StatusSectionView: View, Equatable {
 
     private struct LuxBadgeView: View, Equatable {
         let progress: Double
-
+        let luxValue: Double
         var body: some View {
             Gauge(
                 value: progress,
-                in: 0...1,
-                label: { EmptyView() },
-                currentValueLabel: { EmptyView() }
-            )
+                in: 0...1
+            ) {
+                Text("\(Int(luxValue))")
+            } currentValueLabel: {
+                EmptyView()
+            }
             .gaugeStyle(.accessoryCircular)
+            .tint(luxTintColor)
             .scaleEffect(0.55)
             .frame(width: 22, height: 22)
             .animation(.smooth(duration: 2.0), value: progress)
+        }
+        private var luxTintColor: Color {
+            if progress < 0.2 {
+                return Color.blue
+            } else if progress < 0.5 {
+                return Color.green
+            } else if progress < 0.8 {
+                return Color.yellow
+            } else {
+                return Color.orange
+            }
         }
     }
 

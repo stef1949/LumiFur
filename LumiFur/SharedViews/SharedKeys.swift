@@ -16,6 +16,7 @@ import ActivityKit // Needed for ActivityAttributes
 struct SharedDataKeys {
     static let suiteName = "group.com.richies3d.LumiFur" // <<< MUST MATCH YOUR APP GROUP ID
     static let widgetKind = "com.richies3d.LumiFur.statuswidget"
+    static let controlWidgetKind = "com.richies3d.LumiFur.controlwidget"
     
     static let isConnected = "widgetIsConnected"
     static let connectionStatus = "widgetConnectionStatus"
@@ -29,9 +30,20 @@ struct SharedDataKeys {
     static let sleepModeEnabled = "sleepModeEnabled"
     static let auroraModeEnabled = "auroraModeEnabled"
     static let customMessage = "sharedCustomMessage"
+    static let widgetSnapshot = "widgetSnapshotData"
+    static let pendingWidgetCommand = "pendingWidgetCommandData"
+    static let transportPayload = "lumifurTransportPayload"
 }
 
 // MARK: - Shared Data Structures
+
+/// The configuration bytes exposed by the accessory config characteristic.
+struct AccessoryConfiguration: Equatable, Codable, Sendable {
+    var autoBrightness: Bool
+    var accelerometerEnabled: Bool
+    var sleepModeEnabled: Bool
+    var auroraModeEnabled: Bool
+}
 
 /// Data structure for temperature readings (SHARED)
 struct TemperatureData: Identifiable, Codable, Equatable, Sendable {
@@ -45,6 +57,198 @@ struct CPUUsageData: Identifiable, Codable, Sendable {
     var id = UUID()
     let timestamp: Date
     let cpuUsage: Int
+}
+
+struct WidgetSnapshot: Codable, Equatable, Sendable {
+    var isConnected: Bool
+    var connectionStatus: String
+    var controllerName: String?
+    var signalStrength: Int
+    var temperatureText: String
+    var temperatureHistory: [TemperatureData]
+    var selectedView: Int
+    var availableViewCount: Int
+    var configuration: AccessoryConfiguration
+    var customMessage: String
+
+    static let placeholder = WidgetSnapshot(
+        isConnected: false,
+        connectionStatus: ConnectionState.disconnected.rawValue,
+        controllerName: nil,
+        signalStrength: -100,
+        temperatureText: "--°C",
+        temperatureHistory: [],
+        selectedView: 1,
+        availableViewCount: 1,
+        configuration: .init(
+            autoBrightness: true,
+            accelerometerEnabled: true,
+            sleepModeEnabled: true,
+            auroraModeEnabled: true
+        ),
+        customMessage: ""
+    )
+}
+
+struct PendingWidgetCommand: Codable, Equatable, Sendable {
+    enum Kind: String, Codable, Sendable {
+        case setView
+    }
+
+    let id: UUID
+    let createdAt: Date
+    let kind: Kind
+    let selectedView: Int
+}
+
+enum WatchCommandType: String, Codable, Sendable {
+    case requestSnapshot
+    case setView
+    case connect
+    case disconnect
+    case updateConfiguration
+    case updateCustomMessage
+}
+
+struct WatchCommandPayload: Codable, Equatable, Sendable {
+    let type: WatchCommandType
+    var selectedView: Int?
+    var configuration: AccessoryConfiguration?
+    var customMessage: String?
+
+    static func requestSnapshot() -> Self {
+        .init(type: .requestSnapshot, selectedView: nil, configuration: nil, customMessage: nil)
+    }
+
+    static func setView(_ selectedView: Int) -> Self {
+        .init(type: .setView, selectedView: selectedView, configuration: nil, customMessage: nil)
+    }
+
+    static func connect() -> Self {
+        .init(type: .connect, selectedView: nil, configuration: nil, customMessage: nil)
+    }
+
+    static func disconnect() -> Self {
+        .init(type: .disconnect, selectedView: nil, configuration: nil, customMessage: nil)
+    }
+
+    static func configuration(_ configuration: AccessoryConfiguration) -> Self {
+        .init(type: .updateConfiguration, selectedView: nil, configuration: configuration, customMessage: nil)
+    }
+
+    static func customMessage(_ customMessage: String) -> Self {
+        .init(type: .updateCustomMessage, selectedView: nil, configuration: nil, customMessage: customMessage)
+    }
+}
+
+struct WatchEnvelope: Codable, Equatable, Sendable {
+    let sentAt: Date
+    let payload: WatchCommandPayload
+
+    init(payload: WatchCommandPayload, sentAt: Date = .now) {
+        self.sentAt = sentAt
+        self.payload = payload
+    }
+}
+
+struct WatchStateSnapshot: Codable, Equatable, Sendable {
+    let deviceName: String?
+    let controllerName: String?
+    let controllerConnectionState: ConnectionState
+    let selectedView: Int
+    let configuration: AccessoryConfiguration
+    let customMessage: String
+    let temperatureText: String
+    let temperatureC: Double?
+    let temperatureTimestamp: Date?
+}
+
+struct WatchCommandReply: Codable, Equatable, Sendable {
+    let status: String
+    let snapshot: WatchStateSnapshot
+}
+
+enum SharedTransportCodec {
+    static func encodeMessage<T: Encodable>(_ value: T) throws -> [String: Any] {
+        let data = try JSONEncoder().encode(value)
+        return [SharedDataKeys.transportPayload: data]
+    }
+
+    static func decodeMessage<T: Decodable>(_ message: [String: Any], as type: T.Type) -> T? {
+        guard let data = message[SharedDataKeys.transportPayload] as? Data else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode(type, from: data)
+    }
+}
+
+struct WidgetSnapshotStore {
+    private let defaults: UserDefaults?
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "LumiFur",
+        category: "WidgetSnapshotStore"
+    )
+
+    init(defaults: UserDefaults? = UserDefaults(suiteName: SharedDataKeys.suiteName)) {
+        self.defaults = defaults
+    }
+
+    func loadSnapshot() -> WidgetSnapshot? {
+        guard let defaults, let data = defaults.data(forKey: SharedDataKeys.widgetSnapshot) else {
+            return nil
+        }
+
+        do {
+            return try JSONDecoder().decode(WidgetSnapshot.self, from: data)
+        } catch {
+            logger.error("Failed to decode widget snapshot: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    func saveSnapshot(_ snapshot: WidgetSnapshot) {
+        guard let defaults else { return }
+
+        do {
+            defaults.set(try JSONEncoder().encode(snapshot), forKey: SharedDataKeys.widgetSnapshot)
+        } catch {
+            logger.error("Failed to encode widget snapshot: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func loadPendingCommand() -> PendingWidgetCommand? {
+        guard let defaults, let data = defaults.data(forKey: SharedDataKeys.pendingWidgetCommand) else {
+            return nil
+        }
+
+        do {
+            return try JSONDecoder().decode(PendingWidgetCommand.self, from: data)
+        } catch {
+            logger.error("Failed to decode pending widget command: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    func savePendingCommand(_ command: PendingWidgetCommand) {
+        guard let defaults else { return }
+
+        do {
+            defaults.set(try JSONEncoder().encode(command), forKey: SharedDataKeys.pendingWidgetCommand)
+        } catch {
+            logger.error("Failed to encode pending widget command: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func clearPendingCommand(id: UUID? = nil) {
+        guard let defaults else { return }
+
+        if let id, let current = loadPendingCommand(), current.id != id {
+            return
+        }
+
+        defaults.removeObject(forKey: SharedDataKeys.pendingWidgetCommand)
+    }
 }
 
 // MARK: - Debug Diagnostics

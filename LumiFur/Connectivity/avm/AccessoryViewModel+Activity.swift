@@ -76,35 +76,8 @@ extension AccessoryViewModel {
 
     @MainActor
     private func updateWidgetData() {
-        guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
-            logger.error("Failed to open shared app-group defaults.")
-            return
-        }
-
-        defaults.set(isConnected, forKey: SharedDataKeys.isConnected)
-        defaults.set(connectionStatus, forKey: SharedDataKeys.connectionStatus)
-        defaults.set(connectedDeviceName, forKey: SharedDataKeys.controllerName)
-        defaults.set(temperature, forKey: SharedDataKeys.temperature)
-        defaults.set(signalStrength, forKey: SharedDataKeys.signalStrength)
-        defaults.set(selectedView, forKey: SharedDataKeys.selectedView)
-        defaults.set(autoBrightness, forKey: SharedDataKeys.autoBrightness)
-        defaults.set(accelerometerEnabled, forKey: SharedDataKeys.accelerometerEnabled)
-        defaults.set(sleepModeEnabled, forKey: SharedDataKeys.sleepModeEnabled)
-        defaults.set(auroraModeEnabled, forKey: SharedDataKeys.auroraModeEnabled)
-        defaults.set(customMessage, forKey: SharedDataKeys.customMessage)
-
-        saveTemperatureHistoryToUserDefaults(defaults: defaults)
+        persistWidgetSnapshot()
         WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    @MainActor
-    private func saveTemperatureHistoryToUserDefaults(defaults: UserDefaults) {
-        do {
-            let history = Array(temperatureData.suffix(50))
-            defaults.set(try JSONEncoder().encode(history), forKey: SharedDataKeys.temperatureHistory)
-        } catch {
-            logger.error("Failed to persist widget temperature history: \(error.localizedDescription)")
-        }
     }
 }
 

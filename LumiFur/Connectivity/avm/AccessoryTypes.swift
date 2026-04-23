@@ -39,14 +39,6 @@ struct StoredPeripheral: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
-/// The configuration bytes exposed by the accessory config characteristic.
-struct AccessoryConfiguration: Equatable, Sendable {
-    var autoBrightness: Bool
-    var accelerometerEnabled: Bool
-    var sleepModeEnabled: Bool
-    var auroraModeEnabled: Bool
-}
-
 /// A Sendable snapshot of an advertised peripheral used by the BLE transport.
 struct PeripheralDiscovery: Sendable {
     let id: UUID

@@ -58,7 +58,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     deinit {
-        stopRSSIMonitoring()
+        cancelRSSIMonitoringTimer()
         resumePendingWrite(with: BLEClientError.deinitialized)
     }
 
@@ -157,8 +157,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     func stopRSSIMonitoring() {
         queue.async { [weak self] in
             guard let self else { return }
-            self.rssiTimer?.cancel()
-            self.rssiTimer = nil
+            self.cancelRSSIMonitoringTimer()
         }
     }
 
@@ -196,6 +195,26 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
     func writeOTAAbort() {
         write(AccessoryCommandEncoder.otaAbort(), to: .ota, type: .withResponse)
+    }
+
+    func canWriteView() -> Bool {
+        canWrite(to: .view)
+    }
+
+    func canWriteConfiguration() -> Bool {
+        canWrite(to: .config)
+    }
+
+    func canWriteBrightness() -> Bool {
+        canWrite(to: .brightness)
+    }
+
+    func canWriteScrollText() -> Bool {
+        canWrite(to: .scrollText)
+    }
+
+    func canWriteStrobeSettings() -> Bool {
+        canWrite(to: .strobeSettings)
     }
 
     func writeCommandWithResponse(_ data: Data) async throws {
@@ -256,6 +275,19 @@ final class BLEClient: NSObject, @unchecked Sendable {
     private func preferredWriteType(for characteristic: CBCharacteristic) -> CBCharacteristicWriteType {
         let properties = characteristic.properties
         return properties.contains(.write) ? .withResponse : .withoutResponse
+    }
+
+    private func canWrite(to kind: AccessoryCharacteristic) -> Bool {
+        queue.sync {
+            guard let targetPeripheral else { return false }
+            guard targetPeripheral.state == .connected else { return false }
+            return characteristics[kind] != nil
+        }
+    }
+
+    private func cancelRSSIMonitoringTimer() {
+        rssiTimer?.cancel()
+        rssiTimer = nil
     }
 
     private func configure(_ characteristic: CBCharacteristic, on peripheral: CBPeripheral) {

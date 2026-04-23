@@ -34,28 +34,37 @@ extension EnvironmentValues {
 
 @main
 struct LumiFurApp: App {
-    //@StateObject private var bleModel = AccessoryViewModel.shared
-    //@StateObject private var settings = SettingsStore()
-    
-    //@StateObject private var AccessoryViewModel = AccessoryViewModel.shared
+    @StateObject private var appContext = LumiFurAppContext()
+
     let repositoryConfiguration = RepositoryConfig(
         appRepoName: "stef1949/LumiFur",          // App Repo
         controllerRepoName: "stef1949/LumiFur_Controller"  // Controller Repo
     )
     var body: some Scene {
         WindowGroup {
-            RootView()
-            //ContentView()
-            
-                //.environmentObject(settings)
-            
+            RootView(appContext: appContext)
                 .environment(\.repositoryConfig, repositoryConfiguration) // <<< CHECK THIS LINE
         }
     }
 }
 
+@MainActor
+final class LumiFurAppContext: ObservableObject {
+    let accessoryViewModel: AccessoryViewModel
+    let watchConnectivityManager: WatchConnectivityManager
+
+    init(
+        accessoryViewModel: AccessoryViewModel = AccessoryViewModel(),
+        watchConnectivityManager: WatchConnectivityManager = .shared
+    ) {
+        self.accessoryViewModel = accessoryViewModel
+        self.watchConnectivityManager = watchConnectivityManager
+        self.watchConnectivityManager.attach(accessoryViewModel: accessoryViewModel)
+    }
+}
+
 struct RootView: View {
-    @StateObject private var bleModel = AccessoryViewModel.shared
+    @ObservedObject var appContext: LumiFurAppContext
     // Persist the last shown version
     @AppStorage("lastAppVersion") private var lastAppVersion: String = ""
     // Get the current version from the bundle
@@ -73,8 +82,10 @@ struct RootView: View {
          }
          */
         // RootView2()
-        ContentView(bleModel: bleModel)
-            .sheet(isPresented: $showWhatsNew) {
+        ContentView(bleModel: appContext.accessoryViewModel)
+            .sheet(isPresented: $showWhatsNew, onDismiss: {
+                lastAppVersion = currentVersion
+            }) {
                 WhatsNew()
             }
             .onAppear {

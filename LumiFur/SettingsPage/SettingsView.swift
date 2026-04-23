@@ -43,11 +43,6 @@ struct SettingsView: View {
     
     // AppStorage for simple, persistent user settings.
     @AppStorage("fancyMode") private var fancyMode = false
-    @AppStorage("autoBrightness") var autoBrightness = true
-    @AppStorage("accelerometer") var accelerometer = true
-    @AppStorage("sleepMode") var sleepMode = true
-    @AppStorage("auroraMode") var auroraMode = true
-    @AppStorage("customMessageEnabled") var customMessage = false
     
     // Local UI state.
     @State private var showAdvanced = false
@@ -114,10 +109,6 @@ struct SettingsView: View {
 
             ConfigSection(
                 bleModel: bleModel,
-                autoBrightness: $autoBrightness,
-                accelerometer: $accelerometer,
-                sleepMode: $sleepMode,
-                auroraMode: $auroraMode,
                 selectedUnits: selectedUnitsBinding
             )
 
@@ -129,7 +120,8 @@ struct SettingsView: View {
             AdvancedSettingsSection(
                 bleModel: bleModel,
                 showAdvanced: $showAdvanced,
-                fancyMode: $fancyMode
+                fancyMode: $fancyMode,
+                onResetToDefaults: resetAdvancedPreferences
             )
 
             AboutSection(
@@ -139,7 +131,11 @@ struct SettingsView: View {
 
             ReleaseNotesSection(
                 appReleases: releaseViewModel.appReleases,
-                controllerReleases: releaseViewModel.controllerReleases
+                controllerReleases: releaseViewModel.controllerReleases,
+                isLoadingAppReleases: releaseViewModel.isLoadingAppReleases,
+                isLoadingControllerReleases: releaseViewModel.isLoadingControllerReleases,
+                appReleaseError: releaseViewModel.appReleaseError,
+                controllerReleaseError: releaseViewModel.controllerReleaseError
             )
 
             AppIconPickerSection()
@@ -198,6 +194,16 @@ struct SettingsView: View {
         if bleModel.isBluetoothReady, !bleModel.isConnected, !bleModel.isScanning {
             bleModel.scanForDevices()
         }
+    }
+
+    @MainActor
+    private func resetAdvancedPreferences() {
+        fancyMode = false
+        tempUnitRaw = TempUnit.celsius.rawValue
+        showAdvanced = false
+
+        _ = bleModel.resetConfigurationToDefaults(syncToDevice: bleModel.isConnected)
+        _ = bleModel.updateCustomMessage("", syncToDevice: bleModel.isConnected)
     }
 
 }
@@ -273,7 +279,7 @@ private struct UnifiedConnectionView: View {
                 .font(.system(size: accessoryViewModel.isConnected ? 72 : 56, weight: .regular))
                 .animation(.easeInOut(duration: 0.25), value: accessoryViewModel.isConnected)
             HStack {
-                Image("blueoth.fill")
+                Image(systemName: accessoryViewModel.connectionState.symbolName)
                 Text(accessoryViewModel.connectionStatus)
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
@@ -421,6 +427,10 @@ private struct AboutSection: View {
 private struct ReleaseNotesSection: View {
     let appReleases: [GitHubRelease]
     let controllerReleases: [GitHubRelease]
+    let isLoadingAppReleases: Bool
+    let isLoadingControllerReleases: Bool
+    let appReleaseError: NetworkError?
+    let controllerReleaseError: NetworkError?
     
     var body: some View {
         Section("Release Notes") {
@@ -429,14 +439,34 @@ private struct ReleaseNotesSection: View {
             } label: {
                 Text("App Release Notes")
             }
-            .disabled(appReleases.isEmpty)
+            .disabled(appReleases.isEmpty && !isLoadingAppReleases)
             
             NavigationLink {
                 ReleaseNotesView(title: "Controller Releases", releases: controllerReleases)
             } label: {
                 Text("Controller Release Notes")
             }
-            .disabled(controllerReleases.isEmpty)
+            .disabled(controllerReleases.isEmpty && !isLoadingControllerReleases)
+
+            if isLoadingAppReleases || isLoadingControllerReleases {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Loading release notes…")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let appReleaseError {
+                Text("App releases failed to load: \(appReleaseError.localizedDescription)")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+
+            if let controllerReleaseError {
+                Text("Controller releases failed to load: \(controllerReleaseError.localizedDescription)")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
         }
     }
 }
@@ -477,7 +507,7 @@ private struct AppIconPickerSection: View{
 private func displayName(for iconName: String?) -> String {
         if iconName == nil { return "Default" }
         return appIcons.first(where: { $0.iconName == iconName })?.displayName
-            ?? iconName! // fallback, but should normally be found
+            ?? "Custom"
     }
 private func iconAssetName(for iconName: String?) -> String {
         if let iconName,
@@ -524,21 +554,46 @@ private struct MatrixSection: View {
 
 private struct ConfigSection: View {
     @ObservedObject var bleModel: AccessoryViewModel
-    
-    // Bindings passed down from the parent.
-    @Binding var autoBrightness: Bool
-    @Binding var accelerometer: Bool
-    @Binding var sleepMode: Bool
-    @Binding var auroraMode: Bool
     @Binding var selectedUnits: TempUnit
     
     private var autoBrightnessBindingWithAnimation: Binding<Bool> {
         Binding(
-            get: { autoBrightness },
+            get: { bleModel.autoBrightness },
             set: { newValue in
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    autoBrightness = newValue
+                    bleModel.autoBrightness = newValue
                 }
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var accelerometerBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.accelerometerEnabled },
+            set: { newValue in
+                bleModel.accelerometerEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var sleepModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.sleepModeEnabled },
+            set: { newValue in
+                bleModel.sleepModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var auroraModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.auroraModeEnabled },
+            set: { newValue in
+                bleModel.auroraModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
             }
         )
     }
@@ -560,25 +615,17 @@ private struct ConfigSection: View {
             }
             BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
             
-            Toggle(isOn: $accelerometer) {
+            Toggle(isOn: accelerometerBinding) {
                 Label("Accelerometer", systemImage: "rotate.3d.fill")
             }
-            .onChange(of: accelerometer) { _, newValue in
-                bleModel.accelerometerEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
             
-            Toggle(isOn: $sleepMode) {
+            Toggle(isOn: sleepModeBinding) {
                 Label("Sleep Mode", systemImage: "moon.fill")
             }
-            .onChange(of: sleepMode) { _, newValue in
-                bleModel.sleepModeEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
             
-            Toggle(isOn: $auroraMode) {
+            Toggle(isOn: auroraModeBinding) {
                 Label("Aurora Mode", systemImage: "bubbles.and.sparkles.fill")
             }
             .toggleStyle(
@@ -586,10 +633,6 @@ private struct ConfigSection: View {
                     gradient: LinearGradient(colors: [.pink, .purple, .blue], startPoint: .leading, endPoint: .trailing)
                 )
             )
-            .onChange(of: auroraMode) { _, newValue in
-                bleModel.auroraModeEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
         }
     }
@@ -603,10 +646,6 @@ private struct BrightnessControls: View {
         VStack {
             Toggle(isOn: $autoBrightness) {
                 Label("Auto Brightness", systemImage: "sun.max.fill")
-            }
-            .onChange(of: autoBrightness) { _, newValue in
-                bleModel.autoBrightness = newValue
-                bleModel.writeConfigToCharacteristic()
             }
             .disabled(!bleModel.isConnected)
             
@@ -640,6 +679,7 @@ private struct AdvancedSettingsSection: View {
     @ObservedObject var bleModel: AccessoryViewModel
     @Binding var showAdvanced: Bool
     @Binding var fancyMode: Bool
+    let onResetToDefaults: () -> Void
     
     var body: some View {
         Section("Advanced") {
@@ -651,7 +691,7 @@ private struct AdvancedSettingsSection: View {
                     AdvancedSettingsView(bleModel: bleModel)
                 }
                 Button("Reset to Defaults", role: .destructive) {
-                    print("Resetting to defaults...")
+                    onResetToDefaults()
                 }
             }
         }

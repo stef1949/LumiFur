@@ -29,69 +29,18 @@ struct Provider: TimelineProvider {
         completion(timeline)
     }
     
-    // Helper function to read data from shared UserDefaults
-    // Consolidated read + fallback logic
-        private func makeEntry() -> LumiFurEntry {
-        guard let defaults = UserDefaults(suiteName: SharedDataKeys.suiteName) else {
-            print("Widget Provider: Cannot access shared defaults.")
-            return LumiFurEntry.placeholder // Return placeholder on error
-        }
-        
-        print("Widget Provider: Reading data from shared UserDefaults.")
-                // Connection
-        let isConnected = defaults.bool(forKey: SharedDataKeys.isConnected)
-        let connectionStatus = defaults.string(forKey: SharedDataKeys.connectionStatus) ?? (isConnected ? "Connected" : "Disconnected")
-                
-                // Controller name fallback: primary key, then lastConnectedPeripheral
-        let controllerName = defaults.string(forKey: SharedDataKeys.controllerName)
-        ?? defaults.string(forKey: SharedDataKeys.controllerName)
-                    ?? "Unknown Device"
-            print(controllerName)
-        // Temperature fallback: live string, then lastKnownTemperature
-        let tempString = defaults.string(forKey: SharedDataKeys.temperature)
-                let temperature: String
-                if let t = tempString, !t.isEmpty {
-                    temperature = t
-                } else if let lastTemp = defaults.object(forKey: SharedDataKeys.temperatureHistory) {
-                    temperature = String(format: "%.1f°C", lastTemp as! CVarArg)
-                } else {
-                    temperature = "--°C"
-                }
-        
-        let signalStrength = defaults.integer(forKey: SharedDataKeys.signalStrength) // Defaults to 0 if not found
-        
-        // Selected view fallback
-        let sel: Int? = defaults.object(forKey: SharedDataKeys.selectedView) as? Int
-                let selectedView = sel ?? 1
-        
-        // Handle default values more gracefully
-        let finalSignalStrength = defaults.object(forKey: SharedDataKeys.signalStrength) == nil ? -100 : signalStrength
-        let finalSelectedView = defaults.object(forKey: SharedDataKeys.selectedView) == nil ? 1 : selectedView // Default to 1 maybe?
-        
-        // 1) Decode your [TemperatureDataPoint]
-        var temperatureHistory: [TemperatureData] = [] // Use TemperatureData type
-            if let data = defaults.data(forKey: SharedDataKeys.temperatureHistory) {
-            do {
-                temperatureHistory = try JSONDecoder().decode([TemperatureData].self, from: data) // Decode TemperatureData
-                print("Widget Provider: Decoded \(temperatureHistory.count) temperature history points.")
-            } catch {
-                // Log the specific decoding error!
-                print("🔴 WIDGET DECODING ERROR for \(SharedDataKeys.temperature): \(error)")
-                    //temperatureHistory = [] // Fallback to empty on error
-            }
-        } else {
-                print("Widget Provider: No data found for key \(SharedDataKeys.temperature)")
-            }
-        
+    private func makeEntry() -> LumiFurEntry {
+        let snapshot = WidgetSnapshotStore().loadSnapshot() ?? .placeholder
+
         return LumiFurEntry(
             date: Date(),
-            connectionStatus: connectionStatus,
-            controllerName: controllerName,
-            temperature: temperature,
-            signalStrength: finalSignalStrength,
-            selectedView: finalSelectedView,
-            isConnected: isConnected,
-            temperatureHistory: temperatureHistory // Pass the decoded [TemperatureData]
+            connectionStatus: snapshot.connectionStatus,
+            controllerName: snapshot.controllerName,
+            temperature: snapshot.temperatureText,
+            signalStrength: snapshot.signalStrength,
+            selectedView: snapshot.selectedView,
+            isConnected: snapshot.isConnected,
+            temperatureHistory: snapshot.temperatureHistory
         )
     }
 }
@@ -312,7 +261,6 @@ struct LargeWidgetView: View {
                     .lineLimit(1)
                 Chart {
                     ForEach(entry.temperatureHistory, id: \.timestamp) { element in
-                        let _ = print("Charting point: Time=\(element.timestamp), Temp=\(element.temperature)")
                         LineMark(
                             x: .value("Time", element.timestamp),
                             y: .value("Temperature", element.temperature)
@@ -573,4 +521,3 @@ struct LumiFur_Widget_Previews: PreviewProvider {
          */
     }
 }
-

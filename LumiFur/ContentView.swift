@@ -20,6 +20,10 @@ import os
 
 let actions = SharedOptions.protoActionOptions
 let configs = SharedOptions.protoConfigOptions
+private let contentLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur",
+    category: "ContentView"
+)
 
 // IOS 18.0 features
 //import AccessorySetupKit
@@ -49,18 +53,18 @@ final class iOSViewModel: ObservableObject {
                     self.receivedCommand = command
 
                     if let view = messageData["view"] as? Int {
-                        print("iOS ViewModel: Received 'setFace' command from watch for view: \(view)")
-                        self.bleModel.setView(view)
+                        contentLogger.debug("Received legacy watch setFace command for view \(view, privacy: .public)")
+                        _ = self.bleModel.setView(view)
                         self.receivedFaceFromWatch = nil
                     } else if let face = messageData["faceValue"] as? String {
-                        print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
+                        contentLogger.notice("Received legacy faceValue payload from watch")
                         self.receivedFaceFromWatch = face
                     } else {
-                        print("iOS ViewModel: Received 'setFace' command but 'view' key was missing or not an Int.")
+                        contentLogger.error("Received legacy setFace command without a valid view value")
                     }
                 } else if let command = messageData["command"] as? String {
                     self.receivedCommand = command
-                    print("iOS ViewModel: Received other command: \(command)")
+                    contentLogger.debug("Received legacy watch command \(command, privacy: .public)")
                 }
             }
             .store(in: &cancellables)
@@ -154,12 +158,6 @@ struct ContentView: View {
     
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
-    @AppStorage("autoBrightness") private var autoBrightness = true
-    @AppStorage("accelerometer") private var accelerometer = true
-    @AppStorage("sleepMode") private var sleepMode = true
-    @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessageEnabled") private var customMessageEnabled = false
-    @AppStorage("customMessageText") private var storedCustomMessageText = ""
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
     @State private var customMessageText: String = ""
@@ -200,13 +198,55 @@ struct ContentView: View {
 
     private var customMessageToggleBinding: Binding<Bool> {
         Binding(
-            get: { customMessageEnabled },
+            get: { showCustomMessagePopup || !bleModel.customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
             set: { newValue in
-                customMessageEnabled = newValue
                 if newValue {
-                    customMessageText = storedCustomMessageText
+                    customMessageText = bleModel.customMessage
                     showCustomMessagePopup = true
+                } else {
+                    customMessageText = ""
+                    bleModel.sendScrollText("")
                 }
+            }
+        )
+    }
+
+    private var autoBrightnessBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.autoBrightness },
+            set: { newValue in
+                bleModel.autoBrightness = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var accelerometerBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.accelerometerEnabled },
+            set: { newValue in
+                bleModel.accelerometerEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var sleepModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.sleepModeEnabled },
+            set: { newValue in
+                bleModel.sleepModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var auroraModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.auroraModeEnabled },
+            set: { newValue in
+                bleModel.auroraModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
             }
         )
     }
@@ -256,7 +296,7 @@ struct ContentView: View {
             engine = try CHHapticEngine()
             try engine?.start()
         } catch {
-            print("Haptics init error: \(error.localizedDescription)")
+            contentLogger.error("Failed to initialize haptics: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -284,7 +324,7 @@ struct ContentView: View {
             let player = try engine?.makePlayer(with: pattern)
             try player?.start(atTime: 0)
         } catch {
-            print("Haptics play error: \(error.localizedDescription)")
+            contentLogger.error("Failed to play haptics: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -423,9 +463,6 @@ struct ContentView: View {
     }
     @ViewBuilder
     private var detailContent: some View {
-        //@AppStorage("charts") var isChartsExpanded = false
-        @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
-
         ZStack {
             if selectedSidebarItem == .dashboard {
                 DashboardContentView(
@@ -489,40 +526,24 @@ struct ContentView: View {
         [
             OptionConfig(
                 title: "Auto Brightness",
-                binding: $autoBrightness,
+                binding: autoBrightnessBinding,
                 type: .autoBrightness
-            ) { newValue in
-                print("Auto brightness changed to \(newValue)")
-                // accessoryViewModel.autoBrightness = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Accelerometer",
-                binding: $accelerometer,
+                binding: accelerometerBinding,
                 type: .accelerometer
-            ) { newValue in
-                print("Accelerometer changed to \(newValue)")
-                // accessoryViewModel.accelerometerEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Sleep Mode",
-                binding: $sleepMode,
+                binding: sleepModeBinding,
                 type: .sleepMode
-            ) { newValue in
-                print("Sleep mode changed to \(newValue)")
-                // accessoryViewModel.sleepModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Aurora Mode",
-                binding: $auroraMode,
+                binding: auroraModeBinding,
                 type: .auroraMode
-            ) { newValue in  // Fixed typo "Aroura"
-                print("Aurora Mode changed to \(newValue)")
-                // accessoryViewModel.auroraModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
         ]
     }
     private var optionGridSection: some View {
@@ -575,21 +596,12 @@ struct ContentView: View {
             HStack {
                 Spacer()
                 Button("Cancel") {
-                    customMessageEnabled = false  // Turn off the toggle
+                    customMessageText = bleModel.customMessage
                     showCustomMessagePopup = false
-                    // customMessageText = "" // Optionally clear text on cancel
                 }
                 Button("OK") {
                     showCustomMessagePopup = false
-                    print("Custom message set: \(customMessageText)")
-                    storedCustomMessageText = customMessageText
-                    bleModel.customMessage = customMessageText
                     bleModel.sendScrollText(customMessageText)
-                    // Optionally set a default speed on first send; comment out if not desired
-                    // bleModel.sendScrollSpeed(50)
-                    if customMessageText.isEmpty {  // If OK is pressed with no text, maybe turn off the feature?
-                        customMessageEnabled = false
-                    }
                 }
             }
             HStack(spacing: 12) {
@@ -629,6 +641,7 @@ struct ContentView: View {
                 //.frame(maxHeight: 120)
         }
         .padding()
+        .disabled(!bleModel.isConnected)
     }
     
     // MARK: –––––––––––––––––––––––––––––––––
@@ -705,8 +718,6 @@ struct ContentView: View {
                                     let commandIndex = index + 1
                                     // 4. Call the parent's `onSetView` function to send the command.
                                     onSetView(commandIndex)
-                                    // Optional but recommended: Add a print statement for debugging.
-                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")
                                 }
                             }
                             .equatable()
@@ -768,7 +779,7 @@ struct ContentView: View {
     /// Handles processing the face selection received from the watch.
     private func handleWatchFaceSelection(face: String?) {  // <--- DEFINITION INSIDE ContentView
         guard let selectedFace = face else {
-            print("Watch face selection cleared or invalid.")
+            contentLogger.notice("Ignored empty watch face selection")
             return
         }
         
@@ -781,14 +792,10 @@ struct ContentView: View {
             }
         }) {
             let viewToSet = index + 1
-            print(
-                "Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet)."
-            )
-            bleModel.setView(viewToSet)
+            contentLogger.debug("Applying watch face selection for view \(viewToSet, privacy: .public)")
+            _ = bleModel.setView(viewToSet)
         } else {
-            print(
-                "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions."
-            )
+            contentLogger.error("Received unknown watch face selection")
         }
     }
 
@@ -879,7 +886,9 @@ private struct DashboardContentView: View {
         ContentView.FaceGridSection(
             bleModel: bleModel,
             selectedView: bleModel.selectedView,
-            onSetView: bleModel.setView
+            onSetView: { view in
+                _ = bleModel.setView(view)
+            }
         )
         .equatable()
     }
@@ -960,8 +969,8 @@ struct AdvancedSettingsView: View {
                 Toggle("Auto Reconnect", isOn: $autoReconnect)
                     .onChange(of: autoReconnect) { oldValue, newValue in
                         bleModel.autoReconnectEnabled = newValue
-                        print(
-                            "Auto Reconnect changed from \(oldValue) to \(newValue)"
+                        contentLogger.debug(
+                            "Auto reconnect changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
                         )
                     }
                 if bleModel.isConnected {
@@ -1007,8 +1016,8 @@ struct AdvancedSettingsView: View {
                     )
                     .onChange(of: rssiUpdateInterval) { oldValue, newValue in
                         // If your model supports adjustable intervals for reading RSSI, update it here.
-                        print(
-                            "RSSI update interval changed from \(oldValue) to \(newValue)"
+                        contentLogger.debug(
+                            "RSSI interval changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
                         )
                     }
                 }
@@ -1136,16 +1145,6 @@ struct AdvancedSettingsView: View {
     }
 }
 
-
-// ——————— Your mock view model at file-scope ———————
-@MainActor
-class MockViewModel: AccessoryViewModel {
-    init(state: ConnectionState, rssi: Int = -65) {
-        super.init()
-        self.connectionState = state
-        self.signalStrength = rssi
-    }
-}
 
 /*
  // ——————— Three separate #Preview entries at file-scope ———————

@@ -12,12 +12,26 @@ import UIKit
 import ActivityKit
 #endif
 
+private struct TemperatureWindowReducer: Sendable {
+    let maxPoints: Int
+
+    func callAsFunction(_ all: [TemperatureData]) -> [TemperatureData] {
+        let cutoff = Date().addingTimeInterval(-5 * 60)
+        var window = all.filter { $0.timestamp >= cutoff }
+
+        if window.count > maxPoints {
+            window.removeFirst(window.count - maxPoints)
+        }
+
+        return window
+    }
+}
+
 // MARK: - AccessoryViewModel
 
 /// UI-facing state and orchestration for the LumiFur accessory.
-class AccessoryViewModel: ObservableObject {
-    @MainActor static let shared = AccessoryViewModel()
-
+@MainActor
+final class AccessoryViewModel: ObservableObject {
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LumiFur", category: "AccessoryViewModel")
 
     // MARK: Published state
@@ -88,18 +102,12 @@ class AccessoryViewModel: ObservableObject {
 
     /// A throttled chart publisher that keeps only a rolling five-minute window.
     var temperatureChartPublisher: AnyPublisher<[TemperatureData], Never> {
-        temperatureDataSubject
+        let maxPoints = maxTemperatureDataPoints
+        let reducer = TemperatureWindowReducer(maxPoints: maxPoints)
+
+        return temperatureDataSubject
             .receive(on: Self.chartProcessingQueue)
-            .map { [maxTemperatureDataPoints] all in
-                let cutoff = Date().addingTimeInterval(-5 * 60)
-                var window = all.filter { $0.timestamp >= cutoff }
-
-                if window.count > maxTemperatureDataPoints {
-                    window.removeFirst(window.count - maxTemperatureDataPoints)
-                }
-
-                return window
-            }
+            .map(reducer.callAsFunction)
             .removeDuplicates()
             .receive(on: RunLoop.main)
             .throttle(for: .seconds(5), scheduler: RunLoop.main, latest: true)
@@ -131,12 +139,13 @@ class AccessoryViewModel: ObservableObject {
 
     let client: BLEClient
     private let store: StoredPeripheralStore
+    private let defaults: UserDefaults
+    private let widgetSnapshotStore: WidgetSnapshotStore
     private let isRunningPreview: Bool
     private let maxTemperatureDataPoints = 600
     private let liveTempChangeThresholdC = 0.1
     private let defaultRSSIInterval: TimeInterval = 1.0
     private let idleRSSIInterval: TimeInterval = 10.0
-    private let changeViewIntentNotification = Notification.Name("com.richies3d.LumiFur.ChangeViewIntentTriggered")
     private var notificationTokens: [NSObjectProtocol] = []
     private var bluetoothState: CBManagerState
     private let temperatureDataSubject = CurrentValueSubject<[TemperatureData], Never>([])
@@ -145,6 +154,7 @@ class AccessoryViewModel: ObservableObject {
     private var didAttemptAutoReconnect = false
     private var isManualDisconnect = false
     private var isAppActive = true
+    private var lastProcessedWidgetCommandID: UUID?
     var pendingExternalUpdateTask: Task<Void, Never>?
     var pendingWatchSyncTask: Task<Void, Never>?
     var lastSentStateDigest: StateDigest?
@@ -172,11 +182,14 @@ class AccessoryViewModel: ObservableObject {
     @MainActor
     init(
         client: BLEClient = BLEClient(),
-        store: StoredPeripheralStore = StoredPeripheralStore()
+        store: StoredPeripheralStore = StoredPeripheralStore(),
+        defaults: UserDefaults = .standard
     ) {
         let environment = ProcessInfo.processInfo.environment
         self.client = client
         self.store = store
+        self.defaults = defaults
+        self.widgetSnapshotStore = WidgetSnapshotStore()
         self.isRunningPreview = environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         self.bluetoothState =
             environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" ||
@@ -215,8 +228,6 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     private func restorePersistedPreferences() {
-        let defaults = UserDefaults.standard
-
         migrateLegacyPreferenceKeysIfNeeded(defaults)
 
         autoBrightness = persistedBool(
@@ -283,6 +294,169 @@ class AccessoryViewModel: ObservableObject {
         }
 
         return storedValue
+    }
+
+    private func persistCurrentPreferences() {
+        defaults.set(autoBrightness, forKey: "autoBrightness")
+        defaults.set(accelerometerEnabled, forKey: "accelerometer")
+        defaults.set(sleepModeEnabled, forKey: "sleepMode")
+        defaults.set(auroraModeEnabled, forKey: "auroraMode")
+        defaults.removeObject(forKey: "arouraMode")
+        defaults.set(customMessage, forKey: "customMessageText")
+        defaults.set(!customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: "customMessageEnabled")
+    }
+
+    private func applyConfigurationState(_ configuration: AccessoryConfiguration, persist: Bool = true) {
+        let didChangeAutoBrightness = assignIfChanged(
+            "autoBrightness",
+            current: &autoBrightness,
+            newValue: configuration.autoBrightness
+        )
+        let didChangeAccelerometer = assignIfChanged(
+            "accelerometerEnabled",
+            current: &accelerometerEnabled,
+            newValue: configuration.accelerometerEnabled
+        )
+        let didChangeSleepMode = assignIfChanged(
+            "sleepModeEnabled",
+            current: &sleepModeEnabled,
+            newValue: configuration.sleepModeEnabled
+        )
+        let didChangeAuroraMode = assignIfChanged(
+            "auroraModeEnabled",
+            current: &auroraModeEnabled,
+            newValue: configuration.auroraModeEnabled
+        )
+
+        if persist, didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+            persistCurrentPreferences()
+        }
+
+        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+            scheduleExternalStateSync()
+        }
+    }
+
+    @discardableResult
+    func applyUserConfiguration(_ configuration: AccessoryConfiguration, syncToDevice: Bool = true) -> Bool {
+        applyConfigurationState(configuration)
+
+        guard syncToDevice else { return true }
+        guard isConnected else { return false }
+        guard client.canWriteConfiguration() else {
+            presentError("Accessory is not ready to accept configuration changes yet.")
+            return false
+        }
+
+        client.writeConfiguration(configuration)
+        return true
+    }
+
+    @discardableResult
+    func updateCustomMessage(_ text: String, syncToDevice: Bool = true) -> Bool {
+        customMessage = text
+        persistCurrentPreferences()
+        scheduleExternalStateSync()
+
+        guard syncToDevice else { return true }
+        guard isConnected else { return false }
+        guard client.canWriteScrollText() else {
+            presentError("Accessory is not ready to accept custom text yet.")
+            return false
+        }
+
+        client.writeScrollText(text)
+        return true
+    }
+
+    @discardableResult
+    func resetConfigurationToDefaults(syncToDevice: Bool = true) -> Bool {
+        applyUserConfiguration(
+            AccessoryConfiguration(
+                autoBrightness: true,
+                accelerometerEnabled: true,
+                sleepModeEnabled: true,
+                auroraModeEnabled: true
+            ),
+            syncToDevice: syncToDevice
+        )
+    }
+
+    func currentWatchSnapshot(deviceName: String? = nil) -> WatchStateSnapshot {
+        WatchStateSnapshot(
+            deviceName: deviceName,
+            controllerName: connectedDeviceName,
+            controllerConnectionState: connectionState,
+            selectedView: selectedView,
+            configuration: currentConfiguration(),
+            customMessage: customMessage,
+            temperatureText: temperature,
+            temperatureC: temperatureData.last?.temperature,
+            temperatureTimestamp: temperatureData.last?.timestamp
+        )
+    }
+
+    func currentWidgetSnapshot() -> WidgetSnapshot {
+        WidgetSnapshot(
+            isConnected: isConnected,
+            connectionStatus: connectionStatus,
+            controllerName: connectedDeviceName,
+            signalStrength: signalStrength,
+            temperatureText: temperature,
+            temperatureHistory: Array(temperatureData.suffix(50)),
+            selectedView: selectedView,
+            availableViewCount: SharedOptions.protoActionOptions.count,
+            configuration: currentConfiguration(),
+            customMessage: customMessage
+        )
+    }
+
+    func persistWidgetSnapshot() {
+        widgetSnapshotStore.saveSnapshot(currentWidgetSnapshot())
+    }
+
+    @discardableResult
+    func attemptRemoteConnect() -> String {
+        guard isBluetoothReady else {
+            connectionState = .bluetoothOff
+            return "Bluetooth is unavailable."
+        }
+
+        if isConnected {
+            return "Controller already connected."
+        }
+
+        if isConnecting {
+            return "Connection already in progress."
+        }
+
+        if let lastConnectedPeripheralUUID {
+            connectionState = .reconnecting
+            connectingPeripheral = nil
+            client.connectToStoredUUID(lastConnectedPeripheralUUID)
+            scheduleExternalStateSync()
+            return "Reconnecting to the last controller."
+        }
+
+        scanForDevices()
+        return "Scanning for LumiFur controllers."
+    }
+
+    func processPendingWidgetCommandIfNeeded() {
+        guard isConnected else { return }
+        guard let command = widgetSnapshotStore.loadPendingCommand() else { return }
+        guard command.id != lastProcessedWidgetCommandID else {
+            widgetSnapshotStore.clearPendingCommand(id: command.id)
+            return
+        }
+
+        switch command.kind {
+        case .setView:
+            if setView(command.selectedView) {
+                lastProcessedWidgetCommandID = command.id
+                widgetSnapshotStore.clearPendingCommand(id: command.id)
+            }
+        }
     }
 
     // MARK: Public API
@@ -398,12 +572,22 @@ class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
+    @discardableResult
     @MainActor
-    func setView(_ view: Int) {
-        guard (1...50).contains(view), selectedView != view else { return }
+    func setView(_ view: Int) -> Bool {
+        guard (1...50).contains(view), selectedView != view else { return false }
+        guard isConnected else {
+            presentError("Connect to your LumiFur controller before changing the view.")
+            return false
+        }
+        guard client.canWriteView() else {
+            presentError("Accessory is not ready to accept a new view yet.")
+            return false
+        }
         selectedView = view
         client.writeView(view)
         scheduleExternalStateSync()
+        return true
     }
 
     @MainActor
@@ -413,9 +597,7 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     func sendScrollText(_ text: String) {
-        customMessage = text
-        client.writeScrollText(text)
-        scheduleExternalStateSync()
+        _ = updateCustomMessage(text)
     }
 
     @MainActor
@@ -426,12 +608,20 @@ class AccessoryViewModel: ObservableObject {
     @MainActor
     func setBrightness(_ value: UInt8) {
         guard brightness != value else { return }
+        guard client.canWriteBrightness() else {
+            presentError("Accessory is not ready to accept brightness updates yet.")
+            return
+        }
         brightness = value
         client.writeBrightness(value)
     }
 
     @MainActor
     func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
+        guard client.canWriteStrobeSettings() else {
+            presentError("Accessory is not ready to accept strobe settings yet.")
+            return
+        }
         let clampedCycle = UInt16(max(1, min(10_000, Int(cycleMs))))
         let rgb = color.toRGB8() ?? RGB8(r: 255, g: 255, b: 255)
         let payload = StrobeSettingsPayload(enabled: enabled, rgb: rgb, cycleMs: clampedCycle)
@@ -450,14 +640,7 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     func writeConfigToCharacteristic() {
-        let configuration = AccessoryConfiguration(
-            autoBrightness: autoBrightness,
-            accelerometerEnabled: accelerometerEnabled,
-            sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
-        )
-        client.writeConfiguration(configuration)
-        scheduleExternalStateSync()
+        _ = applyUserConfiguration(currentConfiguration())
     }
 
     @MainActor
@@ -532,20 +715,6 @@ class AccessoryViewModel: ObservableObject {
     @MainActor
     private func registerObservers() {
         let selfBox = WeakUncheckedSendableBox(self)
-        notificationTokens.append(
-            NotificationCenter.default.addObserver(
-                forName: changeViewIntentNotification,
-                object: nil,
-                queue: .main
-            ) { notification in
-                let nextView = notification.userInfo?["nextView"] as? Int
-                MainActor.assumeIsolated {
-                    guard let nextView else { return }
-                    selfBox.value?.setView(nextView)
-                }
-            }
-        )
-
         #if canImport(UIKit)
         notificationTokens.append(
             NotificationCenter.default.addObserver(
@@ -553,7 +722,7 @@ class AccessoryViewModel: ObservableObject {
                 object: nil,
                 queue: .main
             ) { _ in
-                MainActor.assumeIsolated {
+                Task { @MainActor in
                     selfBox.value?.handleAppDidBecomeActive()
                 }
             }
@@ -564,7 +733,7 @@ class AccessoryViewModel: ObservableObject {
                 object: nil,
                 queue: .main
             ) { _ in
-                MainActor.assumeIsolated {
+                Task { @MainActor in
                     selfBox.value?.handleAppWillResignActive()
                 }
             }
@@ -653,6 +822,7 @@ class AccessoryViewModel: ObservableObject {
 
         case .scrollTextUpdated(let text):
             if assignIfChanged("customMessage", current: &customMessage, newValue: text) {
+                persistCurrentPreferences()
                 scheduleExternalStateSync()
             }
 
@@ -730,6 +900,7 @@ class AccessoryViewModel: ObservableObject {
 
         startRSSIMonitoring()
         scheduleExternalStateSync()
+        processPendingWidgetCommandIfNeeded()
 
         #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
         Task { [weak self] in
@@ -789,30 +960,7 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     private func apply(configuration: AccessoryConfiguration) {
-        let didChangeAutoBrightness = assignIfChanged(
-            "autoBrightness",
-            current: &autoBrightness,
-            newValue: configuration.autoBrightness
-        )
-        let didChangeAccelerometer = assignIfChanged(
-            "accelerometerEnabled",
-            current: &accelerometerEnabled,
-            newValue: configuration.accelerometerEnabled
-        )
-        let didChangeSleepMode = assignIfChanged(
-            "sleepModeEnabled",
-            current: &sleepModeEnabled,
-            newValue: configuration.sleepModeEnabled
-        )
-        let didChangeAuroraMode = assignIfChanged(
-            "auroraModeEnabled",
-            current: &auroraModeEnabled,
-            newValue: configuration.auroraModeEnabled
-        )
-
-        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
-            scheduleExternalStateSync()
-        }
+        applyConfigurationState(configuration)
     }
 
     @MainActor
@@ -939,14 +1087,9 @@ class AccessoryViewModel: ObservableObject {
     // MARK: Notifications
 
     @MainActor
-    private func handleChangeViewIntent(_ notification: Notification) {
-        guard let nextView = notification.userInfo?["nextView"] as? Int else { return }
-        setView(nextView)
-    }
-
-    @MainActor
     private func handleAppDidBecomeActive() {
         isAppActive = true
+        processPendingWidgetCommandIfNeeded()
         syncStateToWatch()
         guard isConnected else { return }
         startRSSIMonitoring()
@@ -974,7 +1117,6 @@ class AccessoryViewModel: ObservableObject {
     private func preferredRSSIMonitoringInterval() -> TimeInterval {
         guard isAppActive else { return idleRSSIInterval }
 
-        let defaults = UserDefaults.standard
         guard defaults.bool(forKey: "rssiMonitoringEnabled") else {
             return idleRSSIInterval
         }
@@ -985,7 +1127,6 @@ class AccessoryViewModel: ObservableObject {
 
     @MainActor
     private func shouldPublishRSSI(_ rssi: Int) -> Bool {
-        let defaults = UserDefaults.standard
         if defaults.bool(forKey: "rssiMonitoringEnabled") {
             return signalStrength != rssi
         }
@@ -1092,3 +1233,4 @@ extension AccessoryViewModel {
     }
 }
 #endif
+

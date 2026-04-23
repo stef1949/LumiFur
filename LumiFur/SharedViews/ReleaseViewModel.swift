@@ -112,19 +112,33 @@ private func releaseRow(for release: GitHubRelease) -> some View {
                 .foregroundStyle(.secondary)
         }
         
-        Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided.")
-            .font(.headline)
-            .foregroundStyle(.green)
-            .backgroundStyle(.clear)
-            .lineLimit(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        
-        if let body = release.body, body.count > 50 {
-            Button("Read More...") {
-                print("Show full body for release: \(release.displayName)")
+        ExpandableReleaseBody(
+            text: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided."
+        )
+    }
+}
+
+private struct ExpandableReleaseBody: View {
+    let text: String
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(text)
+                .font(.headline)
+                .foregroundStyle(.green)
+                .backgroundStyle(.clear)
+                .lineLimit(isExpanded ? nil : 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if text.count > 50 {
+                Button(isExpanded ? "Show Less" : "Read More") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }
+                .font(.caption)
             }
-            .font(.caption)
-            .padding(.top, 2)
         }
     }
 }
