@@ -158,7 +158,8 @@ struct ContentView: View {
     @AppStorage("accelerometer") private var accelerometer = true
     @AppStorage("sleepMode") private var sleepMode = true
     @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
+    @AppStorage("customMessageEnabled") private var customMessageEnabled = false
+    @AppStorage("customMessageText") private var storedCustomMessageText = ""
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
     @State private var customMessageText: String = ""
@@ -196,6 +197,19 @@ struct ContentView: View {
     @State private var matrixStyle: MatrixStyle = .array // The real source of truth
     
     @Namespace var namespace
+
+    private var customMessageToggleBinding: Binding<Bool> {
+        Binding(
+            get: { customMessageEnabled },
+            set: { newValue in
+                customMessageEnabled = newValue
+                if newValue {
+                    customMessageText = storedCustomMessageText
+                    showCustomMessagePopup = true
+                }
+            }
+        )
+    }
 
     fileprivate let twoColumnGrid = [
         GridItem(.adaptive(minimum: 125, maximum: 250))
@@ -527,14 +541,9 @@ struct ContentView: View {
                 // Custom Message Toggle - handled separately due to unique popover logic
                 OptionToggleView(
                     title: "Custom Message",
-                    isOn: $customMessage,
+                    isOn: customMessageToggleBinding,
                     optionType: .customMessage
                 )
-                .onChange(of: customMessage) { oldValue, newValue in
-                    if newValue {
-                        showCustomMessagePopup = true
-                    }
-                }
                 .popover(
                     isPresented: $showCustomMessagePopup,
                     attachmentAnchor: .rect(.bounds),
@@ -566,23 +575,20 @@ struct ContentView: View {
             HStack {
                 Spacer()
                 Button("Cancel") {
-                    customMessage = false  // Turn off the toggle
+                    customMessageEnabled = false  // Turn off the toggle
                     showCustomMessagePopup = false
                     // customMessageText = "" // Optionally clear text on cancel
                 }
                 Button("OK") {
                     showCustomMessagePopup = false
-                    // Here you would typically use customMessageText
-                    // e.g., accessoryViewModel.customMessageText = customMessageText
-                    // accessoryViewModel.customMessageEnabled = customMessage // which is true
-                    // accessoryViewModel.writeConfigToCharacteristic()
                     print("Custom message set: \(customMessageText)")
+                    storedCustomMessageText = customMessageText
                     bleModel.customMessage = customMessageText
                     bleModel.sendScrollText(customMessageText)
                     // Optionally set a default speed on first send; comment out if not desired
                     // bleModel.sendScrollSpeed(50)
                     if customMessageText.isEmpty {  // If OK is pressed with no text, maybe turn off the feature?
-                        // customMessage = false // Or provide feedback to user
+                        customMessageEnabled = false
                     }
                 }
             }

@@ -166,7 +166,6 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             print("iOS: Updated auroraModeEnabled to \(auroraMode)")
         }
         if let customMessage = message["customMessage"] as? String {
-            accessoryViewModel.customMessage = customMessage
             accessoryViewModel.sendScrollText(customMessage)
             print("iOS: Updated customMessage to \"\(customMessage)\"")
         }
@@ -187,11 +186,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             defaults.set(sleepMode, forKey: "sleepMode")
         }
         if let auroraMode = (message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool) {
-            // Note: your key is "arouraMode" (typo preserved to match your app)
-            defaults.set(auroraMode, forKey: "arouraMode")
+            defaults.set(auroraMode, forKey: "auroraMode")
+            defaults.removeObject(forKey: "arouraMode")
         }
         if let customMessage = message["customMessage"] as? String {
-            defaults.set(customMessage, forKey: "customMessage")
+            defaults.set(!customMessage.isEmpty, forKey: "customMessageEnabled")
+            defaults.set(customMessage, forKey: "customMessageText")
         }
     }
     
@@ -280,6 +280,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 replyData = [
                     "timestamp": Date(),
                     "deviceName": UIDevice.current.name,
+                    "selectedView": vm.selectedView,
                     "autoBrightness": vm.autoBrightness,
                     "accelerometer": vm.accelerometerEnabled,
                     "sleepMode": vm.sleepModeEnabled,
@@ -312,10 +313,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                              didReceiveApplicationContext applicationContext: [String: Any]) {
         let contextBox = UncheckedSendable(applicationContext)
         
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             let applicationContext = contextBox.value
             print("Received application context: \(applicationContext)")
-            // Optional handle
+            self.applyAccessorySettingsFromMessage(applicationContext)
+
+            if self.isNewTemperatureData(applicationContext) {
+                self.messageSubject.send(applicationContext)
+            }
         }
     }
     

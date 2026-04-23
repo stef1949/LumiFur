@@ -75,6 +75,8 @@ struct FaceGridView: View {
                         Button {
                             // Play haptic feedback
                             WKInterfaceDevice.current().play(.start)
+                            let previousView = connectivityManager.selectedView
+                            connectivityManager.selectedView = viewNumber
                             // ✅ 4. The action now sends the 1-based view number.
                             // This makes the watch speak the same "language" as the iOS app.
                             let payload: [String: Any] = [
@@ -87,6 +89,9 @@ struct FaceGridView: View {
                                 print("Reply:", reply)
                             } errorHandler: { error in
                                 print("Error:", error)
+                                Task { @MainActor in
+                                    connectivityManager.selectedView = previousView
+                                }
                             }
                         } label: {
                             faceView(for: face)
@@ -417,9 +422,9 @@ struct DeviceView: View {
                                 .listRowBackground(Color.clear)
                                 .disabled(!WCSession.default.isReachable)
                             
-                            Toggle("Aroura Mode", isOn: $connectivityManager.auroraModeEnabled)
+                            Toggle("Aurora Mode", isOn: $connectivityManager.auroraModeEnabled)
                                 .onChange(of: connectivityManager.auroraModeEnabled) { _, newValue in
-                                    WatchConnectivityManager.shared.sendMessage(["arouraMode": newValue])
+                                    WatchConnectivityManager.shared.sendMessage(["auroraMode": newValue])
                                 }
                                 .disabled(!isConnectedOrConnecting(connectivityManager.connectionStatus))
                                 .padding(15)
@@ -451,6 +456,7 @@ struct DeviceView: View {
 
 private struct StatusView: View {
     @ObservedObject private var connectivityManager = WatchConnectivityManager.shared
+    private let maxChartSamples = 24
     
     private var temperatureHeadline: String {
         if let tempC = connectivityManager.temperatureC {
@@ -471,6 +477,24 @@ private struct StatusView: View {
     
     private var isControllerConnectedOrConnecting: Bool {
         isConnectedOrConnecting(connectivityManager.controllerConnectionStatus)
+    }
+
+    private var chartSamples: [TemperatureSample] {
+        let history = connectivityManager.temperatureHistory
+        guard history.count > maxChartSamples else { return history }
+
+        let strideSize = max(1, history.count / maxChartSamples)
+        var samples = stride(from: 0, to: history.count, by: strideSize).map { history[$0] }
+
+        if let latest = history.last, samples.last != latest {
+            samples.append(latest)
+        }
+
+        if samples.count > maxChartSamples {
+            samples.removeFirst(samples.count - maxChartSamples)
+        }
+
+        return samples
     }
     
     var body: some View {
@@ -496,14 +520,14 @@ private struct StatusView: View {
                     .foregroundStyle(.secondary)
             }
             
-            if isControllerConnectedOrConnecting, connectivityManager.temperatureHistory.count >= 2 {
-                Chart(connectivityManager.temperatureHistory) { sample in
+            if isControllerConnectedOrConnecting, chartSamples.count >= 2 {
+                Chart(chartSamples) { sample in
                     LineMark(
                         x: .value("Time", sample.timestamp),
                         y: .value("Temp", sample.temperatureC)
                     )
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(.init(lineWidth: 2))
+                    .interpolationMethod(.linear)
+                    .lineStyle(.init(lineWidth: 1.5))
                 }
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
@@ -520,8 +544,8 @@ private struct StatusView: View {
             Spacer(minLength: 0)
         }
         .padding(.top, 10)
-        .onAppear {
-            connectivityManager.requestSyncFromiOS()
+        .task {
+            connectivityManager.requestSyncFromiOS(force: false)
         }
     }
 }
@@ -552,6 +576,7 @@ private struct StatusView: View {
     guard next != current else { return }
     
     WKInterfaceDevice.current().play(.click)
+    connectivityManager.selectedView = next
     
     // Send the same command as tapping a face, using the 1-based view number
     let payload: [String: Any] = [
@@ -564,6 +589,9 @@ private struct StatusView: View {
         print("Reply:", reply)
     } errorHandler: { error in
         print("Error:", error)
+        Task { @MainActor in
+            connectivityManager.selectedView = current
+        }
     }
 }
 
@@ -747,7 +775,5 @@ extension WatchConnectivityManager {
 }
 
 #endif
-
-
 
 

@@ -68,7 +68,9 @@ struct SharedOptions {
         .emoji("rainbow fluid"),
         .symbol("rectangle.fill"),
         .symbol("arrow.trianglehead.2.clockwise.rotate.90"),
-        .emoji("rainbow linear band")
+        .emoji("rainbow linear band"),
+        .emoji("Alt Face"),
+        .symbol("movieclapper.fill"),
     ]
 
     static let strobeActionSymbol = "laser.burst"

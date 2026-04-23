@@ -47,7 +47,7 @@ struct SettingsView: View {
     @AppStorage("accelerometer") var accelerometer = true
     @AppStorage("sleepMode") var sleepMode = true
     @AppStorage("auroraMode") var auroraMode = true
-    @AppStorage("customMessage") var customMessage = false
+    @AppStorage("customMessageEnabled") var customMessage = false
     
     // Local UI state.
     @State private var showAdvanced = false

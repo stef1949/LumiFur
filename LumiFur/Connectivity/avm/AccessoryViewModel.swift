@@ -186,6 +186,8 @@ class AccessoryViewModel: ObservableObject {
         self.previouslyConnectedDevices = store.load()
         self.lastConnectedPeripheralUUID = store.lastConnectedPeripheralUUID()
 
+        restorePersistedPreferences()
+
         configureTransport()
         registerObservers()
 
@@ -209,6 +211,78 @@ class AccessoryViewModel: ObservableObject {
         pendingLiveActivityUpdateTask?.cancel()
         activityStateTask?.cancel()
         #endif
+    }
+
+    @MainActor
+    private func restorePersistedPreferences() {
+        let defaults = UserDefaults.standard
+
+        migrateLegacyPreferenceKeysIfNeeded(defaults)
+
+        autoBrightness = persistedBool(
+            in: defaults,
+            key: "autoBrightness",
+            defaultValue: autoBrightness
+        )
+        accelerometerEnabled = persistedBool(
+            in: defaults,
+            key: "accelerometer",
+            defaultValue: accelerometerEnabled
+        )
+        sleepModeEnabled = persistedBool(
+            in: defaults,
+            key: "sleepMode",
+            defaultValue: sleepModeEnabled
+        )
+        auroraModeEnabled = persistedBool(
+            in: defaults,
+            key: "auroraMode",
+            defaultValue: auroraModeEnabled
+        )
+
+        if let storedMessage = defaults.object(forKey: "customMessageText") as? String {
+            customMessage = storedMessage
+        }
+    }
+
+    @MainActor
+    private func migrateLegacyPreferenceKeysIfNeeded(_ defaults: UserDefaults) {
+        if defaults.object(forKey: "auroraMode") == nil,
+           let legacyAuroraMode = defaults.object(forKey: "arouraMode") as? Bool {
+            defaults.set(legacyAuroraMode, forKey: "auroraMode")
+        }
+
+        if defaults.object(forKey: "customMessageEnabled") == nil,
+           let legacyEnabled = defaults.object(forKey: "customMessage") as? Bool {
+            defaults.set(legacyEnabled, forKey: "customMessageEnabled")
+        }
+
+        if defaults.object(forKey: "customMessageText") == nil,
+           let legacyMessage = defaults.object(forKey: "customMessage") as? String {
+            defaults.set(legacyMessage, forKey: "customMessageText")
+        }
+
+        if defaults.object(forKey: "auroraMode") != nil {
+            defaults.removeObject(forKey: "arouraMode")
+        }
+
+        if defaults.object(forKey: "customMessageEnabled") != nil ||
+            defaults.object(forKey: "customMessageText") != nil {
+            defaults.removeObject(forKey: "customMessage")
+        }
+    }
+
+    @MainActor
+    private func persistedBool(
+        in defaults: UserDefaults,
+        key: String,
+        defaultValue: Bool
+    ) -> Bool {
+        guard let storedValue = defaults.object(forKey: key) as? Bool else {
+            return defaultValue
+        }
+
+        return storedValue
     }
 
     // MARK: Public API
@@ -873,6 +947,7 @@ class AccessoryViewModel: ObservableObject {
     @MainActor
     private func handleAppDidBecomeActive() {
         isAppActive = true
+        syncStateToWatch()
         guard isConnected else { return }
         startRSSIMonitoring()
 

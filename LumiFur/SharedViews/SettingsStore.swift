@@ -14,6 +14,6 @@ final class SettingsStore: ObservableObject {
     @AppStorage("accelerometer") private var accelerometer = true
     @AppStorage("sleepMode") private var sleepMode = true
     @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
+    @AppStorage("customMessageEnabled") private var customMessage = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
 }

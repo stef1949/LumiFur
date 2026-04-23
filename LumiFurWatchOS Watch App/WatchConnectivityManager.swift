@@ -55,6 +55,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     
     // MARK: - Private Properties
     private let session: WCSession
+    private var syncRequestInFlight = false
+    private var lastSyncRequestAt = Date.distantPast
+    private let minimumSyncRequestInterval: TimeInterval = 15
+    private let staleTemperatureInterval: TimeInterval = 20
     
     // MARK: - Initialization
     override private init() {
@@ -115,10 +119,22 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 print("WatchOS: Error sending message: \(error.localizedDescription)")
                 errorHandler?(error)
             }
-        } else {
-            print("WatchOS: iPhone app is not reachable.")
-            errorHandler?(WCError(.notReachable))
+            return
         }
+
+        if replyHandler == nil {
+            do {
+                try session.updateApplicationContext(message)
+                print("WatchOS: Queued application context fallback: \(message)")
+            } catch {
+                print("WatchOS: Error queueing application context: \(error.localizedDescription)")
+                errorHandler?(error)
+            }
+            return
+        }
+
+        print("WatchOS: iPhone app is not reachable.")
+        errorHandler?(WCError(.notReachable))
     }
     
     func sendAccessorySettings() {
@@ -151,7 +167,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     
     // MARK: - SYNC with iOS
-    func requestSyncFromiOS() {
+    func requestSyncFromiOS(force: Bool = true) {
+        guard force || shouldRequestSyncFromiOS else { return }
+
+        syncRequestInFlight = true
+        lastSyncRequestAt = Date()
         print("WatchOS: Requesting sync from iOS")
         sendMessage(
             ["command": "getData"],
@@ -159,13 +179,17 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 // WCSession calls this on a background queue -> hop to main actor
                 Task { @MainActor in
                     guard let self else { return }
+                    self.syncRequestInFlight = false
                     print("WatchOS: Received sync response: \(response)")
                     self.updateCompanionInfo(from: response)
                     self.updateAccessorySettings(from: response)
                 }
             },
-            errorHandler: { error in
-                print("WatchOS: Failed to sync from iOS: \(error.localizedDescription)")
+            errorHandler: { [weak self] error in
+                Task { @MainActor in
+                    self?.syncRequestInFlight = false
+                    print("WatchOS: Failed to sync from iOS: \(error.localizedDescription)")
+                }
             }
         )
     }
@@ -188,6 +212,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 let receivedContext = self.session.receivedApplicationContext
                 if !receivedContext.isEmpty {
                     self.updateCompanionInfo(from: receivedContext)
+                    self.updateAccessorySettings(from: receivedContext)
                 }
             case .inactive:
                 self.connectionStatus = "Inactive"
@@ -301,7 +326,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             self.sleepModeEnabled = sleepMode
             print("WatchOS: Updated sleepModeEnabled: \(sleepMode)")
         }
-        if let auroraMode = data["auroraMode"] as? Bool, auroraMode != self.auroraModeEnabled {
+        if let auroraMode = (data["auroraMode"] as? Bool) ?? (data["arouraMode"] as? Bool),
+           auroraMode != self.auroraModeEnabled {
             self.auroraModeEnabled = auroraMode
             print("WatchOS: Updated auroraModeEnabled: \(auroraMode)")
         }
@@ -365,6 +391,26 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         temperatureTimestamp = nil
         temperatureHistory.removeAll()
     }
+
+    private var shouldRequestSyncFromiOS: Bool {
+        guard session.activationState == .activated,
+              session.isCompanionAppInstalled,
+              session.isReachable,
+              !syncRequestInFlight
+        else { return false }
+
+        let now = Date()
+        guard now.timeIntervalSince(lastSyncRequestAt) >= minimumSyncRequestInterval else {
+            return false
+        }
+
+        guard isConnectedOrConnecting(controllerConnectionStatus) else {
+            return temperatureTimestamp == nil && temperatureC == nil
+        }
+
+        guard let temperatureTimestamp else { return true }
+        return now.timeIntervalSince(temperatureTimestamp) >= staleTemperatureInterval
+    }
     
     // MARK: - App Lifecycle Integration
     func applicationDidBecomeActive() {
@@ -376,6 +422,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 let context = self.session.receivedApplicationContext
                 if !context.isEmpty {
                     self.updateCompanionInfo(from: context)
+                    self.updateAccessorySettings(from: context)
                 }
             }
         }
