@@ -31,13 +31,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514419</string>
+					<string>793736246.826975</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -55,11 +55,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -72,13 +75,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.5143811</string>
+					<string>793736246.826956</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -96,11 +99,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -113,13 +119,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514035</string>
+					<string>793736246.8269629</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -137,11 +143,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -154,13 +163,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514388</string>
+					<string>793736246.826969</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -178,11 +187,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -195,13 +207,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514374</string>
+					<string>793736246.8269449</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -219,11 +231,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -236,13 +251,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514394</string>
+					<string>793736246.826991</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -260,11 +275,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -277,13 +295,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514352</string>
+					<string>793736246.826938</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -301,11 +319,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>title</key>
 			<string>LED Preview grid</string>
@@ -320,13 +341,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514413</string>
+					<string>793736246.82698</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -344,11 +365,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -361,13 +385,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.5144</string>
+					<string>793736246.826878</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -385,11 +409,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -448,13 +475,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1031</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788491652.514408</string>
+					<string>793736246.826985</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -472,11 +499,14 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>
-
+				<string>            - The UI has been updated with a fresh, modern look.
+            
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -530,13 +560,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>2251</string>
+					<string>2241</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>2250</string>
+					<string>2241</string>
 					<key>Timestamp</key>
-					<string>788491877.109125</string>
+					<string>788707747.453269</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -546,51 +576,6 @@
 					<dict>
 						<key>relative-path</key>
 						<string>LumiFur/Connectivity/AccessoryViewModel.swift</string>
-					</dict>
-				</dict>
-			</dict>
-			<key>text-context</key>
-			<dict>
-				<key>focused</key>
-				<string>/*
-</string>
-				<key>leading</key>
-				<string>}
-
-</string>
-				<key>trailing</key>
-				<string> @available(iOS 16.1, *)
- func dismissalPolicyDescription(_ policy: ActivityUIDismissalPolicy) -&gt; String {
- switch policy {
-</string>
-			</dict>
-			<key>type</key>
-			<string>bookmark</string>
-		</dict>
-		<dict>
-			<key>destination</key>
-			<dict>
-				<key>location-parameters</key>
-				<dict>
-					<key>EndingColumnNumber</key>
-					<string>0</string>
-					<key>EndingLineNumber</key>
-					<string>1031</string>
-					<key>StartingColumnNumber</key>
-					<string>0</string>
-					<key>StartingLineNumber</key>
-					<string>1031</string>
-					<key>Timestamp</key>
-					<string>788491652.514425</string>
-				</dict>
-				<key>rebasable-url</key>
-				<dict>
-					<key>base</key>
-					<string>workspace</string>
-					<key>payload</key>
-					<dict>
-						<key>relative-path</key>
-						<string>LumiFur/ContentView.swift</string>
 					</dict>
 				</dict>
 			</dict>
@@ -616,13 +601,57 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>361</string>
+					<string>1103</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>360</string>
+					<string>1103</string>
 					<key>Timestamp</key>
-					<string>788498838.834277</string>
+					<string>793736246.826928</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string></string>
+				<key>leading</key>
+				<string>            - The UI has been updated with a fresh, modern look.
+            
+</string>
+				<key>trailing</key>
+				<string>            ### Bug Fixes
+            
+            *   Fixed a bug where the app would occasionally crash on launch.
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>408</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>407</string>
+					<key>Timestamp</key>
+					<string>794169407.678908</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -638,16 +667,61 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>}
+				<string>    let isConnected: Bool
 </string>
 				<key>leading</key>
-				<string>        .padding(.horizontal)
-    }
+				<string>private struct AboutSection: View {
+    let firmwareVersion: String
 </string>
 				<key>trailing</key>
-				<string>// MARK: - Subviews as Structs (MAJOR OPTIMIZATION)
-// Each major section of the List is now its own struct. This provides:
-// 1. Stable Identity: SwiftUI knows these are distinct, reusable components.
+				<string>    
+    var body: some View {
+        Section("About") {
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>312</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>311</string>
+					<key>Timestamp</key>
+					<string>794169407.678919</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>LumiFur/SettingsPage/SettingsView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>                            .accessibilityAddTraits(.isHeader)
+</string>
+				<key>leading</key>
+				<string>                            .fontWeight(.semibold)
+                            .lineLimit(1)
+</string>
+				<key>trailing</key>
+				<string>                        Text(accessoryViewModel.connectionStatus)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
 </string>
 			</dict>
 			<key>type</key>

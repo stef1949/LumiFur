@@ -2,71 +2,80 @@ import Charts
 import Combine
 import SwiftUI
 
-struct ChartView: View {
+struct ChartView: View, Equatable {
+    @Environment(\.scenePhase) private var scenePhase
+
     @Binding var isExpanded: Bool
-    @ObservedObject var accessoryViewModel: AccessoryViewModel
-    @Binding var selectedUnits: TempUnit   // ← binding from parent
-    
+    let seedData: [TemperatureData]
+    let temperaturePublisher: AnyPublisher<[TemperatureData], Never>
+    @Binding var selectedUnits: TempUnit
+
     private var displayUnit: TempUnit { selectedUnits }
-    
+
     private func toDisplayUnit(_ celsius: Double) -> Double {
-            Measurement(value: celsius, unit: UnitTemperature.celsius)
-                .converted(to: displayUnit.unit)
-                .value
-        }
+        Measurement(value: celsius, unit: UnitTemperature.celsius)
+            .converted(to: displayUnit.unit)
+            .value
+    }
+
+    static func == (lhs: ChartView, rhs: ChartView) -> Bool {
+        lhs.isExpanded == rhs.isExpanded &&
+        lhs._selectedUnits.wrappedValue == rhs._selectedUnits.wrappedValue
+    }
 
     // MARK: - State
+
     @State private var dataSubscription: AnyCancellable?
     @State private var samples: [TemperatureData] = []
-    @State private var yAxisDomain: ClosedRange<Double> = 20...30
+    @State private var yAxisDomain: ClosedRange<Double> = 20...35
+    @State private var domainEnd: Date = Date()
 
     // MARK: - Animation State
+
     @State private var chartPlotSize: CGSize = .zero
     @State private var animationEndFraction: CGFloat = 0.0
 
     // MARK: - Time window
+
     private let windowSeconds: TimeInterval = 3 * 60
     private let maxPoints: Int = 100
 
-    // Keep "now" stable for axis domain (updates once per second while expanded)
-    @State private var now: Date = Date()
     private var xDomain: ClosedRange<Date> {
-        (now.addingTimeInterval(-windowSeconds))...now
+        domainEnd.addingTimeInterval(-windowSeconds)...domainEnd
     }
-    
+
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("ChartView")
+
         VStack(spacing: 8) {
             header
 
             if isExpanded {
                 styledChart {
-                    ForEach(samples, id: \.id) { p in
+                    ForEach(samples, id: \.id) { point in
                         LineMark(
-                            x: .value("Time", p.timestamp),
-                            y: .value("Temp", toDisplayUnit(p.temperature))
+                            x: .value("Time", point.timestamp),
+                            y: .value("Temp", toDisplayUnit(point.temperature))
                         )
                         .interpolationMethod(.catmullRom)
                         .lineStyle(StrokeStyle(lineWidth: 2.5))
                     }
                 }
                 .transition(.opacity)
-                .onReceive(timer) { t in
-                    now = t
-                }
             }
         }
         .padding()
-        .onChange(of: isExpanded) { _, isNowExpanded in
-            if isNowExpanded { startSubscription() } else { stopSubscription() }
+        .onAppear(perform: refreshActivityState)
+        .onDisappear(perform: stopSubscription)
+        .onChange(of: isExpanded) { _, _ in
+            refreshActivityState()
+        }
+        .onChange(of: scenePhase) { _, _ in
+            refreshActivityState()
         }
         .onChange(of: selectedUnits) { _, _ in
-            // Units changed: recompute domain (and samples if you want)
             updateYAxisDomain(with: samples)
         }
-        .onAppear {
-            if isExpanded { startSubscription() }
-        }
-        .onDisappear(perform: stopSubscription)
     }
 
     private var header: some View {
@@ -85,11 +94,25 @@ struct ChartView: View {
         }
     }
 
-    private var timer: Publishers.Autoconnect<Timer.TimerPublisher> {
-        Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
+    private func refreshActivityState() {
+        if isExpanded && scenePhase == .active {
+            startSubscription()
+        } else {
+            stopSubscription()
+        }
+    }
+
+    private func animateRevealTick() {
+        animationEndFraction = 0.98
+        DispatchQueue.main.async {
+            withAnimation(.linear(duration: 0.35)) {
+                animationEndFraction = 1.0
+            }
+        }
     }
 
     // MARK: - Chart Builder
+
     private func styledChart<Content: ChartContent>(
         @ChartContentBuilder content: () -> Content
     ) -> some View {
@@ -120,7 +143,9 @@ struct ChartView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onAppear { chartPlotSize = geometry.size }
-                            .onChange(of: geometry.size) { _, newSize in chartPlotSize = newSize }
+                            .onChange(of: geometry.size) { _, newSize in
+                                chartPlotSize = newSize
+                            }
                     }
                 }
             }
@@ -131,66 +156,98 @@ struct ChartView: View {
     }
 
     // MARK: - Subscription
+
     private func startSubscription() {
         guard dataSubscription == nil else { return }
 
-        // Prime the chart immediately
-        let initial = processData(from: accessoryViewModel.temperatureData)
+        animationEndFraction = 0
+
+        let initial = processData(from: seedData)
         samples = initial
+        domainEnd = initial.last?.timestamp ?? Date()
         updateYAxisDomain(with: initial)
 
-        // Animate reveal after first layout
         DispatchQueue.main.async {
-            withAnimation(.linear(duration: 0.5)) {
-                animationEndFraction = 1.0
+            withAnimation(.linear(duration: 0.35)) {
+                animationEndFraction = 1
             }
         }
 
-        dataSubscription = accessoryViewModel.temperatureChartPublisher
-            .receive(on: RunLoop.main)
+        dataSubscription = temperaturePublisher
             .sink { newSamples in
-                // If we collapse while the publisher is still emitting
-                guard isExpanded else { return }
+                IdleCPUDiagnostics.shared.recordTaskFire("chart.subscription")
 
                 let processed = processData(from: newSamples)
-                samples = processed
-                updateYAxisDomain(with: processed)
+                let lastIncoming = processed.last
+                let lastCurrent = samples.last
+
+                guard lastIncoming?.timestamp != lastCurrent?.timestamp ||
+                        lastIncoming?.temperature != lastCurrent?.temperature else {
+                    return
+                }
+
+                withAnimation(.linear(duration: 0.25)) {
+                    samples = processed
+                    domainEnd = processed.last?.timestamp ?? Date()
+                    updateYAxisDomain(with: processed)
+                }
+                animateRevealTick()
             }
     }
 
     private func stopSubscription() {
         dataSubscription?.cancel()
         dataSubscription = nil
-
-        animationEndFraction = 0.0
+        animationEndFraction = 0
         samples = []
+        domainEnd = Date()
+        updateYAxisDomain(with: [])
     }
 
-    // MARK: - Data processing
+    // MARK: - Data Processing
+
     private func processData(from allData: [TemperatureData]) -> [TemperatureData] {
-        let cutoff = now.addingTimeInterval(-windowSeconds)
+        let referenceDate = allData.last?.timestamp ?? Date()
+        let cutoff = referenceDate.addingTimeInterval(-windowSeconds)
         let recent = allData.filter { $0.timestamp >= cutoff }
+        guard !recent.isEmpty else { return [] }
 
         let strideBy = max(1, recent.count / maxPoints)
-        return recent.enumerated().compactMap { idx, element in
-            idx.isMultiple(of: strideBy) ? element : nil
+        var downsampled: [TemperatureData] = []
+        downsampled.reserveCapacity(min(maxPoints, recent.count))
+
+        for (index, element) in recent.enumerated() where index.isMultiple(of: strideBy) {
+            downsampled.append(element)
         }
+
+        if downsampled.last?.timestamp != recent.last?.timestamp, let last = recent.last {
+            downsampled.append(last)
+        }
+
+        if downsampled.count > maxPoints {
+            downsampled.removeFirst(downsampled.count - maxPoints)
+        }
+
+        return downsampled
     }
 
     private func updateYAxisDomain(with data: [TemperatureData]) {
         guard !data.isEmpty else {
-            // reasonable default for the current unit
             let midC = 25.0
             let mid = toDisplayUnit(midC)
-            yAxisDomain = (mid - 5)...(mid + 5)
+            yAxisDomain = (mid - 6)...(mid + 6)
             return
         }
 
-        // IMPORTANT: compute in DISPLAY UNIT, because that's what we plot
         let temps = data.map { toDisplayUnit($0.temperature) }
         guard let minT = temps.min(), let maxT = temps.max() else { return }
 
-        let padding = max(1.0, (maxT - minT) * 0.15) // adaptive padding
-        yAxisDomain = (minT - padding)...(maxT + padding)
+        let minRange = 8.0
+        let baseRange = max(maxT - minT, minRange)
+        let padding = baseRange * 0.25
+        let mid = (maxT + minT) / 2
+        let halfRange = (baseRange / 2) + padding
+
+        yAxisDomain = (mid - halfRange)...(mid + halfRange)
     }
 }

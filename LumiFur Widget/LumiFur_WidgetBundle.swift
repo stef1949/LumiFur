@@ -21,7 +21,7 @@ struct LumiFur_WidgetBundle: WidgetBundle {
 // MARK: – Home‑screen Widget
 
 struct LumiFurHomeWidget: Widget {
-    let kind = SharedDataKeys.widgetKind
+    let kind = "com.richies3d.LumiFur.homewidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: HomeProvider()) { entry in

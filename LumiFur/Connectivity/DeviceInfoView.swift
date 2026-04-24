@@ -8,6 +8,7 @@ import SwiftUI
 
 struct DeviceInfoView: View {
     @ObservedObject var accessoryViewModel: AccessoryViewModel
+    @State private var lastCopiedValue: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -127,13 +128,21 @@ struct DeviceInfoView: View {
         Button {
             #if canImport(UIKit)
             UIPasteboard.general.string = text
+            lastCopiedValue = text
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                if lastCopiedValue == text {
+                    lastCopiedValue = nil
+                }
+            }
             #endif
         } label: {
-            Image(systemName: "doc.on.doc")
+            Image(systemName: lastCopiedValue == text ? "checkmark.circle.fill" : "doc.on.doc")
                 .font(.caption.weight(.semibold))
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .accessibilityLabel("Copy")
+        .foregroundStyle(lastCopiedValue == text ? .green : .secondary)
+        .accessibilityLabel(lastCopiedValue == text ? "Copied" : "Copy")
+        .accessibilityHint("Copies this value to the clipboard")
     }
 }

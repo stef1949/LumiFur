@@ -8,7 +8,7 @@ import SwiftUI
 
 
 // Place this struct outside of ContentView
-struct HeaderView: View {
+struct HeaderView: View, Equatable {
     
     // MARK: - Properties
     // It receives the core data from ContentView.
@@ -22,13 +22,17 @@ struct HeaderView: View {
     
     // MARK: - Body
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("HeaderView")
+
         HStack {
+            /*
             Text("LumiFur")
                 .font(Font.custom("Meloriac", size: 35))
                 .frame(width: 150)
                 //.border(.purple)
+            */
             
-            Spacer()
+            // Spacer()
             
             // It creates the StatusSectionView and passes down the data.
             StatusSectionView(
@@ -40,6 +44,13 @@ struct HeaderView: View {
             )
             .equatable()
         }
-        .padding(.horizontal)
+        //.padding(.horizontal)
+    }
+
+    static func == (lhs: HeaderView, rhs: HeaderView) -> Bool {
+        lhs.connectionState == rhs.connectionState &&
+        lhs.connectionStatus == rhs.connectionStatus &&
+        lhs.signalStrength == rhs.signalStrength &&
+        lhs.luxValue == rhs.luxValue
     }
 }

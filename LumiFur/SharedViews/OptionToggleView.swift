@@ -68,8 +68,9 @@ struct OptionToggleView: View, Equatable {
             isOn.toggle()
         }) {
             Text(title)
-                .dynamicTypeSize(.medium)
                 .fontWeight(.medium)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
         }
         .background(
@@ -86,4 +87,3 @@ struct OptionToggleView: View, Equatable {
         .animation(.easeInOut(duration: 0.3), value: isOn)
     }
 }
-

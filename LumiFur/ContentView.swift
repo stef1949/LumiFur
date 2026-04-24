@@ -18,8 +18,12 @@ import SwiftUI
 import UniformTypeIdentifiers
 import os
 
-let actions = SharedOptions.protoActionOptions3
+let actions = SharedOptions.protoActionOptions
 let configs = SharedOptions.protoConfigOptions
+private let contentLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur",
+    category: "ContentView"
+)
 
 // IOS 18.0 features
 //import AccessorySetupKit
@@ -27,63 +31,45 @@ let configs = SharedOptions.protoConfigOptions
 // ----- iOSViewModel Definition -----
 // (Technically possible to put it here)
 @MainActor
-class iOSViewModel: ObservableObject {
+final class iOSViewModel: ObservableObject {
     @Published var receivedCommand: String = "None"
-    // We can keep this for debugging, but it's not essential for the core logic anymore.
     @Published var receivedFaceFromWatch: String? = nil
-    // This provides a link to the single source of truth for your app's state.
-    @ObservedObject var accessoryViewModel = AccessoryViewModel.shared
+
+    private let bleModel: AccessoryViewModel
     private var cancellables = Set<AnyCancellable>()
-    
-    // ✅ REPLACE YOUR OLD init() WITH THIS ONE
-    init() {
-        // This check is good practice to avoid running connectivity code in SwiftUI Previews.
+
+    init(bleModel: AccessoryViewModel) {
+        self.bleModel = bleModel
+
         let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         if isPreview { return }
-        
-        // Subscribe to messages from the WatchConnectivityManager
+
         WatchConnectivityManager.shared.messageSubject
-            .receive(on: DispatchQueue.main) // Ensure UI updates happen on the main thread
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] messageData in
-                // Use a guard to safely unwrap `self` and avoid retain cycles
-                guard let self = self else { return }
-                
-                // Check if the command is "setFace"
+                guard let self else { return }
+
                 if let command = messageData["command"] as? String, command == "setFace" {
-                    self.receivedCommand = command // Update for debugging
-                    
-                    // ✅ Look for the "view" integer key sent from the watch
+                    self.receivedCommand = command
+
                     if let view = messageData["view"] as? Int {
-                        print("iOS ViewModel: Received 'setFace' command from watch for view: \(view)")
-                        
-                        // Call the accessory view model to update the app's state.
-                        // This will update the iOS UI and send the command to the BLE device.
-                        self.accessoryViewModel.setView(view)
-                        
-                        // Clear the old debugging property
+                        contentLogger.debug("Received legacy watch setFace command for view \(view, privacy: .public)")
+                        _ = self.bleModel.setView(view)
                         self.receivedFaceFromWatch = nil
-                        
+                    } else if let face = messageData["faceValue"] as? String {
+                        contentLogger.notice("Received legacy faceValue payload from watch")
+                        self.receivedFaceFromWatch = face
                     } else {
-                        // This block is for backwards compatibility or debugging the old format.
-                        if let face = messageData["faceValue"] as? String {
-                            print("iOS ViewModel: Received OLD format `faceValue`: \(face). Please ensure watch app is updated.")
-                            self.receivedFaceFromWatch = face // For debugging
-                        } else {
-                            print("iOS ViewModel: Received 'setFace' command but 'view' key was missing or not an Int.")
-                        }
+                        contentLogger.error("Received legacy setFace command without a valid view value")
                     }
-                } else {
-                    // Handle other potential commands from the watch
-                    if let command = messageData["command"] as? String {
-                        self.receivedCommand = command
-                        print("iOS ViewModel: Received other command: \(command)")
-                    }
+                } else if let command = messageData["command"] as? String {
+                    self.receivedCommand = command
+                    contentLogger.debug("Received legacy watch command \(command, privacy: .public)")
                 }
             }
-            .store(in: &cancellables) // Store the subscription to keep it alive
+            .store(in: &cancellables)
     }
 }
-
 struct WidgetItem: Identifiable, Equatable {
     let id: Int  // ← stable index, not UUID()
     let title: String
@@ -147,26 +133,33 @@ struct AppInfo {
     }
 }
 
+extension ConnectionState {
+    var toolbarStatusText: String {
+        switch self {
+        case .connected:    return "Connected"
+        case .connecting:   return "Connecting…"
+        case .disconnected: return "Disconnected"
+        case .scanning:     return "Scanning…"
+        case .bluetoothOff: return "Turn on Bluetooth"
+        case .reconnecting: return "Reconnecting…"
+        case .failed:       return "Error"
+        case .unknown:      return "Unknown Error"
+        }
+    }
+}
+
 // MARK: ContentView
 struct ContentView: View {
     @StateObject private var ledModel = LEDPreviewModel()
     @Environment(\.scenePhase) private var scenePhase
     //@StateObject private var accessoryViewModel = AccessoryViewModel()
     
-    // 1. Declare this as an @ObservedObject. It will receive the instance
-        //    created in the App struct.
-        @ObservedObject var bleModel: AccessoryViewModel
+    let bleModel: AccessoryViewModel
     
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
-    @AppStorage("autoBrightness") private var autoBrightness = true
-    @AppStorage("accelerometer") private var accelerometer = true
-    @AppStorage("sleepMode") private var sleepMode = true
-    @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
-    @State var auroraModeEnabled = false
     @State private var customMessageText: String = ""
     @State private var showCustomMessagePopup = false
     
@@ -177,16 +170,24 @@ struct ContentView: View {
             count: 64
         )
     
-    @StateObject private var viewModel = iOSViewModel()  // Instantiates the class defined above
+    @StateObject private var viewModel: iOSViewModel  // Instantiates the class defined above
 
+    init(bleModel: AccessoryViewModel) {
+            self.bleModel = bleModel
+            _viewModel = StateObject(wrappedValue: iOSViewModel(bleModel: bleModel))
+        }
+    
     @State private var errorMessage: String?
     
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
     @State private var showSplash = true  // Local state to control the splash screen appearance.
+    @State private var showQuickControls = false
     
     @State private var drawProgress: CGFloat = 1.0
     
     @Environment(\.colorScheme) var colorScheme  // Colot Scheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     var overlayColor: Color {
         colorScheme == .dark ? .init(uiColor: .systemGray6) : .white
     }
@@ -194,6 +195,61 @@ struct ContentView: View {
     @State private var matrixStyle: MatrixStyle = .array // The real source of truth
     
     @Namespace var namespace
+
+    private var customMessageToggleBinding: Binding<Bool> {
+        Binding(
+            get: { showCustomMessagePopup || !bleModel.customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+            set: { newValue in
+                if newValue {
+                    customMessageText = bleModel.customMessage
+                    showCustomMessagePopup = true
+                } else {
+                    customMessageText = ""
+                    bleModel.sendScrollText("")
+                }
+            }
+        )
+    }
+
+    private var autoBrightnessBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.autoBrightness },
+            set: { newValue in
+                bleModel.autoBrightness = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var accelerometerBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.accelerometerEnabled },
+            set: { newValue in
+                bleModel.accelerometerEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var sleepModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.sleepModeEnabled },
+            set: { newValue in
+                bleModel.sleepModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var auroraModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.auroraModeEnabled },
+            set: { newValue in
+                bleModel.auroraModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
 
     fileprivate let twoColumnGrid = [
         GridItem(.adaptive(minimum: 125, maximum: 250))
@@ -240,7 +296,7 @@ struct ContentView: View {
             engine = try CHHapticEngine()
             try engine?.start()
         } catch {
-            print("Haptics init error: \(error.localizedDescription)")
+            contentLogger.error("Failed to initialize haptics: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -268,11 +324,13 @@ struct ContentView: View {
             let player = try engine?.makePlayer(with: pattern)
             try player?.start(atTime: 0)
         } catch {
-            print("Haptics play error: \(error.localizedDescription)")
+            contentLogger.error("Failed to play haptics: \(error.localizedDescription, privacy: .public)")
         }
     }
     
     var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("ContentView")
+
         #if os(macOS)
             NavigationSplitView {
                 List(SidebarItem.allCases, selection: $selectedSidebarItem) {
@@ -302,27 +360,42 @@ struct ContentView: View {
                 NavigationStack {
                     detailContent
                     //.navigationTitle("LumiFur")
-                    /*
-                     .toolbar {
-                         //ToolbarSpacer(.fixed)
-                         ToolbarItemGroup(placement: .bottomBar) {
-                             NavigationLink(destination: ContentView()) {
-                             Image(systemName: "gear")
-                             .glassEffect(.regular.interactive())
-                             }
-                             }
-                         ToolbarSpacer(.fixed)
-                    
-                         ToolbarItemGroup(placement: .bottomBar) {
-                     //Spacer()   // pushes the gear icon all the way to the right
-                     NavigationLink(destination: SettingsView(bleModel: accessoryViewModel,
-                     selectedMatrix: $selectedMatrix)) {
-                     Image(systemName: "gear")
-                     .glassEffect(.regular.interactive())
-                     }
-                     }
-                     }
-                     */
+                    //.navigationBarTitleDisplayMode(.large)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { showQuickControls.toggle() } label: {
+                                    Image(systemName: "line.3.horizontal")
+                                }
+                                .accessibilityLabel("Quick Controls")
+                                .accessibilityHint("Shows quick controls and the LumiFur logo")
+                            
+                                // Present as popover on regular width (iPad), sheet on compact (iPhone)
+                                .popover(
+                                    isPresented: Binding(
+                                        get: { showQuickControls && horizontalSizeClass == .regular },
+                                        set: { if !$0 { showQuickControls = false } }
+                                    ),
+                                    attachmentAnchor: .rect(.bounds),
+                                    arrowEdge: .top
+                                ) {
+                                    quickControlsContent
+                                }
+                                .popover(
+                                    isPresented: Binding(
+                                        get: { showQuickControls && horizontalSizeClass == .compact },
+                                        set: { if !$0 { showQuickControls = false } }
+                                    )
+                                ) {
+                                    quickControlsContent
+                                        .presentationBackground(.clear)
+                                        .presentationCompactAdaptation(.popover)
+                                        .padding()
+                                }
+                            }
+                            ToolbarItem(placement: .topBarTrailing) {
+                                ToolbarStatusHost(bleModel: bleModel)
+                            }
+                        }
                 }
                 .tabItem {
                     Label(SidebarItem.dashboard.rawValue, systemImage: SidebarItem.dashboard.iconName)
@@ -333,7 +406,9 @@ struct ContentView: View {
                 //Divider()
                 NavigationStack {
                     SettingsView(
-                        bleModel: bleModel, selectedMatrix: $matrixStyle
+                        bleModel: bleModel,
+                        selectedMatrix: $matrixStyle,
+                        isActive: selectedSidebarItem == .settings
                     )
                     .navigationTitle("Settings")
                 }
@@ -388,53 +463,16 @@ struct ContentView: View {
     }
     @ViewBuilder
     private var detailContent: some View {
-        //@AppStorage("charts") var isChartsExpanded = false
-        @AppStorage("hasLaunchedBefore") var hasLaunchedBefore: Bool = true
-
         ZStack {
             if selectedSidebarItem == .dashboard {
-                VStack {
-                    HStack{
-                        HeaderView(
-                            connectionState: bleModel.connectionState,
-                            connectionStatus: bleModel.connectionStatus,
-                            signalStrength: bleModel.signalStrength,
-                            luxValue: Double(bleModel.luxValue)
-                        )
-                    }
-                    optionGridSection
-                    //ledArraySection
-                    //.border(.green)
-                    
-                    FaceGridSection(
-                        selectedView: bleModel.selectedView,
-                        onSetView: { bleModel.setView($0) },
-                        auroraModeEnabled: auroraModeEnabled
-                        //items: SharedOptions.protoActionOptions3
-                    )
-                    .zIndex(-1)
-                    
-                    ChartView(
-                        isExpanded: $isChartsExpanded,
-                        accessoryViewModel: bleModel,
-                        selectedUnits: selectedUnitsBinding
-                    )
-                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
-                    .frame(maxHeight: isChartsExpanded ? 160 : 55) // Animate height change
-                    .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                isChartsExpanded.toggle()
-                            }
-                        }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    // This animation smoothly handles the frame height change.
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
-                }
-                .onAppear(perform: prepareHaptics)
-                .onChange(of: viewModel.receivedFaceFromWatch) { _, newFace in
-                    handleWatchFaceSelection(face: newFace)
-                }
+                DashboardContentView(
+                    bleModel: bleModel,
+                    isChartsExpanded: $isChartsExpanded,
+                    selectedUnits: selectedUnitsBinding,
+                    receivedFaceFromWatch: viewModel.receivedFaceFromWatch,
+                    onPrepareHaptics: prepareHaptics,
+                    onHandleWatchFaceSelection: handleWatchFaceSelection
+                )
         } else {
             Text("Select an item from the sidebar")
                 .foregroundStyle(.secondary)
@@ -488,76 +526,45 @@ struct ContentView: View {
         [
             OptionConfig(
                 title: "Auto Brightness",
-                binding: $autoBrightness,
+                binding: autoBrightnessBinding,
                 type: .autoBrightness
-            ) { newValue in
-                print("Auto brightness changed to \(newValue)")
-                // accessoryViewModel.autoBrightness = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Accelerometer",
-                binding: $accelerometer,
+                binding: accelerometerBinding,
                 type: .accelerometer
-            ) { newValue in
-                print("Accelerometer changed to \(newValue)")
-                // accessoryViewModel.accelerometerEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Sleep Mode",
-                binding: $sleepMode,
+                binding: sleepModeBinding,
                 type: .sleepMode
-            ) { newValue in
-                print("Sleep mode changed to \(newValue)")
-                // accessoryViewModel.sleepModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
             OptionConfig(
                 title: "Aurora Mode",
-                binding: $auroraMode,
+                binding: auroraModeBinding,
                 type: .auroraMode
-            ) { newValue in  // Fixed typo "Aroura"
-                print("Aurora Mode changed to \(newValue)")
-                // accessoryViewModel.auroraModeEnabled = newValue
-                // accessoryViewModel.writeConfigToCharacteristic()
-            },
+            ),
         ]
     }
     private var optionGridSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {  // Added showsIndicators: false
-            LazyHGrid(rows: twoRowOptionGrid) {
+        ScrollView(.vertical, showsIndicators: false) {  // Added showsIndicators: false
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(standardOptions) { option in
                     OptionToggleView(
                         title: option.title,
                         isOn: option.binding,
                         optionType: option.type
                     )
-                    .onChange(of: option.binding.wrappedValue) {
-                        oldValue,
-                        newValue in
+                    .onChange(of: option.binding.wrappedValue) { oldValue, newValue in
                         option.action?(newValue)
-                        // If accessoryViewModel actions are always the same,
-                        // you might simplify the `action` closure further or move
-                        // `writeConfigToCharacteristic` here.
-                        // For now, I've kept the print and commented viewModel lines in the closures.
                     }
                 }
                 // Custom Message Toggle - handled separately due to unique popover logic
                 OptionToggleView(
                     title: "Custom Message",
-                    isOn: $customMessage,
+                    isOn: customMessageToggleBinding,
                     optionType: .customMessage
                 )
-                .onChange(of: customMessage) { oldValue, newValue in  // Correct onChange signature
-                    if newValue {  // Use newValue for clarity
-                        showCustomMessagePopup = true
-                    } else {
-                        // Optionally handle if customMessage is turned OFF by means other than Cancel button
-                        // For example, if customMessageText should be cleared.
-                        // customMessageText = "" // If desired
-                    }
-                }
                 .popover(
                     isPresented: $showCustomMessagePopup,
                     attachmentAnchor: .rect(.bounds),
@@ -569,9 +576,9 @@ struct ContentView: View {
                         .padding()
                 }
             }
-            .padding(.horizontal)  // Apply padding to the HGrid content
+            .padding(.horizontal)
         }
-        .frame(maxWidth: .infinity, maxHeight: 80)
+        //.frame(maxWidth: .infinity, maxHeight: 80)
         //.scrollContentBackground(.hidden)
         .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
         // If you want content to extend beyond scroll view bounds, set true.
@@ -589,24 +596,12 @@ struct ContentView: View {
             HStack {
                 Spacer()
                 Button("Cancel") {
-                    customMessage = false  // Turn off the toggle
+                    customMessageText = bleModel.customMessage
                     showCustomMessagePopup = false
-                    // customMessageText = "" // Optionally clear text on cancel
                 }
                 Button("OK") {
                     showCustomMessagePopup = false
-                    // Here you would typically use customMessageText
-                    // e.g., accessoryViewModel.customMessageText = customMessageText
-                    // accessoryViewModel.customMessageEnabled = customMessage // which is true
-                    // accessoryViewModel.writeConfigToCharacteristic()
-                    print("Custom message set: \(customMessageText)")
-                    bleModel.customMessage = customMessageText
                     bleModel.sendScrollText(customMessageText)
-                    // Optionally set a default speed on first send; comment out if not desired
-                    // bleModel.sendScrollSpeed(50)
-                    if customMessageText.isEmpty {  // If OK is pressed with no text, maybe turn off the feature?
-                        // customMessage = false // Or provide feedback to user
-                    }
                 }
             }
             HStack(spacing: 12) {
@@ -627,13 +622,35 @@ struct ContentView: View {
         //.glassEffect(.regular.tint(.blue))
     }
     
+    // Quick Controls content used in both popover and sheet
+    private var quickControlsContent: some View {
+        VStack(spacing: 12) {
+            /*
+            Image("LumiFur_Controller_AK")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
+             */
+            Text("LumiFur")
+                .font(Font.custom("Meloriac", size: 35))
+                .frame(width: 150)
+                //.border(.purple)
+            optionGridSection
+                //.frame(maxHeight: 120)
+        }
+        .padding()
+        .disabled(!bleModel.isConnected)
+    }
+    
     // MARK: –––––––––––––––––––––––––––––––––
     // 1) Standalone grid view
-    struct FaceGridSection: View {
+    struct FaceGridSection: View, Equatable {
         // No longer observing the whole VM, but taking specific values/callbacks
+        let bleModel: AccessoryViewModel
         let selectedView: Int
         let onSetView: (Int) -> Void  // Callback to update the selection
-        let auroraModeEnabled: Bool
         //let items: [SharedOptions.ProtoAction]  // Pass the data directly
         
         @Environment(\.colorScheme) private var colorScheme
@@ -657,15 +674,18 @@ struct ContentView: View {
         */
         
         // Access the static property directly and use .map to convert it.
-        @State private var items: [FaceItem] = SharedOptions.protoActionOptions3.map { FaceItem(content: $0) }
+        @State private var items: [FaceItem] = SharedOptions.protoActionOptions.map { FaceItem(content: $0) }
         
         
         // --- The rest of your view remains the same ---
         @State private var selectedItemID: FaceItem.ID?
+        @State private var showStrobeOptions = false
         
         //@Namespace private var glassNamespace
         
         var body: some View {
+            let _ = IdleCPUDiagnostics.shared.recordViewBody("FaceGridSection")
+
             /*
              // --- DEBUG TEXT ---
              Text("Number of items: \(items.count)")
@@ -677,14 +697,15 @@ struct ContentView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
                         // 2. ForEach loops over identifiable data, not indices.
-                        ForEach(items) { item in
+                        ForEach(items, id: \.id) { item in
                             FaceCellView(
                                 // 3. Pass the item and selection state cleanly.
                                 item: item,
-                                isSelected: selectedItemID == item.id,
-                                auroraModeEnabled: auroraModeEnabled,
+                                isSelected: isSelectedFaceItem(item),
                                 overlayColor: lightColor,
-                                backgroundColor: darkColor
+                                backgroundColor: darkColor,
+                                showsMenuButton: shouldShowStrobeMenu(for: item),
+                                onMenuTap: shouldShowStrobeMenu(for: item) ? { showStrobeOptions = true } : nil
                                 //namespace: glassNamespace,
                                 
                                 // The action now provides the item directly.
@@ -697,11 +718,23 @@ struct ContentView: View {
                                     let commandIndex = index + 1
                                     // 4. Call the parent's `onSetView` function to send the command.
                                     onSetView(commandIndex)
-                                    // Optional but recommended: Add a print statement for debugging.
-                                    print("Tapped item with content '\(tappedItem.content)'. Sending command for view: \(commandIndex)")
                                 }
                             }
-                            .equatable() // This is good, keep it!
+                            .equatable()
+                            .popover(
+                                isPresented: Binding(
+                                    get: { shouldShowStrobeMenu(for: item) && showStrobeOptions },
+                                    set: { showStrobeOptions = $0 }
+                                ),
+                                attachmentAnchor: .rect(.bounds),
+                                arrowEdge: .top
+                            ) {
+                                StrobeControlsView(
+                                    bleModel: bleModel,
+                                    onDone: { showStrobeOptions = false }
+                                )
+                                .presentationCompactAdaptation(.popover)
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -720,6 +753,25 @@ struct ContentView: View {
                 }
             }
         }
+
+        private func isSelectedFaceItem(_ item: FaceItem) -> Bool {
+            selectedItemID == item.id
+        }
+
+        private func shouldShowStrobeMenu(for item: FaceItem) -> Bool {
+            guard isSelectedFaceItem(item) else { return false }
+
+            switch item.content {
+            case .symbol(let symbol):
+                return symbol == SharedOptions.strobeActionSymbol
+            case .emoji:
+                return false
+            }
+        }
+
+        static func == (lhs: FaceGridSection, rhs: FaceGridSection) -> Bool {
+            lhs.selectedView == rhs.selectedView
+        }
     }
     
     // MARK: - Helper Functions (Place handleWatchFaceSelection HERE)
@@ -727,12 +779,12 @@ struct ContentView: View {
     /// Handles processing the face selection received from the watch.
     private func handleWatchFaceSelection(face: String?) {  // <--- DEFINITION INSIDE ContentView
         guard let selectedFace = face else {
-            print("Watch face selection cleared or invalid.")
+            contentLogger.notice("Ignored empty watch face selection")
             return
         }
         
         // Find the index where the enum's String == selectedFace
-        if let index = SharedOptions.protoActionOptions3.firstIndex(where: {
+        if let index = SharedOptions.protoActionOptions.firstIndex(where: {
             action in
             switch action {
             case .emoji(let e): return e == selectedFace
@@ -740,14 +792,10 @@ struct ContentView: View {
             }
         }) {
             let viewToSet = index + 1
-            print(
-                "Watch requested face '\(selectedFace)' at index \(index). Setting view \(viewToSet)."
-            )
-            bleModel.setView(viewToSet)
+            contentLogger.debug("Applying watch face selection for view \(viewToSet, privacy: .public)")
+            _ = bleModel.setView(viewToSet)
         } else {
-            print(
-                "Received face '\(selectedFace)' from watch, but it wasn’t in protoActionOptions3."
-            )
+            contentLogger.error("Received unknown watch face selection")
         }
     }
 
@@ -755,12 +803,111 @@ struct ContentView: View {
     /// so you can show it back in your SwiftUI view or send it to the watch.
     private func getFaceForView(_ view: Int) -> String {
         let idx = view - 1
-        guard SharedOptions.protoActionOptions3.indices.contains(idx) else {
+        guard SharedOptions.protoActionOptions.indices.contains(idx) else {
             return "❓"
         }
-        switch SharedOptions.protoActionOptions3[idx] {
+        switch SharedOptions.protoActionOptions[idx] {
         case .emoji(let e): return e
         case .symbol(let s): return s
+        }
+    }
+}
+
+private struct ToolbarStatusHost: View {
+    @ObservedObject var bleModel: AccessoryViewModel
+
+    private var toolbarModel: ToolbarStatusModel {
+        .init(
+            connectionState: bleModel.connectionState,
+            toolbarStatusText: bleModel.connectionState.toolbarStatusText,
+            signalStrength: bleModel.signalStrength,
+            luxValue: Int(bleModel.luxValue)
+        )
+    }
+
+    var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("ToolbarStatusHost")
+
+        HeaderView(
+            connectionState: toolbarModel.connectionState,
+            connectionStatus: toolbarModel.connectionState.toolbarStatusText,
+            signalStrength: toolbarModel.signalStrength,
+            luxValue: Double(toolbarModel.luxValue)
+        )
+        .equatable()
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+private struct DashboardContentView: View {
+    @ObservedObject var bleModel: AccessoryViewModel
+    @Binding var isChartsExpanded: Bool
+    let selectedUnits: Binding<TempUnit>
+    let receivedFaceFromWatch: String?
+    let onPrepareHaptics: () -> Void
+    let onHandleWatchFaceSelection: (String?) -> Void
+
+    var body: some View {
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("DashboardContentView")
+
+        GeometryReader { proxy in
+            let isLandscape = proxy.size.width > proxy.size.height
+
+            Group {
+                if isLandscape {
+                    HStack(spacing: 16) {
+                        faceGrid
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        chart(width: proxy.size.width * 0.33)
+                            .frame(maxHeight: .infinity)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                } else {
+                    VStack {
+                        faceGrid
+                        chart(width: nil)
+                            .frame(maxHeight: isChartsExpanded ? 160 : 55)
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
+                    }
+                }
+            }
+        }
+        .onAppear(perform: onPrepareHaptics)
+        .onChange(of: receivedFaceFromWatch) { _, newFace in
+            onHandleWatchFaceSelection(newFace)
+        }
+    }
+
+    private var faceGrid: some View {
+        ContentView.FaceGridSection(
+            bleModel: bleModel,
+            selectedView: bleModel.selectedView,
+            onSetView: { view in
+                _ = bleModel.setView(view)
+            }
+        )
+        .equatable()
+    }
+
+    @ViewBuilder
+    private func chart(width: CGFloat?) -> some View {
+        ChartView(
+            isExpanded: $isChartsExpanded,
+            seedData: bleModel.temperatureData,
+            temperaturePublisher: bleModel.temperatureChartPublisher,
+            selectedUnits: selectedUnits
+        )
+        .equatable()
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+        .frame(width: width, alignment: .top)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                isChartsExpanded.toggle()
+            }
         }
     }
 }
@@ -822,8 +969,8 @@ struct AdvancedSettingsView: View {
                 Toggle("Auto Reconnect", isOn: $autoReconnect)
                     .onChange(of: autoReconnect) { oldValue, newValue in
                         bleModel.autoReconnectEnabled = newValue
-                        print(
-                            "Auto Reconnect changed from \(oldValue) to \(newValue)"
+                        contentLogger.debug(
+                            "Auto reconnect changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
                         )
                     }
                 if bleModel.isConnected {
@@ -869,8 +1016,8 @@ struct AdvancedSettingsView: View {
                     )
                     .onChange(of: rssiUpdateInterval) { oldValue, newValue in
                         // If your model supports adjustable intervals for reading RSSI, update it here.
-                        print(
-                            "RSSI update interval changed from \(oldValue) to \(newValue)"
+                        contentLogger.debug(
+                            "RSSI interval changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
                         )
                     }
                 }
@@ -999,16 +1146,6 @@ struct AdvancedSettingsView: View {
 }
 
 
-// ——————— Your mock view model at file-scope ———————
-@MainActor
-class MockViewModel: AccessoryViewModel {
-    init(state: ConnectionState, rssi: Int = -65) {
-        super.init()
-        self.connectionState = state
-        self.signalStrength = rssi
-    }
-}
-
 /*
  // ——————— Three separate #Preview entries at file-scope ———————
  #Preview("Connected") {
@@ -1027,5 +1164,3 @@ class MockViewModel: AccessoryViewModel {
  }
  }
  */
-
-

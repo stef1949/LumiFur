@@ -43,11 +43,6 @@ struct SettingsView: View {
     
     // AppStorage for simple, persistent user settings.
     @AppStorage("fancyMode") private var fancyMode = false
-    @AppStorage("autoBrightness") var autoBrightness = true
-    @AppStorage("accelerometer") var accelerometer = true
-    @AppStorage("sleepMode") var sleepMode = true
-    @AppStorage("auroraMode") var auroraMode = true
-    @AppStorage("customMessage") var customMessage = false
     
     // Local UI state.
     @State private var showAdvanced = false
@@ -63,15 +58,21 @@ struct SettingsView: View {
     @AppStorage("tempUnit") private var tempUnitRaw: String = TempUnit.celsius.rawValue
     
     @State private var isLedArrayExpanded: Bool = false
+    let isActive: Bool
     
     // Bindings passed from a parent view.
     @Binding var selectedMatrix: MatrixStyle
     
     // --- OPTIMIZATION 2: Centralized Initialization ---
     // The initializer correctly sets up all state and dependencies.
-    init(bleModel: AccessoryViewModel, selectedMatrix: Binding<MatrixStyle>) {
+    init(
+        bleModel: AccessoryViewModel,
+        selectedMatrix: Binding<MatrixStyle>,
+        isActive: Bool = true
+    ) {
         self.bleModel = bleModel
         self._selectedMatrix = selectedMatrix
+        self.isActive = isActive
         
         // Services are created once and injected into the ViewModel.
         let appService = GitHubService(owner: "stef1949", repo: "LumiFur")
@@ -89,91 +90,79 @@ struct SettingsView: View {
     // The body is now extremely simple. It just composes the new, smaller,
     // and more efficient view structs. The Swift compiler can process this much faster.
     var body: some View {
-        NavigationStack {
-            List {
-                // Connection view is a self-contained component.
-                Section { // The List needs a Section to host the view
-                        UnifiedConnectionView(accessoryViewModel: bleModel)
-                        //.scrollContentBackground(.hidden)
+        let _ = IdleCPUDiagnostics.shared.recordViewBody("SettingsView")
+
+        List {
+            Section {
+                UnifiedConnectionView(accessoryViewModel: bleModel)
+            }
+
+            if bleModel.isConnected {
+                otaUpdateLink
+                    .sheet(isPresented: $showOTAUpdate) {
+                        OTAUpdateView(
+                            viewModel: bleModel,
+                            releaseViewModel: releaseViewModel
+                        )
+                            .presentationDetents([.medium, .large])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(46)
                     }
-                //.listRowBackground(Color.blue.opacity(0.0))
-                    //.listRowInsets(EdgeInsets()) // Optional: remove padding if needed
-                    //.scrollContentBackground(.hidden)
-                
-                // OTA Update link appears conditionally.
-                if bleModel.isConnected {
-                    otaUpdateLink
-                        .sheet(isPresented: $showOTAUpdate) {
-                            OTAUpdateView(viewModel: bleModel)
-                                .presentationDetents([.medium, .large])
-                                .presentationDragIndicator(.visible)
-                                .presentationCornerRadius(46)
-                                //.padding()
-                        }
-                }
-                
-                // Each section is now its own lightweight struct.
-                ConfigSection(
-                    bleModel: bleModel,
-                    autoBrightness: $autoBrightness,
-                    accelerometer: $accelerometer,
-                    sleepMode: $sleepMode,
-                    auroraMode: $auroraMode,
-                    selectedUnits: selectedUnitsBinding
-                )
-                
-                MatrixSection(
-                    isExpanded: $isLedArrayExpanded,
-                    selectedMatrix: $selectedMatrix
-                )
-                //.disabled(true)
-                
-                AdvancedSettingsSection(
-                    bleModel: bleModel,
-                    showAdvanced: $showAdvanced,
-                    fancyMode: $fancyMode
-                )
-                
-                AboutSection(
-                    firmwareVersion: bleModel.firmwareVersion,
-                    isConnected: bleModel.isConnected
-                )
-                
-                ReleaseNotesSection(
-                    appReleases: releaseViewModel.appReleases,
-                    controllerReleases: releaseViewModel.controllerReleases
-                )
-                
-                AppIconPickerSection()
             }
-            //.scrollContentBackground(.hidden)
-            .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    NavigationLink(destination: InfoView()) {
-                        Image(systemName: "info.circle")
-                    }
+
+            ConfigSection(
+                bleModel: bleModel,
+                selectedUnits: selectedUnitsBinding
+            )
+
+            MatrixSection(
+                isExpanded: $isLedArrayExpanded,
+                selectedMatrix: $selectedMatrix
+            )
+
+            AdvancedSettingsSection(
+                bleModel: bleModel,
+                showAdvanced: $showAdvanced,
+                fancyMode: $fancyMode,
+                onResetToDefaults: resetAdvancedPreferences
+            )
+
+            AboutSection(
+                firmwareVersion: bleModel.firmwareVersion,
+                isConnected: bleModel.isConnected
+            )
+
+            ReleaseNotesSection(
+                appReleases: releaseViewModel.appReleases,
+                controllerReleases: releaseViewModel.controllerReleases,
+                isLoadingAppReleases: releaseViewModel.isLoadingAppReleases,
+                isLoadingControllerReleases: releaseViewModel.isLoadingControllerReleases,
+                appReleaseError: releaseViewModel.appReleaseError,
+                controllerReleaseError: releaseViewModel.controllerReleaseError
+            )
+
+            AppIconPickerSection()
+
+            Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
+                .textFieldStyle(.plain)
+                .font(.caption)
+        }
+        .navigationTitle("Settings")
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                NavigationLink(destination: InfoView()) {
+                    Image(systemName: "info.circle")
                 }
             }
-            .alert("Connection Error", isPresented: $bleModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(bleModel.errorMessage)
-            }
-            .task {
-                // Data fetching logic remains centralized here.
-                if releaseViewModel.appReleases.isEmpty {
-                    await releaseViewModel.loadAppReleases()
-                }
-                if releaseViewModel.controllerReleases.isEmpty {
-                    await releaseViewModel.loadControllerReleases()
-                }
-            }
-            .onAppear {
-                if bleModel.isBluetoothReady && !bleModel.isConnected {
-                    bleModel.scanForDevices()
-                }
-            }
+        }
+        .alert("Connection Error", isPresented: $bleModel.showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(bleModel.errorMessage)
+        }
+        .task(id: isActive) {
+            guard isActive else { return }
+            await activateIfNeeded()
         }
     }
     
@@ -193,6 +182,31 @@ struct SettingsView: View {
             }
         }
         .listRowInsets(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10))
+    }
+
+    @MainActor
+    private func activateIfNeeded() async {
+        IdleCPUDiagnostics.shared.recordTaskFire("settings.activate")
+
+        if releaseViewModel.appReleases.isEmpty {
+            await releaseViewModel.loadAppReleases()
+        }
+        if releaseViewModel.controllerReleases.isEmpty {
+            await releaseViewModel.loadControllerReleases()
+        }
+        if bleModel.isBluetoothReady, !bleModel.isConnected, !bleModel.isScanning {
+            bleModel.scanForDevices()
+        }
+    }
+
+    @MainActor
+    private func resetAdvancedPreferences() {
+        fancyMode = false
+        tempUnitRaw = TempUnit.celsius.rawValue
+        showAdvanced = false
+
+        _ = bleModel.resetConfigurationToDefaults(syncToDevice: bleModel.isConnected)
+        _ = bleModel.updateCustomMessage("", syncToDevice: bleModel.isConnected)
     }
 
 }
@@ -237,10 +251,11 @@ private struct UnifiedConnectionView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            statusAndScanSection
-                .connectionCard()
+            if !accessoryViewModel.isConnected {
+                statusAndScanSection
+                    .connectionCard()
                 //.padding(.horizontal)
-
+            }
             ZStack {
                 if accessoryViewModel.isConnected {
                     connectedSection
@@ -258,7 +273,7 @@ private struct UnifiedConnectionView: View {
             }
             .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         }
-        .padding(.vertical)
+        //.padding(.vertical)
     }
 
     private var statusAndScanSection: some View {
@@ -266,54 +281,79 @@ private struct UnifiedConnectionView: View {
             ConnectionStateIconView(state: accessoryViewModel.connectionState)
                 .font(.system(size: accessoryViewModel.isConnected ? 72 : 56, weight: .regular))
                 .animation(.easeInOut(duration: 0.25), value: accessoryViewModel.isConnected)
-
-            Text(accessoryViewModel.connectionStatus)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .foregroundStyle(.primary)
-                .background(accessoryViewModel.connectionState.color.opacity(0.18),
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            if !accessoryViewModel.isConnected {
+            HStack {
+                Image(systemName: accessoryViewModel.connectionState.symbolName)
+                Text(accessoryViewModel.connectionStatus)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .foregroundStyle(.primary)
+                    .background(accessoryViewModel.connectionState.color.opacity(0.18),
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            if !accessoryViewModel.isConnected && !accessoryViewModel.isScanning {
                 Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
                     .buttonStyle(.glassProminent)
                     .padding(.top, 6)
             }
         }
         .animation(.easeInOut, value: accessoryViewModel.connectionState)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private var connectedSection: some View {
         if let device = accessoryViewModel.targetPeripheral {
-            VStack(spacing: 12) {
-                Text(device.name ?? "LumiFur Controller")
-                    .font(.headline.weight(.semibold))
-
-                HStack() {
-                    VStack() {
-                        SignalStrengthView(rssi: accessoryViewModel.signalStrength)
-
-                        Image("mps3")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .shadow(radius: 6)
+            VStack(alignment: .leading, spacing: 16) {
+                // Header: device name and connection status, with signal strength as a trailing accessory
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(device.name ?? "LumiFur Controller")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(accessoryViewModel.connectionStatus)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .foregroundStyle(.primary)
+                            .background(accessoryViewModel.connectionState.color.opacity(0.18),
+                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    
                     Spacer()
-
-                    DeviceInfoView(accessoryViewModel: .shared)
-                        .frame(maxWidth: 320)
+                    SignalStrengthView(rssi: accessoryViewModel.signalStrength)
+                        .accessibilityLabel("Signal strength")
                 }
 
-                Button("Disconnect", role: .destructive, action: accessoryViewModel.disconnect)
-                    .buttonStyle(.glassProminent)
+                Divider()
+
+                // Details: product image and device info aligned to leading
+                VStack(alignment: .center, spacing: 16) {
+                    Image("mps3")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 84, height: 84)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .shadow(radius: 2, y: 1)
+                        .accessibilityHidden(true)
+
+                    DeviceInfoView(accessoryViewModel: accessoryViewModel)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Primary destructive action uses standard system styling for consistency
+                Button(role: .destructive, action: accessoryViewModel.disconnect) {
+                    Label("Disconnect", systemImage: "antenna.radiowaves.left.and.right.slash")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.large)
+                .accessibilityHint("Disconnect from this controller")
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .connectionCard()
-            .padding(.horizontal)
+            //.padding(.horizontal)
         }
     }
 
@@ -356,7 +396,7 @@ private struct UnifiedConnectionView: View {
                 }
             }
         }
-        .padding(.horizontal)
+        //.padding(.horizontal)
     }
 }
 // MARK: - Subviews as Structs (MAJOR OPTIMIZATION)
@@ -390,6 +430,10 @@ private struct AboutSection: View {
 private struct ReleaseNotesSection: View {
     let appReleases: [GitHubRelease]
     let controllerReleases: [GitHubRelease]
+    let isLoadingAppReleases: Bool
+    let isLoadingControllerReleases: Bool
+    let appReleaseError: NetworkError?
+    let controllerReleaseError: NetworkError?
     
     var body: some View {
         Section("Release Notes") {
@@ -398,14 +442,34 @@ private struct ReleaseNotesSection: View {
             } label: {
                 Text("App Release Notes")
             }
-            .disabled(appReleases.isEmpty)
+            .disabled(appReleases.isEmpty && !isLoadingAppReleases)
             
             NavigationLink {
                 ReleaseNotesView(title: "Controller Releases", releases: controllerReleases)
             } label: {
                 Text("Controller Release Notes")
             }
-            .disabled(controllerReleases.isEmpty)
+            .disabled(controllerReleases.isEmpty && !isLoadingControllerReleases)
+
+            if isLoadingAppReleases || isLoadingControllerReleases {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Loading release notes…")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let appReleaseError {
+                Text("App releases failed to load: \(appReleaseError.localizedDescription)")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+
+            if let controllerReleaseError {
+                Text("Controller releases failed to load: \(controllerReleaseError.localizedDescription)")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
         }
     }
 }
@@ -446,7 +510,7 @@ private struct AppIconPickerSection: View{
 private func displayName(for iconName: String?) -> String {
         if iconName == nil { return "Default" }
         return appIcons.first(where: { $0.iconName == iconName })?.displayName
-            ?? iconName! // fallback, but should normally be found
+            ?? "Custom"
     }
 private func iconAssetName(for iconName: String?) -> String {
         if let iconName,
@@ -493,21 +557,46 @@ private struct MatrixSection: View {
 
 private struct ConfigSection: View {
     @ObservedObject var bleModel: AccessoryViewModel
-    
-    // Bindings passed down from the parent.
-    @Binding var autoBrightness: Bool
-    @Binding var accelerometer: Bool
-    @Binding var sleepMode: Bool
-    @Binding var auroraMode: Bool
     @Binding var selectedUnits: TempUnit
     
     private var autoBrightnessBindingWithAnimation: Binding<Bool> {
         Binding(
-            get: { autoBrightness },
+            get: { bleModel.autoBrightness },
             set: { newValue in
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    autoBrightness = newValue
+                    bleModel.autoBrightness = newValue
                 }
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var accelerometerBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.accelerometerEnabled },
+            set: { newValue in
+                bleModel.accelerometerEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var sleepModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.sleepModeEnabled },
+            set: { newValue in
+                bleModel.sleepModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
+
+    private var auroraModeBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.auroraModeEnabled },
+            set: { newValue in
+                bleModel.auroraModeEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
             }
         )
     }
@@ -529,25 +618,17 @@ private struct ConfigSection: View {
             }
             BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
             
-            Toggle(isOn: $accelerometer) {
+            Toggle(isOn: accelerometerBinding) {
                 Label("Accelerometer", systemImage: "rotate.3d.fill")
             }
-            .onChange(of: accelerometer) { _, newValue in
-                bleModel.accelerometerEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
             
-            Toggle(isOn: $sleepMode) {
+            Toggle(isOn: sleepModeBinding) {
                 Label("Sleep Mode", systemImage: "moon.fill")
             }
-            .onChange(of: sleepMode) { _, newValue in
-                bleModel.sleepModeEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
             
-            Toggle(isOn: $auroraMode) {
+            Toggle(isOn: auroraModeBinding) {
                 Label("Aurora Mode", systemImage: "bubbles.and.sparkles.fill")
             }
             .toggleStyle(
@@ -555,10 +636,6 @@ private struct ConfigSection: View {
                     gradient: LinearGradient(colors: [.pink, .purple, .blue], startPoint: .leading, endPoint: .trailing)
                 )
             )
-            .onChange(of: auroraMode) { _, newValue in
-                bleModel.auroraModeEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
         }
     }
@@ -573,17 +650,13 @@ private struct BrightnessControls: View {
             Toggle(isOn: $autoBrightness) {
                 Label("Auto Brightness", systemImage: "sun.max.fill")
             }
-            .onChange(of: autoBrightness) { _, newValue in
-                bleModel.autoBrightness = newValue
-                bleModel.writeConfigToCharacteristic()
-            }
             .disabled(!bleModel.isConnected)
             
             if !autoBrightness {
                 Slider(
                     value: Binding(
                         get: { Double(bleModel.brightness) },
-                        set: { bleModel.brightness = UInt8($0) }
+                        set: { bleModel.setBrightness(UInt8($0)) }
                     ),
                     in: 0...255,
                     step: 15
@@ -609,6 +682,7 @@ private struct AdvancedSettingsSection: View {
     @ObservedObject var bleModel: AccessoryViewModel
     @Binding var showAdvanced: Bool
     @Binding var fancyMode: Bool
+    let onResetToDefaults: () -> Void
     
     var body: some View {
         Section("Advanced") {
@@ -620,7 +694,7 @@ private struct AdvancedSettingsSection: View {
                     AdvancedSettingsView(bleModel: bleModel)
                 }
                 Button("Reset to Defaults", role: .destructive) {
-                    print("Resetting to defaults...")
+                    onResetToDefaults()
                 }
             }
         }
@@ -663,14 +737,24 @@ private extension AccessoryViewModel {
     }
 }
 
+ */
+
 // MARK: - Previews
 
 #Preview("Disconnected") {
     @Previewable @State var matrixStyle: MatrixStyle = .array
     
-    return SettingsView(
-        // Use the new debug initializer to create the exact state you need.
-        bleModel: AccessoryViewModel(isConnected: false),
+    SettingsView(
+        bleModel: .previewDisconnected,
+        selectedMatrix: $matrixStyle
+    )
+}
+
+#Preview("Scanning") {
+    @Previewable @State var matrixStyle: MatrixStyle = .array
+    
+    SettingsView(
+        bleModel: .previewScanning,
         selectedMatrix: $matrixStyle
     )
 }
@@ -678,9 +762,8 @@ private extension AccessoryViewModel {
 #Preview("Connected") {
     @Previewable @State var matrixStyle: MatrixStyle = .dot
     
-    return SettingsView(
-        // Create a connected state with a specific firmware version.
-        bleModel: AccessoryViewModel(isConnected: true, firmwareVersion: "2.1.0"),
+    SettingsView(
+        bleModel: .previewConnected,
         selectedMatrix: $matrixStyle
     )
     .preferredColorScheme(.dark)
@@ -689,14 +772,8 @@ private extension AccessoryViewModel {
 #Preview("Error State") {
     @Previewable @State var matrixStyle: MatrixStyle = .wled
     
-    return SettingsView(
-        // Create an error state to preview the alert.
-        bleModel: AccessoryViewModel(
-            isConnected: false,
-            errorMessage: "Failed to connect. The device is out of range."
-        ),
+    SettingsView(
+        bleModel: .previewError,
         selectedMatrix: $matrixStyle
     )
 }
-*/
-

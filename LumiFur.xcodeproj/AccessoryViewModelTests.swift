@@ -4,9 +4,19 @@ import Foundation
 
 @Suite("AccessoryViewModel - Logic Tests")
 struct AccessoryViewModelLogicTests {
+    @MainActor
+    private func makeViewModel(testName: String = #function) -> AccessoryViewModel {
+        let suiteName = "com.richies3d.LumiFur.xcodeproj-tests.\(testName)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let store = StoredPeripheralStore(defaults: defaults)
+        return AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
+    }
+
     @Test("Accessory settings encoding produces correct payload")
-    func testEncodedAccessorySettingsPayload() async throws {
-        let vm = AccessoryViewModel.shared
+    @MainActor
+    func testEncodedAccessorySettingsPayload() throws {
+        let vm = makeViewModel()
         let data = vm.encodedAccessorySettingsPayload(
             autoBrightness: true,
             accelerometerEnabled: false,
@@ -17,8 +27,9 @@ struct AccessoryViewModelLogicTests {
     }
     
     @Test("Saving and loading StoredPeripheral roundtrips")
-    func testStoredPeripheralPersistence() async throws {
-        let vm = AccessoryViewModel.shared
+    @MainActor
+    func testStoredPeripheralPersistence() throws {
+        let vm = makeViewModel()
         let testDevices = [StoredPeripheral(id: "UUID-1234", name: "TestDevice")]
         vm.saveStoredPeripherals(testDevices)
         let loaded = vm.loadStoredPeripherals()
@@ -26,14 +37,15 @@ struct AccessoryViewModelLogicTests {
     }
 
     @Test("setView ignores invalid values and does not update selectedView")
-    func testSetViewValidation() async throws {
-        let vm = AccessoryViewModel.shared
+    @MainActor
+    func testSetViewValidation() throws {
+        let vm = makeViewModel()
         let original = vm.selectedView
-        vm.setView(0) // Below valid range
+        _ = vm.setView(0) // Below valid range
         #expect(vm.selectedView == original)
-        vm.setView(51) // Above valid range
+        _ = vm.setView(51) // Above valid range
         #expect(vm.selectedView == original)
-        vm.setView(original) // Same as current
+        _ = vm.setView(original) // Same as current
         #expect(vm.selectedView == original)
     }
 }

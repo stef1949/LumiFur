@@ -16,7 +16,7 @@ import AppIntents
 
 /// Control widget to cycle the LumiFur display view
 struct LumiFur_WidgetControl: ControlWidget {
-     let kind = SharedDataKeys.widgetKind
+     let kind = SharedDataKeys.controlWidgetKind
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
@@ -43,9 +43,8 @@ extension LumiFur_WidgetControl {
            var previewValue: ViewValue { .init(selectedView: 1) }
 
            func currentValue() async throws -> ViewValue {
-               let view = UserDefaults(suiteName: SharedDataKeys.suiteName)?
-                   .integer(forKey: SharedDataKeys.selectedView) ?? 1
-               return .init(selectedView: view)
+               let snapshot = WidgetSnapshotStore().loadSnapshot() ?? .placeholder
+               return .init(selectedView: snapshot.selectedView)
            }
        }
    }

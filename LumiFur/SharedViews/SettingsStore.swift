@@ -6,14 +6,10 @@
 //
 import SwiftUI
 
-// Every @AppStorage read marks the whole ContentView dirty when it changes. Wrap them in a tiny settings store so only consumers who need a value re-render.
+// Keep only app-level presentation preferences here. Device configuration now lives in AccessoryViewModel.
 final class SettingsStore: ObservableObject {
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
     @AppStorage("fancyMode") private var fancyMode: Bool = false
-    @AppStorage("autoBrightness") private var autoBrightness = true
-    @AppStorage("accelerometer") private var accelerometer = true
-    @AppStorage("sleepMode") private var sleepMode = true
-    @AppStorage("auroraMode") private var auroraMode = true
-    @AppStorage("customMessage") private var customMessage = false
-    @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
+    @AppStorage("charts") private var isChartsExpanded = false
+    @AppStorage("tempUnit") private var temperatureUnit = "C"
 }

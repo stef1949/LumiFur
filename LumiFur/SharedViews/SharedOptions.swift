@@ -41,10 +41,11 @@ struct SharedOptions {
 
     // ❌ FaceItem is no longer defined here.
 
-    static let protoActionOptions3: [ProtoAction] = [
+    static let protoActionOptions: [ProtoAction] = [
         .symbol("apple.logo"),
         .symbol("paintpalette.fill"),
         .emoji("🏳️‍⚧️"),
+        .emoji("🏳️‍🌈"),
         .emoji("🙂"),
         .emoji("😳"),
         .emoji("😎"),
@@ -56,13 +57,23 @@ struct SharedOptions {
         .emoji("✨"),
         .symbol("pc"),
         .symbol("opticaldisc.fill"),
-        .symbol("thermometer.high"),
         .symbol("flame.fill"),
+        .symbol("water.waves"),
         .emoji("😲"),
         .emoji("🌀"),
         .emoji("꩜"),
-        .symbol("bubble.and.pencil")
+        .symbol("bubble.and.pencil"),
+        .emoji("🦖"),
+        .symbol("laser.burst"),
+        .emoji("rainbow fluid"),
+        .symbol("rectangle.fill"),
+        .symbol("arrow.trianglehead.2.clockwise.rotate.90"),
+        .emoji("rainbow linear band"),
+        .emoji("Alt Face"),
+        .symbol("movieclapper.fill"),
     ]
+
+    static let strobeActionSymbol = "laser.burst"
 }
 
 // MARK: - Helpers for testing and UI logic
@@ -85,5 +96,10 @@ extension SharedOptions.ProtoAction {
         case .symbol:
             return false
         }
+    }
+
+    /// Returns true for the face tile that exposes strobe controls in the dashboard.
+    var isStrobeAction: Bool {
+        !isEmoji && rawValue == SharedOptions.strobeActionSymbol
     }
 }

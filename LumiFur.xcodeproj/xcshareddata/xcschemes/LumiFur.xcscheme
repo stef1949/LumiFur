@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "2620"
+   LastUpgradeVersion = "2630"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -75,9 +75,21 @@
             ReferencedContainer = "container:LumiFur.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "LUMIFUR_IDLE_CPU_DIAGNOSTICS"
+            value = "1"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "CG_NUMERICS_SHOW_BACKTRACE"
+            value = "1"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"

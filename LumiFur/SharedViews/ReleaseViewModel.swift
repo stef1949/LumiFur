@@ -65,6 +65,25 @@ final class ReleaseViewModel: ObservableObject {
         }
     }
 
+    func loadControllerReleasesIfNeeded() async {
+        guard controllerReleases.isEmpty else { return }
+        await loadControllerReleases()
+    }
+
+    var latestControllerRelease: GitHubRelease? {
+        controllerReleases.max { left, right in
+            let leftVersion = left.semanticVersion
+            let rightVersion = right.semanticVersion
+
+            switch (leftVersion, rightVersion) {
+            case let (left?, right?):
+                return left < right
+            default:
+                return left.publishedAt < right.publishedAt
+            }
+        }
+    }
+
     // MARK: - Private Helper
 
     /// A generic, reusable function that fetches releases and returns a Result.
@@ -112,18 +131,33 @@ private func releaseRow(for release: GitHubRelease) -> some View {
                 .foregroundStyle(.secondary)
         }
         
-        Text(release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided.")
-            .font(.body)
-            .foregroundStyle(.secondary)
-            .lineLimit(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        
-        if let body = release.body, body.count > 250 {
-            Button("Read More...") {
-                print("Show full body for release: \(release.displayName)")
+        ExpandableReleaseBody(
+            text: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No release notes provided."
+        )
+    }
+}
+
+private struct ExpandableReleaseBody: View {
+    let text: String
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(text)
+                .font(.headline)
+                .foregroundStyle(.green)
+                .backgroundStyle(.clear)
+                .lineLimit(isExpanded ? nil : 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if text.count > 50 {
+                Button(isExpanded ? "Show Less" : "Read More") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }
+                .font(.caption)
             }
-            .font(.caption)
-            .padding(.top, 2)
         }
     }
 }

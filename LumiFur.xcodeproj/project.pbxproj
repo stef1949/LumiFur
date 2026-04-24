@@ -3,11 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		35062EA82E107A590012AC60 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35062EA72E107A590012AC60 /* MarkdownUI */; };
+		350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
 		35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 35197ABE2DA1A17100BE0EE3 /* MarkdownUI */; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
 		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
@@ -18,7 +19,17 @@
 		354B00D72DD26E3A00825147 /* GlassPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00CE2DD2698E00825147 /* GlassPane.swift */; };
 		354B00D82DD26E4000825147 /* GlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D12DD269F900825147 /* GlassView.swift */; };
 		354B00D92DD26E4500825147 /* GlassLazyHGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */; };
+		354B42862F02B62800074B7F /* AccessoryTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42852F02B62800074B7F /* AccessoryTypes.swift */; };
+		354B42882F02B62800074B7F /* UncheckedSendableBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42872F02B62800074B7F /* UncheckedSendableBox.swift */; };
+		354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42892F02B62B00074B7F /* ActivityHelpers.swift */; };
+		354B428E2F02B62B00074B7F /* AccessoryCommandEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */; };
+		354B42902F02B62B00074B7F /* AccessoryNotificationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */; };
+		354B42922F02B62B00074B7F /* StoredPeripheralStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */; };
+		354B42942F02B62B00074B7F /* BLEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42932F02B62B00074B7F /* BLEClient.swift */; };
+		354B42962F02B62B00074B7F /* AccessoryViewModel+Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */; };
 		354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */; platformFilter = ios; };
+		3555D6C22F55C15E00EB6256 /* StrobeControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */; };
+		3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */; };
 		355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */; };
 		355853662EF483E2001666E6 /* LEDPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853652EF483E2001666E6 /* LEDPreviewModel.swift */; };
 		355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853682EF4BAD4001666E6 /* ConnectionUI.swift */; };
@@ -31,6 +42,8 @@
 		355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E72EFE5C3C001666E6 /* LEDArraySection.swift */; };
 		355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355853E92EFF7302001666E6 /* IconPickerView.swift */; };
 		356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D04CA62DB29DAA00199C5D /* SharedKeys.swift */; };
+		35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35741B392F05FF0A00D4937C /* PrivacyPolicyView.swift */; };
+		35741B3D2F061C7800D4937C /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 35741B3C2F061C7800D4937C /* Textual */; };
 		357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357EEA682E0EE00A0085E438 /* CustomLedView.swift */; };
 		3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3580941E2E2BF0A0005DB779 /* ChartView.swift */; };
 		358151A52E16D155003CE8A3 /* ConnectionStateIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358151A42E16D155003CE8A3 /* ConnectionStateIconView.swift */; };
@@ -115,25 +128,21 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		3591DD752D5FB697009A3A94 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
+			dstSubfolder = Product;
 			files = (
 				3591DD742D5FB697009A3A94 /* LumiFurWatchOS Watch App.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A652D5D24C700FDD29E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstSubfolder = PlugIns;
 			files = (
 				35AE1A602D5D24C700FDD29E /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -149,7 +158,17 @@
 		354B00CE2DD2698E00825147 /* GlassPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPane.swift; sourceTree = "<group>"; };
 		354B00D12DD269F900825147 /* GlassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassView.swift; sourceTree = "<group>"; };
 		354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassLazyHGrid.swift; sourceTree = "<group>"; };
+		354B42852F02B62800074B7F /* AccessoryTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryTypes.swift; sourceTree = "<group>"; };
+		354B42872F02B62800074B7F /* UncheckedSendableBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UncheckedSendableBox.swift; sourceTree = "<group>"; };
+		354B42892F02B62B00074B7F /* ActivityHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityHelpers.swift; sourceTree = "<group>"; };
+		354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryCommandEncoder.swift; sourceTree = "<group>"; };
+		354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryNotificationParser.swift; sourceTree = "<group>"; };
+		354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredPeripheralStore.swift; sourceTree = "<group>"; };
+		354B42932F02B62B00074B7F /* BLEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEClient.swift; sourceTree = "<group>"; };
+		354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryViewModel+Activity.swift"; sourceTree = "<group>"; };
 		354E0B9D2D8F1AA2008FD025 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrobeControlsView.swift; sourceTree = "<group>"; };
+		3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RRGGBBHelper.swift; sourceTree = "<group>"; };
 		3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewOLD.swift; sourceTree = "<group>"; };
 		355853652EF483E2001666E6 /* LEDPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDPreviewModel.swift; sourceTree = "<group>"; };
 		355853682EF4BAD4001666E6 /* ConnectionUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionUI.swift; sourceTree = "<group>"; };
@@ -159,6 +178,9 @@
 		355853E72EFE5C3C001666E6 /* LEDArraySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEDArraySection.swift; sourceTree = "<group>"; };
 		355853E92EFF7302001666E6 /* IconPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconPickerView.swift; sourceTree = "<group>"; };
 		356B4B822E117322005D1A31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		35741B342F04580700D4937C /* LumiFur WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "LumiFur WidgetExtension.entitlements"; sourceTree = "<group>"; };
+		35741B352F05F5B100D4937C /* PrivacyPolicy.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PrivacyPolicy.md; sourceTree = "<group>"; };
+		35741B392F05FF0A00D4937C /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		357EEA682E0EE00A0085E438 /* CustomLedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomLedView.swift; sourceTree = "<group>"; };
 		3580941E2E2BF0A0005DB779 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
 		358151A42E16D155003CE8A3 /* ConnectionStateIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStateIconView.swift; sourceTree = "<group>"; };
@@ -260,56 +282,43 @@
 /* Begin PBXFrameworksBuildPhase section */
 		3591DD4E2D5FB695009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5D2D5FB697009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD672D5FB697009A3A94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A472D5D24C600FDD29E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35AE1A4F2D5D24C600FDD29E /* SwiftUI.framework in Frameworks */,
 				35AE1A4D2D5D24C600FDD29E /* WidgetKit.framework in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A592C8739FB0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
+				35741B3D2F061C7800D4937C /* Textual in Frameworks */,
 				35197ABF2DA1A17100BE0EE3 /* MarkdownUI in Frameworks */,
 				35062EA82E107A590012AC60 /* MarkdownUI in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A6A2C8739FD0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A742C8739FD0039D19D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -320,8 +329,26 @@
 				354B00D52DD26A7300825147 /* GlassLazyHGrid.swift */,
 				354B00D12DD269F900825147 /* GlassView.swift */,
 				354B00CE2DD2698E00825147 /* GlassPane.swift */,
+				3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */,
 			);
 			path = "New Group";
+			sourceTree = "<group>";
+		};
+		354B428C2F02B9F400074B7F /* avm */ = {
+			isa = PBXGroup;
+			children = (
+				3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */,
+				354B42932F02B62B00074B7F /* BLEClient.swift */,
+				354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */,
+				354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */,
+				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
+				354B42952F02B62B00074B7F /* AccessoryViewModel+Activity.swift */,
+				354B42852F02B62800074B7F /* AccessoryTypes.swift */,
+				354B42912F02B62B00074B7F /* StoredPeripheralStore.swift */,
+				354B42872F02B62800074B7F /* UncheckedSendableBox.swift */,
+				354B42892F02B62B00074B7F /* ActivityHelpers.swift */,
+			);
+			path = avm;
 			sourceTree = "<group>";
 		};
 		355853672EF4BAC9001666E6 /* connection view */ = {
@@ -335,8 +362,9 @@
 		355853E22EF71DEE001666E6 /* About Page */ = {
 			isa = PBXGroup;
 			children = (
-				355853E02EF71DDA001666E6 /* SocialLink.swift */,
 				355853DE2EF71DAC001666E6 /* InfoView.swift */,
+				35741B392F05FF0A00D4937C /* PrivacyPolicyView.swift */,
+				355853E02EF71DDA001666E6 /* SocialLink.swift */,
 			);
 			path = "About Page";
 			sourceTree = "<group>";
@@ -355,6 +383,7 @@
 		358427A02C8CF5590096B1D0 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				35741B352F05F5B100D4937C /* PrivacyPolicy.md */,
 				35A391A32DD784BD00F60E47 /* Assets.xcassets */,
 				35F936F32DBC808D00A45B64 /* Meloriac.ttf */,
 			);
@@ -366,7 +395,7 @@
 			children = (
 				354069322DF4BB7F00D9040D /* DeviceInfoView.swift */,
 				3591DD7F2D5FB753009A3A94 /* WatchOSConnectivity.swift */,
-				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
+				354B428C2F02B9F400074B7F /* avm */,
 			);
 			path = Connectivity;
 			sourceTree = "<group>";
@@ -404,6 +433,7 @@
 		35DA3A532C8739FB0039D19D = {
 			isa = PBXGroup;
 			children = (
+				35741B342F04580700D4937C /* LumiFur WidgetExtension.entitlements */,
 				354B00CF2DD269A400825147 /* New Group */,
 				35DA3A5E2C8739FB0039D19D /* LumiFur */,
 				35DA3A702C8739FD0039D19D /* LumiFurTests */,
@@ -415,7 +445,6 @@
 				35AE1A4B2D5D24C600FDD29E /* Frameworks */,
 				35DA3A5D2C8739FB0039D19D /* Products */,
 				356B4B822E117322005D1A31 /* Info.plist */,
-				3558535F2EF47AF1001666E6 /* LEDPreviewOLD.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -439,13 +468,14 @@
 				355853E62EFE4E5C001666E6 /* LEDViewModel */,
 				35D1A1062D98FE7F00AEC573 /* LumiFurRelease.entitlements */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
+				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				35A391A72DD7A17B00F60E47 /* BouncingButtonStyle.swift */,
 				35E4D4012DF88DE4004EB85E /* splashView.swift */,
 				35E4D4032DF88E38004EB85E /* WhatsNew.swift */,
 				35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */,
-				35DA3A612C8739FB0039D19D /* ContentView.swift */,
 				358A05E92E43D1B1009D3CC9 /* FaceCellView.swift */,
 				358A05E72E43CF3B009D3CC9 /* FaceGridSection.swift */,
+				3555D6C12F55BF9B00EB6256 /* StrobeControlsView.swift */,
 				3580941E2E2BF0A0005DB779 /* ChartView.swift */,
 				35AE1A442D5D207F00FDD29E /* liveActivity.swift */,
 				355853E22EF71DEE001666E6 /* About Page */,
@@ -512,14 +542,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				3591DD522D5FB695009A3A94 /* LumiFurWatchOS Watch App */,
 			);
 			name = "LumiFurWatchOS Watch App";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch App";
 			productReference = 3591DD512D5FB695009A3A94 /* LumiFurWatchOS Watch App.app */;
 			productType = "com.apple.product-type.application";
@@ -541,8 +567,6 @@
 				3591DD632D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests */,
 			);
 			name = "LumiFurWatchOS Watch AppTests";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch AppTests";
 			productReference = 3591DD602D5FB697009A3A94 /* LumiFurWatchOS Watch AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -564,8 +588,6 @@
 				3591DD6D2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests */,
 			);
 			name = "LumiFurWatchOS Watch AppUITests";
-			packageProductDependencies = (
-			);
 			productName = "LumiFurWatchOS Watch AppUITests";
 			productReference = 3591DD6A2D5FB697009A3A94 /* LumiFurWatchOS Watch AppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -580,14 +602,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				35AE1A502D5D24C600FDD29E /* LumiFur Widget */,
 			);
 			name = "LumiFur WidgetExtension";
-			packageProductDependencies = (
-			);
 			productName = "LumiFur WidgetExtension";
 			productReference = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -657,7 +675,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					3591DD502D5FB695009A3A94 = {
 						CreatedOnToolsVersion = 16.2;
@@ -696,8 +714,9 @@
 			mainGroup = 35DA3A532C8739FB0039D19D;
 			packageReferences = (
 				35197ABD2DA1A17100BE0EE3 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				35741B3B2F061C7800D4937C /* XCRemoteSwiftPackageReference "textual" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 35DA3A5D2C8739FB0039D19D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -716,105 +735,88 @@
 /* Begin PBXResourcesBuildPhase section */
 		3591DD4F2D5FB695009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
+				350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5E2D5FB697009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD682D5FB697009A3A94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A482D5D24C600FDD29E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A5A2C8739FB0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35F936F42DBC808D00A45B64 /* Meloriac.ttf in Resources */,
 				354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */,
 				355853DA2EF716FB001666E6 /* Assets.xcassets in Resources */,
 				35DA3A682C8739FD0039D19D /* Preview Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A6B2C8739FD0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A752C8739FD0039D19D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3591DD4D2D5FB695009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35D04CA92DB29DB300199C5D /* SharedKeys.swift in Sources */,
 				35A391A22DD77A6300F60E47 /* GitHubRelease.swift in Sources */,
 				354B00CD2DCE631A00825147 /* SharedOptions.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD5C2D5FB697009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3591DD662D5FB697009A3A94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35AE1A462D5D24C600FDD29E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				356D7AEF2DC94AE200D9746B /* SharedKeys.swift in Sources */,
 				355853602EF47AF1001666E6 /* LEDPreviewOLD.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A582C8739FB0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				3591DD802D5FB75B009A3A94 /* WatchOSConnectivity.swift in Sources */,
 				358A05EA2E43D1B1009D3CC9 /* FaceCellView.swift in Sources */,
 				355853E82EFE5C3C001666E6 /* LEDArraySection.swift in Sources */,
 				35DA3A622C8739FB0039D19D /* ContentView.swift in Sources */,
+				354B42942F02B62B00074B7F /* BLEClient.swift in Sources */,
 				35AE1A422D5D147400FDD29E /* AccessoryViewModel.swift in Sources */,
+				354B42962F02B62B00074B7F /* AccessoryViewModel+Activity.swift in Sources */,
+				3555D6C42F55D8CD00EB6256 /* RRGGBBHelper.swift in Sources */,
+				35741B3A2F05FF0A00D4937C /* PrivacyPolicyView.swift in Sources */,
 				35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */,
 				35E4D4022DF88DE9004EB85E /* splashView.swift in Sources */,
 				35E93AB02E17EDD600E9D52F /* AboutSectionView.swift in Sources */,
+				354B42882F02B62800074B7F /* UncheckedSendableBox.swift in Sources */,
 				358A05E82E43CF3C009D3CC9 /* FaceGridSection.swift in Sources */,
 				35CD1DBC2E15AE1B0028A6C9 /* StatusSectionView.swift in Sources */,
 				35E4D4062DF88E78004EB85E /* ReleaseNotesView.swift in Sources */,
@@ -825,6 +827,9 @@
 				355853E52EFE4E31001666E6 /* LEDPreview.swift in Sources */,
 				355853DF2EF71DAC001666E6 /* InfoView.swift in Sources */,
 				357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */,
+				354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */,
+				354B428E2F02B62B00074B7F /* AccessoryCommandEncoder.swift in Sources */,
+				354B42902F02B62B00074B7F /* AccessoryNotificationParser.swift in Sources */,
 				358151A92E16D23B003CE8A3 /* ConnectionState.swift in Sources */,
 				35E4D4042DF88E38004EB85E /* WhatsNew.swift in Sources */,
 				35D04CA72DB29DAA00199C5D /* SharedKeys.swift in Sources */,
@@ -832,9 +837,12 @@
 				355853DC2EF71D3E001666E6 /* MeshGradient.swift in Sources */,
 				355853692EF4BAD4001666E6 /* ConnectionUI.swift in Sources */,
 				354069332DF4BB7F00D9040D /* DeviceInfoView.swift in Sources */,
+				3555D6C22F55C15E00EB6256 /* StrobeControlsView.swift in Sources */,
 				355853EA2EFF7308001666E6 /* IconPickerView.swift in Sources */,
 				355853DD2EF71D48001666E6 /* ViewExtensions.swift in Sources */,
 				35DA3A602C8739FB0039D19D /* LumiFurApp.swift in Sources */,
+				354B42862F02B62800074B7F /* AccessoryTypes.swift in Sources */,
+				354B42922F02B62B00074B7F /* StoredPeripheralStore.swift in Sources */,
 				352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */,
 				354470452DA55F0E0061FD83 /* SharedOptions.swift in Sources */,
 				3580941F2E2BF0A0005DB779 /* ChartView.swift in Sources */,
@@ -847,25 +855,20 @@
 				35D1A1162D9A377E00AEC573 /* ReleaseViewModel.swift in Sources */,
 				354B00D82DD26E4000825147 /* GlassView.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A692C8739FD0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35DA3A722C8739FD0039D19D /* LumiFurTests.swift in Sources */,
 				358151AB2E16FF48003CE8A3 /* AccessoryViewModelTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		35DA3A732C8739FD0039D19D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				35DA3A7C2C8739FD0039D19D /* LumiFurUITests.swift in Sources */,
 				35DA3A7E2C8739FD0039D19D /* LumiFurUITestsLaunchTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -903,30 +906,32 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		3591DD762D5FB697009A3A94 /* Debug */ = {
+		3591DD762D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "LumiFurWatchOS Watch App/LumiFurWatchOS Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFurWatchOS-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LumiFurWatchOS;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Bluetooth required for communicating with LumiFur Controller";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to discover LumiFur microcontroller";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -936,7 +941,7 @@
 			};
 			name = Debug;
 		};
-		3591DD772D5FB697009A3A94 /* Release */ = {
+		3591DD772D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -948,19 +953,20 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFurWatchOS-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LumiFurWatchOS;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Used to connect device to microcontroller ";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Bluetooth required for communicating with LumiFur Controller";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to discover LumiFur microcontroller";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.richies3d.LumiFur.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -971,7 +977,7 @@
 			};
 			name = Release;
 		};
-		3591DD782D5FB697009A3A94 /* Debug */ = {
+		3591DD782D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -986,7 +992,7 @@
 			};
 			name = Debug;
 		};
-		3591DD792D5FB697009A3A94 /* Release */ = {
+		3591DD792D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1002,7 +1008,7 @@
 			};
 			name = Release;
 		};
-		3591DD7A2D5FB697009A3A94 /* Debug */ = {
+		3591DD7A2D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1016,7 +1022,7 @@
 			};
 			name = Debug;
 		};
-		3591DD7B2D5FB697009A3A94 /* Release */ = {
+		3591DD7B2D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1031,11 +1037,12 @@
 			};
 			name = Release;
 		};
-		35AE1A632D5D24C700FDD29E /* Debug */ = {
+		35AE1A632D5D24C700FDD29E /* Debug configuration for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "LumiFur WidgetExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Z64L7GR687;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1056,8 +1063,9 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.statuswidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.statuswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1065,7 +1073,7 @@
 			};
 			name = Debug;
 		};
-		35AE1A642D5D24C700FDD29E /* Release */ = {
+		35AE1A642D5D24C700FDD29E /* Release configuration for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1091,7 +1099,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.statuswidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app.statuswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1101,7 +1109,7 @@
 			};
 			name = Release;
 		};
-		35DA3A7F2C8739FD0039D19D /* Debug */ = {
+		35DA3A7F2C8739FD0039D19D /* Debug configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1138,8 +1146,9 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6.2.0;
+				CURRENT_PROJECT_VERSION = 6.3.6;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1155,7 +1164,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_UNROLL_LOOPS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1171,7 +1179,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 10.0;
+				MARKETING_VERSION = 11.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1179,12 +1187,13 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
-		35DA3A802C8739FD0039D19D /* Release */ = {
+		35DA3A802C8739FD0039D19D /* Release configuration for PBXProject "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1221,8 +1230,9 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6.2.0;
+				CURRENT_PROJECT_VERSION = 6.3.6;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1246,19 +1256,20 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 10.0;
+				MARKETING_VERSION = 11.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 6.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
 		};
-		35DA3A822C8739FD0039D19D /* Debug */ = {
+		35DA3A822C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
@@ -1266,6 +1277,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = LumiFur/LumiFur.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
@@ -1279,16 +1291,15 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GCC_UNROLL_LOOPS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumiFur/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LumiFur;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Bluetooth required for communicating with LumiFur Controller";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Local network access required to discover LumiFur Controller";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1306,19 +1317,21 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		35DA3A832C8739FD0039D19D /* Release */ = {
+		35DA3A832C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFur" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "bluegreen glassrainbow lilaclight monochrome orangebow pinkbow pinkpalette purplebow";
@@ -1346,9 +1359,9 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This App uses Bluetooth to connect to the LumiFur Controller";
-				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Connected to LumiFur Controller";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Used to connect device to microcontroller ";
+				INFOPLIST_KEY_NSBluetoothWhileInUseUsageDescription = "Bluetooth required for communicating with LumiFur Controller";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Richies 3D Ltd. All rights reserved.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Local network access required to discover LumiFur Controller";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1366,20 +1379,21 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFur.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		35DA3A852C8739FD0039D19D /* Debug */ = {
+		35DA3A852C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1396,7 +1410,7 @@
 			};
 			name = Debug;
 		};
-		35DA3A862C8739FD0039D19D /* Release */ = {
+		35DA3A862C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1413,7 +1427,7 @@
 			};
 			name = Release;
 		};
-		35DA3A882C8739FD0039D19D /* Debug */ = {
+		35DA3A882C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1429,7 +1443,7 @@
 			};
 			name = Debug;
 		};
-		35DA3A892C8739FD0039D19D /* Release */ = {
+		35DA3A892C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -1451,73 +1465,65 @@
 		3591DD7C2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD762D5FB697009A3A94 /* Debug */,
-				3591DD772D5FB697009A3A94 /* Release */,
+				3591DD762D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */,
+				3591DD772D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch App" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		3591DD7D2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD782D5FB697009A3A94 /* Debug */,
-				3591DD792D5FB697009A3A94 /* Release */,
+				3591DD782D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */,
+				3591DD792D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		3591DD7E2D5FB697009A3A94 /* Build configuration list for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3591DD7A2D5FB697009A3A94 /* Debug */,
-				3591DD7B2D5FB697009A3A94 /* Release */,
+				3591DD7A2D5FB697009A3A94 /* Debug configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */,
+				3591DD7B2D5FB697009A3A94 /* Release configuration for PBXNativeTarget "LumiFurWatchOS Watch AppUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35AE1A622D5D24C700FDD29E /* Build configuration list for PBXNativeTarget "LumiFur WidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35AE1A632D5D24C700FDD29E /* Debug */,
-				35AE1A642D5D24C700FDD29E /* Release */,
+				35AE1A632D5D24C700FDD29E /* Debug configuration for PBXNativeTarget "LumiFur WidgetExtension" */,
+				35AE1A642D5D24C700FDD29E /* Release configuration for PBXNativeTarget "LumiFur WidgetExtension" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A572C8739FB0039D19D /* Build configuration list for PBXProject "LumiFur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A7F2C8739FD0039D19D /* Debug */,
-				35DA3A802C8739FD0039D19D /* Release */,
+				35DA3A7F2C8739FD0039D19D /* Debug configuration for PBXProject "LumiFur" */,
+				35DA3A802C8739FD0039D19D /* Release configuration for PBXProject "LumiFur" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A812C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A822C8739FD0039D19D /* Debug */,
-				35DA3A832C8739FD0039D19D /* Release */,
+				35DA3A822C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFur" */,
+				35DA3A832C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFur" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A842C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFurTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A852C8739FD0039D19D /* Debug */,
-				35DA3A862C8739FD0039D19D /* Release */,
+				35DA3A852C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurTests" */,
+				35DA3A862C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		35DA3A872C8739FD0039D19D /* Build configuration list for PBXNativeTarget "LumiFurUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				35DA3A882C8739FD0039D19D /* Debug */,
-				35DA3A892C8739FD0039D19D /* Release */,
+				35DA3A882C8739FD0039D19D /* Debug configuration for PBXNativeTarget "LumiFurUITests" */,
+				35DA3A892C8739FD0039D19D /* Release configuration for PBXNativeTarget "LumiFurUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
@@ -1527,8 +1533,16 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
 			requirement = {
-				kind = upToNextMajorVersion;
+				kind = upToNextMinorVersion;
 				minimumVersion = 2.4.1;
+			};
+		};
+		35741B3B2F061C7800D4937C /* XCRemoteSwiftPackageReference "textual" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/textual";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.1.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -1543,6 +1557,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 35197ABD2DA1A17100BE0EE3 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
 			productName = MarkdownUI;
+		};
+		35741B3C2F061C7800D4937C /* Textual */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35741B3B2F061C7800D4937C /* XCRemoteSwiftPackageReference "textual" */;
+			productName = Textual;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
