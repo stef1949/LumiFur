@@ -100,7 +100,10 @@ struct SettingsView: View {
             if bleModel.isConnected {
                 otaUpdateLink
                     .sheet(isPresented: $showOTAUpdate) {
-                        OTAUpdateView(viewModel: bleModel)
+                        OTAUpdateView(
+                            viewModel: bleModel,
+                            releaseViewModel: releaseViewModel
+                        )
                             .presentationDetents([.medium, .large])
                             .presentationDragIndicator(.visible)
                             .presentationCornerRadius(46)

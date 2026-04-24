@@ -217,6 +217,32 @@ final class BLEClient: NSObject, @unchecked Sendable {
         canWrite(to: .strobeSettings)
     }
 
+    func canWriteOTA() -> Bool {
+        canWrite(to: .ota)
+    }
+
+    /// Returns an OTA payload size (excluding the 1-byte command prefix) based on negotiated ATT write limits.
+    func preferredOTAChunkPayloadSize(fallback: Int = 182) -> Int {
+        queue.sync {
+            guard let peripheral = targetPeripheral, peripheral.state == .connected else {
+                return fallback
+            }
+
+            // OTA packets currently go through the command characteristic using write-with-response.
+            guard characteristics[.command] != nil else {
+                return fallback
+            }
+
+            let maxWriteLength = peripheral.maximumWriteValueLength(for: .withResponse)
+            guard maxWriteLength > 1 else { return fallback }
+
+            // Subtract one byte for the OTA command discriminator (0x02 for chunk packets).
+            let payload = maxWriteLength - 1
+            // Cap to a practical upper bound to avoid oversized writes on edge stacks.
+            return max(20, min(payload, 512))
+        }
+    }
+
     func writeCommandWithResponse(_ data: Data) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.async { [weak self] in

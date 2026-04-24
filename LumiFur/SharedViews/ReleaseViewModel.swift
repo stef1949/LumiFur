@@ -65,6 +65,25 @@ final class ReleaseViewModel: ObservableObject {
         }
     }
 
+    func loadControllerReleasesIfNeeded() async {
+        guard controllerReleases.isEmpty else { return }
+        await loadControllerReleases()
+    }
+
+    var latestControllerRelease: GitHubRelease? {
+        controllerReleases.max { left, right in
+            let leftVersion = left.semanticVersion
+            let rightVersion = right.semanticVersion
+
+            switch (leftVersion, rightVersion) {
+            case let (left?, right?):
+                return left < right
+            default:
+                return left.publishedAt < right.publishedAt
+            }
+        }
+    }
+
     // MARK: - Private Helper
 
     /// A generic, reusable function that fetches releases and returns a Result.

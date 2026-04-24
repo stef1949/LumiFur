@@ -32,6 +32,53 @@ private struct TemperatureWindowReducer: Sendable {
 /// UI-facing state and orchestration for the LumiFur accessory.
 @MainActor
 final class AccessoryViewModel: ObservableObject {
+    enum OTAState: Equatable {
+        case idle
+        case preparing
+        case uploading(progress: Double)
+        case finalizing
+        case completed
+        case aborted
+        case failed(message: String)
+
+        var userMessage: String {
+            switch self {
+            case .idle:
+                return "Idle"
+            case .preparing:
+                return "Starting OTA..."
+            case .uploading(let progress):
+                return "Uploading... \(Int(progress * 100))%"
+            case .finalizing:
+                return "Finalizing OTA..."
+            case .completed:
+                return "Update uploaded. Device will finalize and reboot."
+            case .aborted:
+                return "OTA Aborted"
+            case .failed(let message):
+                return "OTA Error: \(message)"
+            }
+        }
+
+        var progress: Double {
+            switch self {
+            case .uploading(let progress):
+                return min(max(progress, 0), 1)
+            default:
+                return 0
+            }
+        }
+
+        var isActive: Bool {
+            switch self {
+            case .preparing, .uploading, .finalizing:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LumiFur", category: "AccessoryViewModel")
 
     // MARK: Published state
@@ -55,6 +102,8 @@ final class AccessoryViewModel: ObservableObject {
     @Published var strobeColor: Color = .white
     @Published var otaStatusMessage = "Idle"
     @Published var otaProgress = 0.0
+    @Published private(set) var otaEstimatedRemainingSeconds: TimeInterval?
+    @Published private(set) var otaState: OTAState = .idle
     @Published var autoBrightness = true
     @Published var accelerometerEnabled = true
     @Published var sleepModeEnabled = true
@@ -656,15 +705,21 @@ final class AccessoryViewModel: ObservableObject {
     @MainActor
     func startOTAUpdate(firmwareData: Data) {
         guard isConnected else {
-            otaStatusMessage = "OTA Error: Peripheral not ready"
+            transitionOTAState(to: .failed(message: "Peripheral not ready"))
+            return
+        }
+
+        guard client.canWriteOTA() else {
+            transitionOTAState(to: .failed(message: "Accessory is not ready for OTA writes yet."))
+            presentError("Accessory is not ready for OTA writes yet.")
             return
         }
 
         otaTask?.cancel()
         otaGeneration &+= 1
         otaInProgress = true
-        otaProgress = 0
-        otaStatusMessage = "Starting OTA..."
+        otaEstimatedRemainingSeconds = nil
+        transitionOTAState(to: .preparing)
 
         let generation = otaGeneration
 
@@ -675,9 +730,8 @@ final class AccessoryViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                self.otaStatusMessage = "OTA Error: \(error.localizedDescription)"
-                self.otaProgress = 0
                 self.otaInProgress = false
+                self.transitionOTAState(to: .failed(message: error.localizedDescription))
             }
         }
     }
@@ -687,8 +741,8 @@ final class AccessoryViewModel: ObservableObject {
         otaTask?.cancel()
         otaGeneration &+= 1
         otaInProgress = false
-        otaProgress = 0
-        otaStatusMessage = "OTA Aborted"
+        otaEstimatedRemainingSeconds = nil
+        transitionOTAState(to: .aborted)
         client.writeOTAAbort()
     }
 
@@ -812,9 +866,11 @@ final class AccessoryViewModel: ObservableObject {
             assignIfChanged("brightness", current: &brightness, newValue: value)
 
         case .otaResponseUpdated(let response):
-            otaStatusMessage = response.statusMessage
+            if !response.statusMessage.isEmpty {
+                otaStatusMessage = response.statusMessage
+            }
             if response.resetsProgress {
-                otaProgress = 0
+                transitionOTAState(to: .idle)
             }
 
         case .luxUpdated(let value):
@@ -1060,11 +1116,12 @@ final class AccessoryViewModel: ObservableObject {
     @MainActor
     private func runOTAUpdate(firmwareData: Data, generation: UInt64) async throws {
         try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaStart(size: firmwareData.count))
-        try await Task.sleep(nanoseconds: 300_000_000)
+        try await Task.sleep(nanoseconds: 120_000_000)
 
-        let mtu = 185
-        let chunkSize = mtu - 3
+        let chunkSize = client.preferredOTAChunkPayloadSize()
         var offset = 0
+        let uploadStart = Date()
+        var lastProgressPublishAt = Date.distantPast
 
         while offset < firmwareData.count {
             try Task.checkCancellation()
@@ -1075,13 +1132,44 @@ final class AccessoryViewModel: ObservableObject {
             try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaChunk(chunk))
 
             offset = end
-            otaProgress = Double(offset) / Double(max(firmwareData.count, 1))
-            otaStatusMessage = "Uploading... \(Int(otaProgress * 100))%"
+            let progress = Double(offset) / Double(max(firmwareData.count, 1))
+            let now = Date()
+            let shouldPublishProgress =
+                offset == firmwareData.count ||
+                now.timeIntervalSince(lastProgressPublishAt) >= 0.15
+
+            if shouldPublishProgress {
+                lastProgressPublishAt = now
+                otaEstimatedRemainingSeconds = Self.estimatedRemainingSeconds(
+                    progress: progress,
+                    elapsed: now.timeIntervalSince(uploadStart)
+                )
+                transitionOTAState(to: .uploading(progress: progress))
+            }
         }
 
         try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaFinish())
-        otaStatusMessage = "Finalizing OTA..."
+        otaEstimatedRemainingSeconds = nil
+        transitionOTAState(to: .finalizing)
         otaInProgress = false
+        transitionOTAState(to: .completed)
+    }
+
+    @MainActor
+    private func transitionOTAState(to newState: OTAState) {
+        otaState = newState
+        otaProgress = newState.progress
+        otaStatusMessage = newState.userMessage
+
+        if !newState.isActive {
+            otaEstimatedRemainingSeconds = nil
+        }
+    }
+
+    private static func estimatedRemainingSeconds(progress: Double, elapsed: TimeInterval) -> TimeInterval? {
+        guard progress > 0, progress < 1, elapsed > 0 else { return nil }
+        let remainingFraction = 1 - progress
+        return max((elapsed / progress) * remainingFraction, 0)
     }
 
     // MARK: Notifications
