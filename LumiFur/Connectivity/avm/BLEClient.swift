@@ -43,7 +43,9 @@ final class BLEClient: NSObject, @unchecked Sendable {
     private var historyAssembler = TemperatureHistoryAssembler()
     private var lastLuxValue: UInt16 = 0
     private var writeContinuation: CheckedContinuation<Void, Error>?
+    private var writeTimeoutWorkItem: DispatchWorkItem?
     private var rssiTimer: DispatchSourceTimer?
+    private let writeTimeout: TimeInterval = 10
 
     override init() {
         let environment = ProcessInfo.processInfo.environment
@@ -60,6 +62,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     deinit {
         cancelRSSIMonitoringTimer()
         resumePendingWrite(with: BLEClientError.deinitialized)
+        writeTimeoutWorkItem?.cancel()
     }
 
     // MARK: Public API
@@ -244,23 +247,32 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func writeCommandWithResponse(_ data: Data) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            queue.async { [weak self] in
-                guard let self else {
-                    continuation.resume(throwing: BLEClientError.deinitialized)
-                    return
-                }
-                guard self.writeContinuation == nil else {
-                    continuation.resume(throwing: BLEClientError.writeAlreadyInProgress)
-                    return
-                }
-                guard let peripheral = self.targetPeripheral, let characteristic = self.characteristics[.command] else {
-                    continuation.resume(throwing: BLEClientError.missingCharacteristic("command"))
-                    return
-                }
+        try await withTaskCancellationHandler {
+            try Task.checkCancellation()
 
-                self.writeContinuation = continuation
-                peripheral.writeValue(data, for: characteristic, type: .withResponse)
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                queue.async { [weak self] in
+                    guard let self else {
+                        continuation.resume(throwing: BLEClientError.deinitialized)
+                        return
+                    }
+                    guard self.writeContinuation == nil else {
+                        continuation.resume(throwing: BLEClientError.writeAlreadyInProgress)
+                        return
+                    }
+                    guard let peripheral = self.targetPeripheral, let characteristic = self.characteristics[.command] else {
+                        continuation.resume(throwing: BLEClientError.missingCharacteristic("command"))
+                        return
+                    }
+
+                    self.beginPendingWrite(continuation)
+                    peripheral.writeValue(data, for: characteristic, type: .withResponse)
+                }
+            }
+        } onCancel: { [weak self] in
+            guard let client = self else { return }
+            client.queue.async { [weak client] in
+                client?.resumePendingWrite(with: CancellationError())
             }
         }
     }
@@ -421,9 +433,21 @@ final class BLEClient: NSObject, @unchecked Sendable {
         return false
     }
 
+    private func beginPendingWrite(_ continuation: CheckedContinuation<Void, Error>) {
+        writeContinuation = continuation
+
+        let timeoutWorkItem = DispatchWorkItem { [weak self] in
+            self?.resumePendingWrite(with: BLEClientError.writeTimedOut)
+        }
+        writeTimeoutWorkItem = timeoutWorkItem
+        queue.asyncAfter(deadline: .now() + writeTimeout, execute: timeoutWorkItem)
+    }
+
     private func resumePendingWrite(with error: Error? = nil) {
         guard let continuation = writeContinuation else { return }
         writeContinuation = nil
+        writeTimeoutWorkItem?.cancel()
+        writeTimeoutWorkItem = nil
 
         if let error {
             continuation.resume(throwing: error)
@@ -794,6 +818,7 @@ private enum BLEClientError: LocalizedError {
     case deinitialized
     case disconnected
     case writeAlreadyInProgress
+    case writeTimedOut
     case missingCharacteristic(String)
 
     var errorDescription: String? {
@@ -804,6 +829,8 @@ private enum BLEClientError: LocalizedError {
             return "The BLE peripheral disconnected before the write completed."
         case .writeAlreadyInProgress:
             return "A write with response is already in progress."
+        case .writeTimedOut:
+            return "The BLE write timed out before the accessory acknowledged it."
         case .missingCharacteristic(let name):
             return "The \(name) characteristic is not available."
         }

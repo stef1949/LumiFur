@@ -65,6 +65,23 @@ enum AccessoryCommandEncoder {
         return payload
     }
 
+    /// Encodes an OTA data chunk directly from a firmware buffer range to avoid an intermediate `subdata` copy.
+    static func otaChunk(from firmwareData: Data, range: Range<Int>) -> Data {
+        var payload = Data()
+        payload.reserveCapacity(range.count + 1)
+        payload.append(0x02)
+
+        firmwareData.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else { return }
+            payload.append(
+                baseAddress.advanced(by: range.lowerBound).assumingMemoryBound(to: UInt8.self),
+                count: range.count
+            )
+        }
+
+        return payload
+    }
+
     /// Encodes the OTA completion packet.
     static func otaFinish() -> Data {
         Data([0x03])

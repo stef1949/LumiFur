@@ -13,7 +13,8 @@ import Combine
 import CoreBluetooth
 import CoreHaptics
 import CoreImage
-import MarkdownUI
+//import MarkdownUI
+import Textual
 import SwiftUI
 import UniformTypeIdentifiers
 import os
@@ -465,14 +466,38 @@ struct ContentView: View {
     private var detailContent: some View {
         ZStack {
             if selectedSidebarItem == .dashboard {
-                DashboardContentView(
-                    bleModel: bleModel,
-                    isChartsExpanded: $isChartsExpanded,
-                    selectedUnits: selectedUnitsBinding,
-                    receivedFaceFromWatch: viewModel.receivedFaceFromWatch,
-                    onPrepareHaptics: prepareHaptics,
-                    onHandleWatchFaceSelection: handleWatchFaceSelection
-                )
+               // if bleModel.isConnected {
+                    
+                    DashboardContentView(
+                        bleModel: bleModel,
+                        isChartsExpanded: $isChartsExpanded,
+                        selectedUnits: selectedUnitsBinding,
+                        receivedFaceFromWatch: viewModel.receivedFaceFromWatch,
+                        onPrepareHaptics: prepareHaptics,
+                        onHandleWatchFaceSelection: handleWatchFaceSelection
+                    )
+                
+                // .disabled(bleModel.isConnected)
+                /*
+              } else {
+                
+                    VStack {
+                    Spacer()
+                        Image("mps3")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 250, height: 200)
+                        
+                        Text("Connect your LumiFur controller to get started")
+                            .font(.title)
+                            .padding()
+                            .foregroundStyle(.white)
+                        Spacer()
+                 
+                   }
+                 
+                }
+            */
         } else {
             Text("Select an item from the sidebar")
                 .foregroundStyle(.secondary)
@@ -866,7 +891,9 @@ private struct DashboardContentView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isChartsExpanded)
                 } else {
                     VStack {
-                        faceGrid
+
+                            faceGrid
+
                         chart(width: nil)
                             .frame(maxHeight: isChartsExpanded ? 160 : 55)
                             .padding(.horizontal)
@@ -899,7 +926,8 @@ private struct DashboardContentView: View {
             isExpanded: $isChartsExpanded,
             seedData: bleModel.temperatureData,
             temperaturePublisher: bleModel.temperatureChartPublisher,
-            selectedUnits: selectedUnits
+            selectedUnits: selectedUnits,
+            connected: bleModel.isConnected
         )
         .equatable()
         .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
@@ -1066,7 +1094,9 @@ struct AdvancedSettingsView: View {
 }
 
 #Preview("Whats New") {
-    WhatsNew()
+    let appReleases: [GitHubRelease] = []
+    
+    WhatsNew(appReleases: appReleases)
 }
 
 #Preview("Info View") {

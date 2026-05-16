@@ -21,7 +21,7 @@ private enum ConnectionUI {
     func body(content: Content) -> some View {
         content
             .padding(ConnectionUI.cardPadding)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: ConnectionUI.cardCorner, style: .continuous))
+        //.glassEffect(.regular, in: RoundedRectangle(cornerRadius: ConnectionUI.cardCorner, style: .continuous))
     }
 }
 
@@ -32,6 +32,7 @@ private enum ConnectionUI {
             content
                 .padding(ConnectionUI.rowPadding)
                 .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: ConnectionUI.rowCorner, style: .continuous))
+                //.animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         } else {
             content
                 .padding(ConnectionUI.rowPadding)

@@ -8,7 +8,8 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import MarkdownUI
+//import MarkdownUI
+import Textual
 
 struct OTAUpdateView: View {
     @ObservedObject var viewModel: AccessoryViewModel
@@ -22,6 +23,7 @@ struct OTAUpdateView: View {
             versionSection
             progressSection
             actionSection
+            recoverySection
             releaseNotesSection
         }
         .navigationTitle("Firmware Update")
@@ -168,7 +170,7 @@ struct OTAUpdateView: View {
             .disabled(!coordinator.canDownloadLatest || coordinator.isBusy)
 
             Button {
-                if let downloaded = coordinator.downloadedFirmwareData {
+                if let downloaded = coordinator.consumeDownloadedFirmwareData() {
                     viewModel.startOTAUpdate(firmwareData: downloaded)
                 }
             } label: {
@@ -193,6 +195,18 @@ struct OTAUpdateView: View {
         }
     }
 
+    private var recoverySection: some View {
+        Section("Recovery") {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Keep the controller powered and near your iPhone until the upload finishes.", systemImage: "bolt.horizontal.circle")
+                Label("If an upload fails, leave the controller on, reconnect in Bluetooth settings, then retry the same firmware file.", systemImage: "arrow.clockwise.circle")
+                Label("If the controller does not respond after retrying, power-cycle it once before starting another upload.", systemImage: "power.circle")
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+    }
+
     private var releaseNotesSection: some View {
         Section("Release Notes") {
             if let release = coordinator.selectedRelease {
@@ -212,8 +226,8 @@ struct OTAUpdateView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Markdown(release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._")
-                        .markdownTheme(.gitHub)
+                    StructuredText(markdown: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._")
+                        //.markdownTheme(.gitHub)
                 }
             } else if coordinator.isCheckingReleases {
                 Text("Loading release notes…")
@@ -309,6 +323,12 @@ private final class FirmwareUpdateCoordinator: ObservableObject {
 
     func attach(releaseViewModel: ReleaseViewModel) {
         self.releaseViewModel = releaseViewModel
+    }
+
+    func consumeDownloadedFirmwareData() -> Data? {
+        guard let data = downloadedFirmwareData else { return nil }
+        downloadedFirmwareData = nil
+        return data
     }
 
     func refresh(usingInstalledFirmware installedVersion: String, force: Bool = false) async {
@@ -431,6 +451,7 @@ private final class FirmwareUpdateCoordinator: ObservableObject {
             downloadedAssetName = selectedFile.lastPathComponent
             lastError = nil
             onReady(firmwareData)
+            downloadedFirmwareData = nil
         } catch {
             lastError = "Failed to load firmware: \(error.localizedDescription)"
             downloadIntegrityMessage = nil

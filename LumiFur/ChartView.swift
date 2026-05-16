@@ -10,6 +10,10 @@ struct ChartView: View, Equatable {
     let temperaturePublisher: AnyPublisher<[TemperatureData], Never>
     @Binding var selectedUnits: TempUnit
 
+    let connected: Bool
+
+    // private let bleModel: AccessoryViewModel
+
     private var displayUnit: TempUnit { selectedUnits }
 
     private func toDisplayUnit(_ celsius: Double) -> Double {
@@ -20,7 +24,10 @@ struct ChartView: View, Equatable {
 
     static func == (lhs: ChartView, rhs: ChartView) -> Bool {
         lhs.isExpanded == rhs.isExpanded &&
-        lhs._selectedUnits.wrappedValue == rhs._selectedUnits.wrappedValue
+        lhs.connected == rhs.connected &&
+        lhs._selectedUnits.wrappedValue == rhs._selectedUnits.wrappedValue &&
+        lhs.seedData.count == rhs.seedData.count &&
+        lhs.seedData.last == rhs.seedData.last
     }
 
     // MARK: - State
@@ -46,27 +53,35 @@ struct ChartView: View, Equatable {
 
     var body: some View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("ChartView")
+        Group {
+            if connected {
+                VStack(spacing: 8) {
+                    header
 
-        VStack(spacing: 8) {
-            header
-
-            if isExpanded {
-                styledChart {
-                    ForEach(samples, id: \.id) { point in
-                        LineMark(
-                            x: .value("Time", point.timestamp),
-                            y: .value("Temp", toDisplayUnit(point.temperature))
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5))
+                    if isExpanded {
+                        styledChart {
+                            ForEach(samples, id: \.id) { point in
+                                LineMark(
+                                    x: .value("Time", point.timestamp),
+                                    y: .value("Temp", toDisplayUnit(point.temperature))
+                                )
+                                .interpolationMethod(.catmullRom)
+                                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                            }
+                        }
+                        .transition(.opacity)
                     }
                 }
-                .transition(.opacity)
+                .padding()
+            } else {
+                EmptyView()
             }
         }
-        .padding()
         .onAppear(perform: refreshActivityState)
         .onDisappear(perform: stopSubscription)
+        .onChange(of: connected) { _, _ in
+            refreshActivityState()
+        }
         .onChange(of: isExpanded) { _, _ in
             refreshActivityState()
         }
@@ -95,7 +110,7 @@ struct ChartView: View, Equatable {
     }
 
     private func refreshActivityState() {
-        if isExpanded && scenePhase == .active {
+        if connected && isExpanded && scenePhase == .active {
             startSubscription()
         } else {
             stopSubscription()

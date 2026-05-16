@@ -109,12 +109,12 @@ struct SettingsView: View {
                             .presentationCornerRadius(46)
                     }
             }
-
-            ConfigSection(
-                bleModel: bleModel,
-                selectedUnits: selectedUnitsBinding
-            )
-
+            if bleModel.isConnected {
+                ConfigSection(
+                    bleModel: bleModel,
+                    selectedUnits: selectedUnitsBinding
+                )
+            }
             MatrixSection(
                 isExpanded: $isLedArrayExpanded,
                 selectedMatrix: $selectedMatrix
@@ -282,7 +282,7 @@ private struct UnifiedConnectionView: View {
                 .font(.system(size: accessoryViewModel.isConnected ? 72 : 56, weight: .regular))
                 .animation(.easeInOut(duration: 0.25), value: accessoryViewModel.isConnected)
             HStack {
-                Image(systemName: accessoryViewModel.connectionState.symbolName)
+                //Image(systemName: accessoryViewModel.connectionState.symbolName)
                 Text(accessoryViewModel.connectionStatus)
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
@@ -321,7 +321,9 @@ private struct UnifiedConnectionView: View {
                             .background(accessoryViewModel.connectionState.color.opacity(0.18),
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
+                    
                     Spacer()
+                    
                     SignalStrengthView(rssi: accessoryViewModel.signalStrength)
                         .accessibilityLabel("Signal strength")
                 }
@@ -615,6 +617,7 @@ private struct ConfigSection: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .disabled(!bleModel.isConnected)
             }
             BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
             

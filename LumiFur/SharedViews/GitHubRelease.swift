@@ -309,6 +309,8 @@ final class GitHubService {
         private let lock = NSLock()
         private var continuation: CheckedContinuation<(Data, URLResponse), Error>?
         private var downloadData: Data?
+        private var session: URLSession?
+        private var task: URLSessionDownloadTask?
         private let progressHandler: (@Sendable (Double) -> Void)?
 
         init(progressHandler: (@Sendable (Double) -> Void)?) {
@@ -316,14 +318,26 @@ final class GitHubService {
         }
 
         func download(request: URLRequest) async throws -> (Data, URLResponse) {
-            let session = URLSession(configuration: Self.makeConfiguration(), delegate: self, delegateQueue: nil)
+            return try await withTaskCancellationHandler {
+                try Task.checkCancellation()
 
-            return try await withCheckedThrowingContinuation { continuation in
-                lock.lock()
-                self.continuation = continuation
-                lock.unlock()
+                let session = URLSession(configuration: Self.makeConfiguration(), delegate: self, delegateQueue: nil)
+                lock.withLock {
+                    self.session = session
+                }
 
-                session.downloadTask(with: request).resume()
+                return try await withCheckedThrowingContinuation { continuation in
+                    let task = session.downloadTask(with: request)
+
+                    lock.lock()
+                    self.continuation = continuation
+                    self.task = task
+                    lock.unlock()
+
+                    task.resume()
+                }
+            } onCancel: {
+                self.cancelDownload()
             }
         }
 
@@ -360,7 +374,11 @@ final class GitHubService {
             self.continuation = nil
             let downloadData = self.downloadData
             let response = task.response
+            self.downloadData = nil
+            self.task = nil
+            self.session = nil
             lock.unlock()
+            defer { session.finishTasksAndInvalidate() }
 
             if let error {
                 continuation?.resume(throwing: error)
@@ -375,6 +393,22 @@ final class GitHubService {
             continuation?.resume(returning: (downloadData, response))
         }
 
+        private func cancelDownload() {
+            lock.lock()
+            let continuation = self.continuation
+            self.continuation = nil
+            self.downloadData = nil
+            let task = self.task
+            self.task = nil
+            let session = self.session
+            self.session = nil
+            lock.unlock()
+
+            task?.cancel()
+            session?.invalidateAndCancel()
+            continuation?.resume(throwing: CancellationError())
+        }
+
         private static func makeConfiguration() -> URLSessionConfiguration {
             let configuration = URLSessionConfiguration.default
             configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -384,4 +418,3 @@ final class GitHubService {
         }
     }
 }
-

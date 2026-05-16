@@ -25,7 +25,7 @@ Address: 6 Mitre House, 149 Western Road, Brighton, United Kingdom
 
 ## 2. What this policy covers
 
-This policy explains how we handle information when you use LumiFur, a SwiftUI iOS app designed to control LED/light systems (such as LED matrices) in fursuit and wearable applications via Bluetooth and, where enabled, Wi-Fi.
+This policy explains how we handle information when you use LumiFur, a SwiftUI iOS app designed to control LED/light systems (such as LED matrices) in fursuit and wearable applications via Bluetooth.
 
 ---
 
@@ -34,7 +34,7 @@ This policy explains how we handle information when you use LumiFur, a SwiftUI i
 - No account required
 - We do **not** sell your data
 - We do **not** run third-party advertising or tracking
-- Connectivity data (Bluetooth / local network) is used to connect to your controller device
+- Connectivity data from Bluetooth is used to connect to your controller device
 - Most data remains on your device unless you choose to share it (e.g., emailing logs)
 
 ---
@@ -54,13 +54,13 @@ This policy explains how we handle information when you use LumiFur, a SwiftUI i
 LumiFur processes on-device data needed to connect to and control your hardware:
 
 - **Bluetooth information:** device discovery results, iOS-assigned identifiers, RSSI/signal strength, connection status
-- **Local network information (if used):** controller IP/host details, connection status
+- **Watch motion information:** wrist motion is processed on Apple Watch when wrist flick control is enabled
 
 **Purpose:** discover, connect to, and communicate with your controller device
 **Legal basis:** contract and legitimate interests
 
 > **Note:** LumiFur does **not** request GPS.
-> However, Bluetooth scans and network details may be considered personal data because they relate to nearby devices.
+> However, Bluetooth scans may be considered personal data because they relate to nearby devices.
 
 ---
 
@@ -146,7 +146,7 @@ We apply reasonable measures to protect data:
 - rely on iOS security features (app sandbox, permissions)
 - recommend keeping iOS updated
 
-> Because Bluetooth and local networks are shared environments, only connect to devices you trust.
+> Because Bluetooth is a shared environment, only connect to devices you trust.
 
 ---
 

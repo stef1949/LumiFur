@@ -109,12 +109,19 @@ struct TemperatureHistoryAssembler {
     private struct State {
         var totalChunks: Int = 0
         var receivedChunks: Int = 0
+        var totalPoints: Int = 0
+        var processedPoints: Int = 0
         var interval: TimeInterval = 60
         var oldestTimestamp: Date = .distantPast
         var points: [TemperatureData] = []
     }
 
+    private let maxPoints: Int
     private var state: State?
+
+    init(maxPoints: Int = 600) {
+        self.maxPoints = maxPoints
+    }
 
     var isDownloading: Bool {
         state != nil
@@ -144,14 +151,19 @@ struct TemperatureHistoryAssembler {
 
             let oldest = now.addingTimeInterval(-TimeInterval(UInt16(littleEndian: startAgeMinutes)) * 60)
 
-            state = State(
+            let advertisedTotalPoints = Int(UInt16(littleEndian: totalPoints))
+
+            var newState = State(
                 totalChunks: 0,
                 receivedChunks: 0,
+                totalPoints: advertisedTotalPoints,
+                processedPoints: 0,
                 interval: TimeInterval(intervalSeconds),
                 oldestTimestamp: oldest,
                 points: []
             )
-            state?.points.reserveCapacity(Int(UInt16(littleEndian: totalPoints)))
+            newState.points.reserveCapacity(min(advertisedTotalPoints, maxPoints))
+            state = newState
             return nil
 
         case 0xA1:
@@ -179,21 +191,31 @@ struct TemperatureHistoryAssembler {
                 return .failed("History packet length did not match the advertised point count.")
             }
 
-            let baseIndex = currentState.points.count
+            let baseIndex = currentState.processedPoints
+            let firstRetainedIndex = max(0, currentState.totalPoints - maxPoints)
 
             data.withUnsafeBytes { raw in
                 for index in 0..<pointsInChunk {
+                    let absoluteIndex = baseIndex + index
                     let offset = 4 + (index * MemoryLayout<Int16>.size)
                     let rawValue = raw.load(fromByteOffset: offset, as: Int16.self)
                     let celsius = Double(Int16(littleEndian: rawValue)) / 10.0
                     let timestamp = currentState.oldestTimestamp.addingTimeInterval(
-                        Double(baseIndex + index) * currentState.interval
+                        Double(absoluteIndex) * currentState.interval
                     )
-                    currentState.points.append(TemperatureData(timestamp: timestamp, temperature: celsius))
+
+                    if absoluteIndex >= firstRetainedIndex {
+                        currentState.points.append(TemperatureData(timestamp: timestamp, temperature: celsius))
+                    }
                 }
             }
 
             currentState.receivedChunks += 1
+            currentState.processedPoints += pointsInChunk
+
+            if currentState.points.count > maxPoints {
+                currentState.points.removeFirst(currentState.points.count - maxPoints)
+            }
 
             if currentState.receivedChunks == currentState.totalChunks {
                 state = nil

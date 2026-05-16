@@ -65,7 +65,8 @@ struct DeviceInfoView: View {
             row("Model", info.model)
 
             row("Firmware", info.fw)
-
+            
+            /*
             // Commit + copy
             GridRow {
                 label("Commit")
@@ -74,7 +75,8 @@ struct DeviceInfoView: View {
                     copyButton(info.commit)
                 }
             }
-
+            */
+            
             row("Branch", info.branch)
 
             row("Build", info.build)
@@ -135,7 +137,7 @@ struct DeviceInfoView: View {
                     lastCopiedValue = nil
                 }
             }
-            #endif
+            #endif // canImport(UIKit)
         } label: {
             Image(systemName: lastCopiedValue == text ? "checkmark.circle.fill" : "doc.on.doc")
                 .font(.caption.weight(.semibold))

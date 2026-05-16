@@ -136,7 +136,17 @@ final class AccessoryViewModel: ObservableObject {
         #endif
 
         guard isConnected, let targetPeripheral else { return nil }
-        return discoveredDevices.first { $0.id == targetPeripheral.identifier }
+        if let device = discoveredDevices.first(where: { $0.id == targetPeripheral.identifier }) {
+            return device
+        }
+
+        return PeripheralDevice(
+            id: targetPeripheral.identifier,
+            name: targetPeripheral.name ?? "Unknown",
+            rssi: signalStrength,
+            advertisementServiceUUIDs: nil,
+            peripheral: targetPeripheral
+        )
     }
 
     var connectedDeviceName: String? {
@@ -192,6 +202,7 @@ final class AccessoryViewModel: ObservableObject {
     private let widgetSnapshotStore: WidgetSnapshotStore
     private let isRunningPreview: Bool
     private let maxTemperatureDataPoints = 600
+    private let maxDiscoveredDevices = 20
     private let liveTempChangeThresholdC = 0.1
     private let defaultRSSIInterval: TimeInterval = 1.0
     private let idleRSSIInterval: TimeInterval = 10.0
@@ -946,6 +957,7 @@ final class AccessoryViewModel: ObservableObject {
         connectionState = .connected
         isScanning = false
         connectingPeripheral = nil
+        retainOnlyConnectedDiscoveredDevice(peripheral)
         isManualDisconnect = false
         didAttemptAutoReconnect = false
         deviceInfo = nil
@@ -1076,6 +1088,28 @@ final class AccessoryViewModel: ObservableObject {
         } else {
             discoveredDevices.append(device)
         }
+
+        if discoveredDevices.count > maxDiscoveredDevices {
+            discoveredDevices.removeFirst(discoveredDevices.count - maxDiscoveredDevices)
+        }
+    }
+
+    @MainActor
+    private func retainOnlyConnectedDiscoveredDevice(_ peripheral: CBPeripheral) {
+        if let connectedDevice = discoveredDevices.first(where: { $0.id == peripheral.identifier }) {
+            discoveredDevices = [connectedDevice]
+            return
+        }
+
+        discoveredDevices = [
+            PeripheralDevice(
+                id: peripheral.identifier,
+                name: peripheral.name ?? "Unknown",
+                rssi: signalStrength,
+                advertisementServiceUUIDs: nil,
+                peripheral: peripheral
+            )
+        ]
     }
 
     @MainActor
@@ -1084,6 +1118,7 @@ final class AccessoryViewModel: ObservableObject {
         deviceInfo = nil
         currentTempC = nil
         lastPublishedTempC = nil
+
         temperature = "--"
         temperatureData.removeAll(keepingCapacity: true)
         publishTemperatureDataSnapshot()
@@ -1092,6 +1127,7 @@ final class AccessoryViewModel: ObservableObject {
         luxValue = 0
         isScanning = false
         isDownloadingHistory = false
+        discoveredDevices.removeAll(keepingCapacity: true)
         client.stopRSSIMonitoring()
     }
 
@@ -1128,8 +1164,9 @@ final class AccessoryViewModel: ObservableObject {
             guard otaGeneration == generation else { throw CancellationError() }
 
             let end = min(offset + chunkSize, firmwareData.count)
-            let chunk = firmwareData.subdata(in: offset..<end)
-            try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaChunk(chunk))
+            try await client.writeCommandWithResponse(
+                AccessoryCommandEncoder.otaChunk(from: firmwareData, range: offset..<end)
+            )
 
             offset = end
             let progress = Double(offset) / Double(max(firmwareData.count, 1))
@@ -1320,5 +1357,14 @@ extension AccessoryViewModel {
         )
     }
 }
-#endif
+#endif // DEBUG
 
+#Preview("Connected") {
+    @Previewable @State var matrixStyle: MatrixStyle = .dot
+
+    SettingsView(
+        bleModel: .previewConnected,
+        selectedMatrix: $matrixStyle
+    )
+    .preferredColorScheme(.dark)
+}

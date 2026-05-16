@@ -19,7 +19,7 @@ Country: United Kingdom
 
 ## 2) What this policy covers
 
-This policy explains how we handle information when you use **LumiFur**, a SwiftUI iOS app designed to control fursuit LED/light systems (for example LED matrices or arrays) using connectivity such as Bluetooth and, where enabled, Wi-Fi.
+This policy explains how we handle information when you use **LumiFur**, a SwiftUI iOS app designed to control fursuit LED/light systems (for example LED matrices or arrays) using Bluetooth connectivity.
 
 
 ## 3) Summary
@@ -27,7 +27,7 @@ This policy explains how we handle information when you use **LumiFur**, a Swift
 - No account is required.
 - We do **not** sell your data.
 - We do **not** run third-party ad tracking.
-- Connectivity data (Bluetooth or local network) is used to connect to your controller device and send commands.
+- Connectivity data from Bluetooth is used to connect to your controller device and send commands.
 - Most data stays on your device unless you choose to share it (for example by emailing logs).
 
 
@@ -57,7 +57,7 @@ Legitimate interests (support) and/or contract (providing the app or service).
 LumiFur may process the following on your device to connect to and control your LED controller hardware:
 
 - **Bluetooth information** such as nearby device discovery results (for example broadcast device names, identifiers assigned by iOS, and signal strength / RSSI) and connection state.
-- **Local network or Wi-Fi information** such as your controller’s IP or host details and connectivity status (when Wi-Fi control is enabled).
+- **Watch motion information** such as wrist movement, processed on Apple Watch when wrist flick control is enabled.
 
 **Purpose**
 
@@ -68,7 +68,7 @@ To discover, connect to, and communicate with your controller device and to appl
 Performance of a contract (core app functionality) and legitimate interests (ensuring reliable connectivity).
 
 > Note on location: LumiFur does not request your GPS location.  
-> However, Bluetooth scans and network information can indirectly relate to your environment or devices and may be considered personal data.
+> However, Bluetooth scans can indirectly relate to your environment or devices and may be considered personal data.
 
 
 ### C) Data received from your controller device (telemetry)
@@ -161,7 +161,7 @@ We use reasonable technical and organisational measures to protect data, includi
 - relying on iOS security features such as sandboxing and system permissions
 - recommending that you keep your device and iOS up to date
 
-Because Bluetooth and local networks are shared environments, you should only connect to controller devices that you trust.
+Because Bluetooth is a shared environment, you should only connect to controller devices that you trust.
 
 
 ## 10) Your GDPR / UK GDPR rights

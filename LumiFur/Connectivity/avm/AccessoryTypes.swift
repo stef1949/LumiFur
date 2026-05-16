@@ -86,4 +86,4 @@ extension PeripheralDevice {
         peripheral: nil               // Previews. We never actually connect
     )
 }
-#endif
+#endif // DEBUG

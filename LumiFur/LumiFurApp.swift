@@ -65,11 +65,15 @@ final class LumiFurAppContext: ObservableObject {
 
 struct RootView: View {
     @ObservedObject var appContext: LumiFurAppContext
-    // Persist the last shown version
+    @StateObject private var releaseViewModel = ReleaseViewModel(
+        appReleaseService: GitHubService(owner: "stef1949", repo: "LumiFur"),
+        controllerReleaseService: GitHubService(owner: "stef1949", repo: "LumiFur_Controller")
+    )
+    // Persist the last app version that has acknowledged the "What's New" sheet.
     @AppStorage("lastAppVersion") private var lastAppVersion: String = ""
     // Get the current version from the bundle
     private let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    // Controls whether to show the splash screen
+    // Controls whether to show the "What's New" sheet.
     @State private var showWhatsNew: Bool = false
     
     //@State private var showSplash = true
@@ -83,17 +87,46 @@ struct RootView: View {
          */
         // RootView2()
         ContentView(bleModel: appContext.accessoryViewModel)
-            .sheet(isPresented: $showWhatsNew, onDismiss: {
-                lastAppVersion = currentVersion
-            }) {
-                WhatsNew()
+            .sheet(isPresented: $showWhatsNew, onDismiss: markCurrentVersionSeen) {
+                WhatsNew(
+                    appReleases: releaseViewModel.appReleases,
+                    isLoadingReleases: releaseViewModel.isLoadingAppReleases,
+                    releaseError: releaseViewModel.appReleaseError,
+                    onRetry: {
+                        Task {
+                            await releaseViewModel.loadAppReleases()
+                        }
+                    }
+                )
             }
-            .onAppear {
-                // Compare stored version with current version
-                if lastAppVersion != currentVersion {
-                    showWhatsNew = true
-                }
+            .onAppear(perform: updateWhatsNewPresentation)
+            .task(id: showWhatsNew) {
+                await loadWhatsNewReleasesIfNeeded()
             }
         // }
+    }
+
+    private func updateWhatsNewPresentation() {
+        guard !lastAppVersion.isEmpty else {
+            markCurrentVersionSeen()
+            return
+        }
+
+        showWhatsNew = lastAppVersion != currentVersion
+    }
+
+    private func markCurrentVersionSeen() {
+        lastAppVersion = currentVersion
+        showWhatsNew = false
+    }
+
+    private func loadWhatsNewReleasesIfNeeded() async {
+        guard showWhatsNew,
+              releaseViewModel.appReleases.isEmpty,
+              !releaseViewModel.isLoadingAppReleases else {
+            return
+        }
+
+        await releaseViewModel.loadAppReleases()
     }
 }

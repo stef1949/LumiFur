@@ -39,9 +39,6 @@ struct StatusSectionView: View, Equatable {
                 LuxBadgeView(progress: luxProgress, luxValue: luxValue)
                     .equatable()
                     .padding(.horizontal, 4)
-            } else {
-                Color.clear
-                    .frame(width: 22, height: 22)
             }
 
             // Content + trailing connection icon
