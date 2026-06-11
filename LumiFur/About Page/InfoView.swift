@@ -38,7 +38,7 @@ struct InfoView: View {
         ),
     ]
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             List {
                 // MARK: – Logo Header
                 VStack {
@@ -152,7 +152,7 @@ struct InfoView: View {
                 }
             }
             .listStyle(.insetGrouped)  // iOS18 default grouping
-            .scrollContentBackground(.hidden)  // let our list sit over the material
+            .compatibleScrollContentBackgroundHidden()
             .background(.thinMaterial)  // global bg
             .navigationTitle("About")
             .navigationBarTitleDisplayMode(.inline)

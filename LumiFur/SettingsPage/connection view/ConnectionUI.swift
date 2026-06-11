@@ -31,12 +31,12 @@ private enum ConnectionUI {
         if interactive {
             content
                 .padding(ConnectionUI.rowPadding)
-                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: ConnectionUI.rowCorner, style: .continuous))
+                .legacyGlassBackground(cornerRadius: ConnectionUI.rowCorner)
                 //.animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         } else {
             content
                 .padding(ConnectionUI.rowPadding)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: ConnectionUI.rowCorner, style: .continuous))
+                .legacyGlassBackground(cornerRadius: ConnectionUI.rowCorner)
         }
     }
 }

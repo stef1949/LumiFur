@@ -7,7 +7,7 @@
 import Foundation
 import os
 import SwiftUI // Needed for Color if used in ConnectionState
-#if canImport(ActivityKit)
+#if canImport(ActivityKit) && !LUMIFUR_LEGACY_IOS15
 import ActivityKit // Needed for ActivityAttributes
 #endif
 
@@ -346,7 +346,7 @@ final class IdleCPUDiagnostics: @unchecked Sendable {
     }
 }
 #else
-final class IdleCPUDiagnostics {
+final class IdleCPUDiagnostics: @unchecked Sendable {
     static let shared = IdleCPUDiagnostics()
     static let isEnabled = false
 
@@ -428,7 +428,7 @@ enum ConnectionState: String, Codable, Sendable { // Make it Codable for easy st
 
 // IMPORTANT: Requires iOS 16.1+ checks where used if deploying below 16.1
 // But the definition itself can exist.
-#if canImport(ActivityKit) && !os(macOS)
+#if canImport(ActivityKit) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 @available(iOS 16.1, *) // Keep this if supporting below 16.1
 struct LumiFur_WidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {

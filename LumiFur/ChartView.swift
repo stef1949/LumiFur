@@ -1,6 +1,8 @@
-import Charts
 import Combine
 import SwiftUI
+#if canImport(Charts)
+import Charts
+#endif
 
 struct ChartView: View, Equatable {
     @Environment(\.scenePhase) private var scenePhase
@@ -59,17 +61,13 @@ struct ChartView: View, Equatable {
                     header
 
                     if isExpanded {
-                        styledChart {
-                            ForEach(samples, id: \.id) { point in
-                                LineMark(
-                                    x: .value("Time", point.timestamp),
-                                    y: .value("Temp", toDisplayUnit(point.temperature))
-                                )
-                                .interpolationMethod(.catmullRom)
-                                .lineStyle(StrokeStyle(lineWidth: 2.5))
-                            }
+                        if #available(iOS 16.0, *) {
+                            modernChart
+                                .transition(.opacity)
+                        } else {
+                            legacyTemperatureSummary
+                                .transition(.opacity)
                         }
-                        .transition(.opacity)
                     }
                 }
                 .padding()
@@ -79,16 +77,16 @@ struct ChartView: View, Equatable {
         }
         .onAppear(perform: refreshActivityState)
         .onDisappear(perform: stopSubscription)
-        .onChange(of: connected) { _, _ in
+        .onChange(of: connected) { _ in
             refreshActivityState()
         }
-        .onChange(of: isExpanded) { _, _ in
+        .onChange(of: isExpanded) { _ in
             refreshActivityState()
         }
-        .onChange(of: scenePhase) { _, _ in
+        .onChange(of: scenePhase) { _ in
             refreshActivityState()
         }
-        .onChange(of: selectedUnits) { _, _ in
+        .onChange(of: selectedUnits) { _ in
             updateYAxisDomain(with: samples)
         }
     }
@@ -128,10 +126,18 @@ struct ChartView: View, Equatable {
 
     // MARK: - Chart Builder
 
-    private func styledChart<Content: ChartContent>(
-        @ChartContentBuilder content: () -> Content
-    ) -> some View {
-        Chart { content() }
+    @available(iOS 16.0, *)
+    private var modernChart: some View {
+        Chart {
+            ForEach(samples, id: \.id) { point in
+                LineMark(
+                    x: .value("Time", point.timestamp),
+                    y: .value("Temp", toDisplayUnit(point.temperature))
+                )
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
+            }
+        }
             .frame(height: 100)
             .chartXScale(domain: xDomain)
             .chartYScale(domain: yAxisDomain)
@@ -158,7 +164,7 @@ struct ChartView: View, Equatable {
                     GeometryReader { geometry in
                         Color.clear
                             .onAppear { chartPlotSize = geometry.size }
-                            .onChange(of: geometry.size) { _, newSize in
+                            .onChange(of: geometry.size) { newSize in
                                 chartPlotSize = newSize
                             }
                     }
@@ -168,6 +174,34 @@ struct ChartView: View, Equatable {
                 Rectangle()
                     .padding(.trailing, (1 - animationEndFraction) * chartPlotSize.width)
             }
+    }
+
+    private var legacyTemperatureSummary: some View {
+        let latest = samples.last.map { toDisplayUnit($0.temperature) }
+        let values = samples.map { toDisplayUnit($0.temperature) }
+        let minimum = values.min()
+        let maximum = values.max()
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(latest.map { formattedTemperature($0) } ?? "No recent samples")
+                .font(.title3.weight(.semibold))
+            if let minimum, let maximum {
+                Text("Range: \(formattedTemperature(minimum)) - \(formattedTemperature(maximum))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.18))
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.7))
+                        .frame(width: legacyTemperatureBarWidth(in: geometry.size.width))
+                }
+            }
+            .frame(height: 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Subscription
@@ -264,5 +298,22 @@ struct ChartView: View, Equatable {
         let halfRange = (baseRange / 2) + padding
 
         yAxisDomain = (mid - halfRange)...(mid + halfRange)
+    }
+
+    private func formattedTemperature(_ value: Double) -> String {
+        "\(String(format: "%.1f", value)) \(displayUnit.shortLabel)"
+    }
+
+    private func legacyTemperatureBarWidth(in availableWidth: CGFloat) -> CGFloat {
+        guard let latest = samples.last.map({ toDisplayUnit($0.temperature) }) else {
+            return 0
+        }
+
+        let lower = yAxisDomain.lowerBound
+        let upper = yAxisDomain.upperBound
+        guard upper > lower else { return 0 }
+
+        let fraction = (latest - lower) / (upper - lower)
+        return max(0, min(1, fraction)) * availableWidth
     }
 }

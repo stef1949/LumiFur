@@ -7,17 +7,15 @@
 
 
 import SwiftUI
-import Textual
 
 struct GitHubReadmeDemo: View {
   private let about = """
-    This screen shows how **Textual** renders a repository’s `README.md`
+    This screen shows how LumiFur renders a repository’s `README.md`
     and uses a custom `OpenURLAction` to scroll to headings from anchor
-    links. Textual isn’t aiming to support every GitHub formatting option,
-    but this demo is a good showcase of its capabilities.
+    links.
     """
 
-  @State private var model = Model()
+  @StateObject private var model = Model()
   @State private var wrapCode = false
 
   var body: some View {
@@ -31,7 +29,7 @@ struct GitHubReadmeDemo: View {
   private var content: some View {
     Form {
       DisclosureGroup("About this demo") {
-        StructuredText(markdown: self.about)
+        MarkdownTextView(markdown: self.about)
       }
       Section("Repository") {
         TextField("Owner", text: $model.owner)
@@ -56,21 +54,12 @@ struct GitHubReadmeDemo: View {
           Section {
             Toggle("Wrap Code Blocks", isOn: $wrapCode)
           }
-          StructuredText(
-            markdown: success.content,
-            baseURL: success.baseURL
-          )
-          .textual.imageAttachmentLoader(.image(relativeTo: success.imageBaseURL))
-          .textual.textSelection(.enabled)
-          .textual.overflowMode(self.wrapCode ? .wrap : .scroll)
+          MarkdownTextView(markdown: success.content)
         case .failure:
-          ContentUnavailableView {
-            Label("Loading Failed", systemImage: "exclamationmark.triangle.fill")
-          }
+          LegacyUnavailableView("Loading Failed", systemImage: "exclamationmark.triangle.fill")
         }
       }
     }
-    .formStyle(.grouped)
   }
 }
 
@@ -92,7 +81,7 @@ extension View {
 }
 
 extension GitHubReadmeDemo {
-  @MainActor @Observable final class Model {
+  @MainActor final class Model: ObservableObject {
     struct State: Equatable, Sendable {
       let content: String
       let baseURL: URL
@@ -123,11 +112,11 @@ extension GitHubReadmeDemo {
       let downloadURL: URL
     }
 
-    var owner = "stef1949"
-    var repo = "lumifur"
-    var isLoading = false
+    @Published var owner = "stef1949"
+    @Published var repo = "lumifur"
+    @Published var isLoading = false
 
-    var state: Result<State, Error>?
+    @Published var state: Result<State, Error>?
 
     func load() async {
       isLoading = true

@@ -9,8 +9,11 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
+#if canImport(ActivityKit) && !LUMIFUR_LEGACY_IOS15
+
 // MARK: - BLE Activity Attributes
 
+@available(iOS 16.1, *)
 struct BLEActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var connectionStatus: String
@@ -23,6 +26,7 @@ struct BLEActivityAttributes: ActivityAttributes {
 
 // MARK: - BLE Live Activity View
 
+@available(iOS 16.1, *)
 struct BLELiveActivityView: View {
     let context: ActivityViewContext<BLEActivityAttributes>
     
@@ -39,3 +43,5 @@ struct BLELiveActivityView: View {
         .background(Color.white.opacity(0.9))
     }
 }
+
+#endif

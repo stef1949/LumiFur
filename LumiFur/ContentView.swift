@@ -8,13 +8,10 @@
 //
 
 import AVKit
-import Charts
 import Combine
 import CoreBluetooth
 import CoreHaptics
 import CoreImage
-//import MarkdownUI
-import Textual
 import SwiftUI
 import UniformTypeIdentifiers
 import os
@@ -345,7 +342,7 @@ struct ContentView: View {
         #else
             TabView(selection: $selectedSidebarItem) {
                 // MARK: – Custom Tab
-                NavigationStack {
+                CompatibleNavigationStack {
                     CustomLedView()
                         .navigationTitle("Custom View")
                 }
@@ -358,12 +355,12 @@ struct ContentView: View {
                 .tag(SidebarItem.profile)
                 //.disabled(true)
                 // MARK: – Dashboard Tab
-                NavigationStack {
+                CompatibleNavigationStack {
                     detailContent
                     //.navigationTitle("LumiFur")
                     //.navigationBarTitleDisplayMode(.large)
                         .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
+                            ToolbarItem(placement: .navigationBarLeading) {
                                 Button { showQuickControls.toggle() } label: {
                                     Image(systemName: "line.3.horizontal")
                                 }
@@ -388,12 +385,11 @@ struct ContentView: View {
                                     )
                                 ) {
                                     quickControlsContent
-                                        .presentationBackground(.clear)
-                                        .presentationCompactAdaptation(.popover)
+                                        .compatibleClearPopoverPresentation()
                                         .padding()
                                 }
                             }
-                            ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarItem(placement: .navigationBarTrailing) {
                                 ToolbarStatusHost(bleModel: bleModel)
                             }
                         }
@@ -405,7 +401,7 @@ struct ContentView: View {
                 // MARK: – Settings Tab
                 
                 //Divider()
-                NavigationStack {
+                CompatibleNavigationStack {
                     SettingsView(
                         bleModel: bleModel,
                         selectedMatrix: $matrixStyle,
@@ -422,7 +418,6 @@ struct ContentView: View {
                 .tag(SidebarItem.settings)
                 .badge("!")
             }
-            .navigationTransition(.zoom(sourceID: "expand", in: namespace))
             .onAppear {
                 if selectedSidebarItem == .dashboard {
                     prepareHaptics()
@@ -580,7 +575,7 @@ struct ContentView: View {
                         isOn: option.binding,
                         optionType: option.type
                     )
-                    .onChange(of: option.binding.wrappedValue) { oldValue, newValue in
+                    .onChange(of: option.binding.wrappedValue) { newValue in
                         option.action?(newValue)
                     }
                 }
@@ -596,8 +591,7 @@ struct ContentView: View {
                     arrowEdge: .top
                 ) {
                     customMessagePopoverView
-                        .presentationBackground(.clear)
-                        .presentationCompactAdaptation(.popover)
+                        .compatibleClearPopoverPresentation()
                         .padding()
                 }
             }
@@ -605,7 +599,7 @@ struct ContentView: View {
         }
         //.frame(maxWidth: .infinity, maxHeight: 80)
         //.scrollContentBackground(.hidden)
-        .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
+        .compatibleScrollClipDisabled(true)
         // If you want content to extend beyond scroll view bounds, set true.
         .ignoresSafeArea(.keyboard, edges: .all)  // Keep this for keyboard behavior
     }
@@ -758,18 +752,18 @@ struct ContentView: View {
                                     bleModel: bleModel,
                                     onDone: { showStrobeOptions = false }
                                 )
-                                .presentationCompactAdaptation(.popover)
+                                .compatiblePopoverPresentation()
                             }
                         }
                     }
                     .padding(.horizontal)
                     //.scrollContentBackground(.hidden)
                 }
-                .scrollClipDisabled()
-                .scrollDismissesKeyboard(.automatic)
+                .compatibleScrollClipDisabled()
+                .compatibleScrollDismissesKeyboard()
                 //.border(.red)
             // This watches for external changes (e.g., from the watch) and updates the local UI.
-            .onChange(of: selectedView) { _, newViewIndex in
+            .onChange(of: selectedView) { newViewIndex in
                 let modelIndex = newViewIndex - 1
                 if items.indices.contains(modelIndex) {
                     selectedItemID = items[modelIndex].id
@@ -904,7 +898,7 @@ private struct DashboardContentView: View {
             }
         }
         .onAppear(perform: onPrepareHaptics)
-        .onChange(of: receivedFaceFromWatch) { _, newFace in
+        .onChange(of: receivedFaceFromWatch) { newFace in
             onHandleWatchFaceSelection(newFace)
         }
     }
@@ -930,7 +924,7 @@ private struct DashboardContentView: View {
             connected: bleModel.isConnected
         )
         .equatable()
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+        .legacyGlassBackground(cornerRadius: 32)
         .frame(width: width, alignment: .top)
         .onTapGesture {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
@@ -995,11 +989,9 @@ struct AdvancedSettingsView: View {
             // Connection Options Section
             Section(header: Text("Connection Options")) {
                 Toggle("Auto Reconnect", isOn: $autoReconnect)
-                    .onChange(of: autoReconnect) { oldValue, newValue in
+                    .onChange(of: autoReconnect) { newValue in
                         bleModel.autoReconnectEnabled = newValue
-                        contentLogger.debug(
-                            "Auto reconnect changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
-                        )
+                        contentLogger.debug("Auto reconnect changed to \(newValue, privacy: .public)")
                     }
                 if bleModel.isConnected {
                     Button("Disconnect Device") {
@@ -1026,7 +1018,7 @@ struct AdvancedSettingsView: View {
                 )
             ) {
                 Toggle("Enable RSSI Monitoring", isOn: $rssiMonitoringEnabled)
-                    .onChange(of: rssiMonitoringEnabled) { _, newValue in
+                    .onChange(of: rssiMonitoringEnabled) { newValue in
                         Task { @MainActor in
                             if newValue {
                                 bleModel.startRSSIMonitoring()
@@ -1042,11 +1034,9 @@ struct AdvancedSettingsView: View {
                         in: 0.5...5.0,
                         step: 0.5
                     )
-                    .onChange(of: rssiUpdateInterval) { oldValue, newValue in
+                    .onChange(of: rssiUpdateInterval) { newValue in
                         // If your model supports adjustable intervals for reading RSSI, update it here.
-                        contentLogger.debug(
-                            "RSSI interval changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
-                        )
+                        contentLogger.debug("RSSI interval changed to \(newValue, privacy: .public)")
                     }
                 }
             }
@@ -1079,13 +1069,6 @@ struct AdvancedSettingsView: View {
 
 
 #Preview("ContentView") {
-    // 1. Create a @State variable to be the source of truth for this preview.
-    //    This variable only exists for the preview's lifetime.
-    @Previewable @State var previewMatrixStyle: MatrixStyle = .array
-
-    // 2. ContentView now uses this local state. When you use the picker
-    //    in the preview canvas, `previewMatrixStyle` will actually change.
-    //    (Assuming ContentView has an init that accepts these, or default values)
     ContentView(bleModel: AccessoryViewModel())
 }
  
@@ -1104,7 +1087,6 @@ struct AdvancedSettingsView: View {
 }
 
 #Preview("Settings") {
-    @Previewable @State var isScanningForButton = true
     SettingsView(
         bleModel: AccessoryViewModel(),
         selectedMatrix: .constant(MatrixStyle.array)
@@ -1157,7 +1139,7 @@ struct AdvancedSettingsView: View {
     
     // --- OPTIMIZATION 2: Preview the view inside a NavigationStack ---
     // This is crucial for seeing the navigation title correctly.
-    return NavigationStack {
+    CompatibleNavigationStack {
         ReleaseNotesView(
             title: "App Releases",
             releases: sampleReleases // Pass the mock data to the view
@@ -1167,7 +1149,7 @@ struct AdvancedSettingsView: View {
 
 #Preview("Release Notes (Empty)") {
     // It's also good practice to preview the empty state.
-    NavigationStack {
+    CompatibleNavigationStack {
         ReleaseNotesView(
             title: "Controller Releases",
             releases: [] // Pass an empty array

@@ -1,5 +1,5 @@
 import Foundation
-#if canImport(ActivityKit) && !os(macOS)
+#if canImport(ActivityKit) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 import ActivityKit
 
 @available(iOS 16.1, *)

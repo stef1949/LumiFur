@@ -8,8 +8,6 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-//import MarkdownUI
-import Textual
 
 struct OTAUpdateView: View {
     @ObservedObject var viewModel: AccessoryViewModel
@@ -32,10 +30,10 @@ struct OTAUpdateView: View {
             coordinator.attach(releaseViewModel: releaseViewModel)
             await coordinator.refresh(usingInstalledFirmware: viewModel.firmwareVersion)
         }
-        .onChange(of: viewModel.firmwareVersion) { _, newValue in
+        .onChange(of: viewModel.firmwareVersion) { newValue in
             coordinator.updateInstalledVersion(newValue)
         }
-        .onChange(of: releaseViewModel.controllerReleases) { _, _ in
+        .onChange(of: releaseViewModel.controllerReleases) { _ in
             coordinator.refreshSelection(usingInstalledFirmware: viewModel.firmwareVersion)
         }
         .fileImporter(
@@ -226,8 +224,10 @@ struct OTAUpdateView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    StructuredText(markdown: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._")
-                        //.markdownTheme(.gitHub)
+                    MarkdownTextView(
+                        markdown: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._"
+                    )
+                    .font(.footnote)
                 }
             } else if coordinator.isCheckingReleases {
                 Text("Loading release notes…")

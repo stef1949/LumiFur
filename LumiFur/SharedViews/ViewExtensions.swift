@@ -9,6 +9,155 @@
 
 import SwiftUI
 
+struct CompatibleNavigationStack<Content: View>: View {
+    private let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                content()
+            }
+        } else {
+            NavigationView {
+                content()
+            }
+            .navigationViewStyle(.stack)
+        }
+    }
+}
+
+struct MarkdownTextView: View {
+    let markdown: String
+
+    var body: some View {
+        Text(attributedString)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
+    }
+
+    private var attributedString: AttributedString {
+        if let parsed = try? AttributedString(markdown: markdown) {
+            return parsed
+        }
+
+        return AttributedString(markdown)
+    }
+}
+
+struct LegacyUnavailableView: View {
+    let title: String
+    let systemImage: String
+    let description: String?
+
+    init(_ title: String, systemImage: String, description: String? = nil) {
+        self.title = title
+        self.systemImage = systemImage
+        self.description = description
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundColor(.secondary)
+            Text(title)
+                .font(.headline)
+            if let description {
+                Text(description)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+    }
+}
+
+extension View {
+    func legacyGlassBackground(cornerRadius: CGFloat = 20) -> some View {
+        background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    @ViewBuilder
+    func compatibleClearPopoverPresentation() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationBackground(.clear)
+                .presentationCompactAdaptation(.popover)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatiblePopoverPresentation() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationCompactAdaptation(.popover)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleSheetPresentation(cornerRadius: CGFloat? = nil) -> some View {
+        if #available(iOS 16.4, *) {
+            if let cornerRadius {
+                presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(cornerRadius)
+            } else {
+                presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
+        } else if #available(iOS 16.0, *) {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleScrollClipDisabled(_ disabled: Bool = true) -> some View {
+        if #available(iOS 17.0, *) {
+            scrollClipDisabled(disabled)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleScrollDismissesKeyboard() -> some View {
+        if #available(iOS 16.0, *) {
+            scrollDismissesKeyboard(.automatic)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleScrollContentBackgroundHidden() -> some View {
+        if #available(iOS 16.0, *) {
+            scrollContentBackground(.hidden)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleHideTabBar() -> some View {
+        if #available(iOS 16.0, *) {
+            toolbar(.hidden, for: .tabBar)
+        } else {
+            self
+        }
+    }
+}
+
 /*
 extension View {
     // Reusable function to display and animate the "Protogen" image
@@ -59,7 +208,7 @@ struct BouncingButton<Label: View>: View{
                 .animation(spring, value: isPressed)
         }
         //.buttonStyle(.glass)
-        .glassEffect(.regular.interactive())
+        .legacyGlassBackground(cornerRadius: 16)
     }
 }
 

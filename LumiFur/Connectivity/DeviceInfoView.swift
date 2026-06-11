@@ -60,31 +60,13 @@ struct DeviceInfoView: View {
     }
 
     private func infoGrid(_ info: DeviceInfo) -> some View {
-        Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 8) {
-
+        VStack(alignment: .leading, spacing: 8) {
             row("Model", info.model)
-
             row("Firmware", info.fw)
-            
-            /*
-            // Commit + copy
-            GridRow {
-                label("Commit")
-                HStack(spacing: 8) {
-                    value(info.commit, monospaced: true)
-                    copyButton(info.commit)
-                }
-            }
-            */
-            
             row("Branch", info.branch)
-
             row("Build", info.build)
-
             row("Compat", "\(info.compat)+")
-
-            // ID + copy
-            GridRow {
+            HStack(spacing: 8) {
                 label("ID")
                 HStack(spacing: 8) {
                     value(info.id, monospaced: true)
@@ -99,7 +81,7 @@ struct DeviceInfoView: View {
     }
 
     private func row(_ title: String, _ val: String) -> some View {
-        GridRow {
+        HStack(spacing: 8) {
             label(title)
             value(val)
         }
@@ -117,7 +99,7 @@ struct DeviceInfoView: View {
 
         return Group {
             if monospaced {
-                t.monospaced()
+                t.font(.system(.footnote, design: .monospaced))
             } else {
                 t
             }

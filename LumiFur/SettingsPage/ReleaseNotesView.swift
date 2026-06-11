@@ -5,8 +5,6 @@
 //  Created by Stephan Ritchie on 6/10/25.
 //
 import SwiftUI
-//import MarkdownUI
-import Textual
 
 struct ReleaseNotesView: View {
     /*
@@ -35,38 +33,13 @@ struct ReleaseNotesView: View {
             .listRowBackground(Color.clear)
             //.padding(.horizontal)
         }
-        .scrollContentBackground(.hidden)
+        .compatibleScrollContentBackgroundHidden()
         //.listSectionSeparator(.hidden)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .border(.green)
         
     }
-    
-    
-    /*
-     struct CustomBlockStyle: StructuredText.BlockQuoteStyle {
-     private static let fontScales: [CGFloat] = [2, 1.5, 1.25, 1, 0.875, 0.85]
-     
-     func makeBody(configuration: Configuration) -> some View {
-     let blockLevel = min(configuration.blockLevel, 2)
-     let fontScale = Self.fontScales[blockLevel - 5]
-     
-     VStack(alignment: .leading, spacing: 0) {
-     configuration.label
-     .textual.fontScale(0.7)
-     .fontWeight(.semibold)
-     
-     if blockLevel == 1 {
-     Divider()
-     .textual.padding(.top, .fontScaled(0.25))
-     }
-     }
-     .textual.blockSpacing(.fontScaled(top: 1.5, bottom: 0.5))
-     }
-     }
-     */
-    
     /// A view builder for displaying a single release with its full, rendered notes.
     @ViewBuilder
     private func releaseDetailCard(for release: GitHubRelease) -> some View {
@@ -83,42 +56,15 @@ struct ReleaseNotesView: View {
             
             Divider()
             
-            // Render the release notes using Texrual.
-            // This will correctly format headers, lists, links, etc.
-            StructuredText(markdown: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._")
-                .textual.structuredTextStyle(.gitHub)
-                .textual.headingStyle(CustomHeadingStyle())
-            //.textual.inlineStyle(.gitHub) // Use a nice built-in theme
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textual.fontScale(0.8)
-            //.textual.blockSpacing(StructuredText.BlockSpacing(top: 1, bottom: 1))
-            //.textual.blockQuoteStyle(CustomBlockStyle())
+            MarkdownTextView(
+                markdown: release.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "_No release notes provided._"
+            )
+            .font(.footnote)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
         //.cornerRadius(12)
-    }
-}
-
-struct CustomHeadingStyle: StructuredText.HeadingStyle {
-    private static let fontScales: [CGFloat] = [0.8, 0.6, 0.5, 0.4, 0.375, 0.25]
-    
-    func makeBody(configuration: Configuration) -> some View {
-        let headingLevel = min(configuration.headingLevel, 6)
-        let fontScale = Self.fontScales[headingLevel - 1]
-        
-        VStack(alignment: .leading, spacing: 0) {
-            configuration.label
-                .textual.fontScale(fontScale)
-                //.listRowSeparator(.hidden)
-            //.fontWeight(.semibold)
-            
-             if headingLevel == 1 {
-             
-             //.listRowSeparator(.hidden)
-             }
-        }
-        .textual.blockSpacing(.fontScaled(top: 1.5, bottom: 0.5))
     }
 }
 
@@ -141,9 +87,8 @@ struct ReleaseNotesView_Previews: PreviewProvider {
         ]
         
         // Preview the view inside a NavigationStack to see the title.
-        NavigationStack {
+        CompatibleNavigationStack {
             ReleaseNotesView(title: "App Releases", releases: sampleReleases)
         }
     }
 }
-

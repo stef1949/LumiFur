@@ -146,7 +146,6 @@ private struct ExpandableReleaseBody: View {
             Text(text)
                 .font(.headline)
                 .foregroundStyle(.green)
-                .backgroundStyle(.clear)
                 .lineLimit(isExpanded ? nil : 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

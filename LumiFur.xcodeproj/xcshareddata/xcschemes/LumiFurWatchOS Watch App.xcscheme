@@ -84,7 +84,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3591DD502D5FB695009A3A94"
             BuildableName = "LumiFurWatchOS Watch App.app"
-            BlueprintName = "LumiFurWatchOS Watch App"
             ReferencedContainer = "container:LumiFur.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -101,7 +100,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3591DD502D5FB695009A3A94"
             BuildableName = "LumiFurWatchOS Watch App.app"
-            BlueprintName = "LumiFurWatchOS Watch App"
             ReferencedContainer = "container:LumiFur.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

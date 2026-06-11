@@ -1,7 +1,7 @@
 import Foundation
 import WidgetKit
 
-#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 import ActivityKit
 #endif
 
@@ -47,7 +47,11 @@ extension AccessoryViewModel {
         }
 
         scheduleWatchSync()
-        scheduleLiveActivityUpdate()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            scheduleLiveActivityUpdate()
+        }
+        #endif
     }
 
     @MainActor
@@ -57,7 +61,11 @@ extension AccessoryViewModel {
 
         lastSentStateDigest = digest
         updateWidgetData()
-        scheduleLiveActivityUpdate()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            scheduleLiveActivityUpdate()
+        }
+        #endif
     }
 
     @MainActor
@@ -83,7 +91,7 @@ extension AccessoryViewModel {
 
 // MARK: - Live Activity
 
-#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 @available(iOS 16.1, *)
 extension AccessoryViewModel {
     @MainActor

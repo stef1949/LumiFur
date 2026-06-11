@@ -55,7 +55,7 @@ struct AppIconPickerView: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(appIcons) { icon in
@@ -218,7 +218,7 @@ struct AppIconPickerView: View {
 
 struct AppIconPickerView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             AppIconPickerView()
         }
     }

@@ -8,7 +8,7 @@ import os
 import UIKit
 #endif
 
-#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 import ActivityKit
 #endif
 
@@ -229,7 +229,7 @@ final class AccessoryViewModel: ObservableObject {
         qos: .utility
     )
 
-    #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+    #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
     var currentActivity: Activity<LumiFur_WidgetAttributes>?
     var activityStateTask: Task<Void, Never>?
     var lastSentActivityState: LumiFur_WidgetAttributes.ContentState?
@@ -264,8 +264,8 @@ final class AccessoryViewModel: ObservableObject {
         configureTransport()
         registerObservers()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        if !isRunningPreview {
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *), !isRunningPreview {
             Task { @MainActor [weak self] in
                 await self?.endAllLumiFurActivities()
             }
@@ -280,9 +280,11 @@ final class AccessoryViewModel: ObservableObject {
         pendingStrobeWriteTask?.cancel()
         otaTask?.cancel()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        pendingLiveActivityUpdateTask?.cancel()
-        activityStateTask?.cancel()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            pendingLiveActivityUpdateTask?.cancel()
+            activityStateTask?.cancel()
+        }
         #endif
     }
 
@@ -970,9 +972,11 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
         processPendingWidgetCommandIfNeeded()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        Task { [weak self] in
-            await self?.startLumiFur_WidgetLiveActivity()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            Task { [weak self] in
+                await self?.startLumiFur_WidgetLiveActivity()
+            }
         }
         #endif
     }
@@ -1003,16 +1007,18 @@ final class AccessoryViewModel: ObservableObject {
         connectingPeripheral = nil
         scheduleExternalStateSync()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        let finalState = createContentState(connected: false, status: ConnectionState.disconnected.rawValue)
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            let finalState = createContentState(connected: false, status: ConnectionState.disconnected.rawValue)
 
-        if wasManualDisconnect {
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
-        } else if disconnection.message != nil {
-            let dismissalDate = Date().addingTimeInterval(15 * 60)
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
-        } else {
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            if wasManualDisconnect {
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            } else if disconnection.message != nil {
+                let dismissalDate = Date().addingTimeInterval(15 * 60)
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
+            } else {
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            }
         }
         #endif
 
@@ -1219,9 +1225,11 @@ final class AccessoryViewModel: ObservableObject {
         guard isConnected else { return }
         startRSSIMonitoring()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        Task { [weak self] in
-            await self?.startLumiFur_WidgetLiveActivity()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            Task { [weak self] in
+                await self?.startLumiFur_WidgetLiveActivity()
+            }
         }
         #endif
     }
@@ -1359,12 +1367,12 @@ extension AccessoryViewModel {
 }
 #endif // DEBUG
 
+#if DEBUG
 #Preview("Connected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .dot
-
     SettingsView(
         bleModel: .previewConnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.dot)
     )
     .preferredColorScheme(.dark)
 }
+#endif

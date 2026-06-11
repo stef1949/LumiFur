@@ -55,9 +55,6 @@ struct FaceCellView: View, Equatable {
             } label: {
                 contentView
                     .foregroundStyle(fgStyle)
-                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                        content.blur(radius: phase.isIdentity ? 0 : 5)
-                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .buttonStyle(.plain)

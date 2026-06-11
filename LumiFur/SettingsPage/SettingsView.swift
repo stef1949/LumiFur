@@ -104,9 +104,7 @@ struct SettingsView: View {
                             viewModel: bleModel,
                             releaseViewModel: releaseViewModel
                         )
-                            .presentationDetents([.medium, .large])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(46)
+                        .compatibleSheetPresentation(cornerRadius: 46)
                     }
             }
             if bleModel.isConnected {
@@ -115,10 +113,12 @@ struct SettingsView: View {
                     selectedUnits: selectedUnitsBinding
                 )
             }
+            /*
             MatrixSection(
                 isExpanded: $isLedArrayExpanded,
                 selectedMatrix: $selectedMatrix
             )
+            */
 
             AdvancedSettingsSection(
                 bleModel: bleModel,
@@ -293,7 +293,7 @@ private struct UnifiedConnectionView: View {
             }
             if !accessoryViewModel.isConnected && !accessoryViewModel.isScanning {
                 Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.borderedProminent)
                     .padding(.top, 6)
             }
         }
@@ -744,39 +744,33 @@ private extension AccessoryViewModel {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview("Disconnected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .array
-    
     SettingsView(
         bleModel: .previewDisconnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.array)
     )
 }
 
 #Preview("Scanning") {
-    @Previewable @State var matrixStyle: MatrixStyle = .array
-    
     SettingsView(
         bleModel: .previewScanning,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.array)
     )
 }
 
 #Preview("Connected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .dot
-    
     SettingsView(
         bleModel: .previewConnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.dot)
     )
     .preferredColorScheme(.dark)
 }
 
 #Preview("Error State") {
-    @Previewable @State var matrixStyle: MatrixStyle = .wled
-    
     SettingsView(
         bleModel: .previewError,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.wled)
     )
 }
+#endif

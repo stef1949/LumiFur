@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Textual
 
 struct PrivacyPolicySection: Identifiable {
     let id = UUID()
@@ -42,9 +41,7 @@ struct PrivacyPolicyView: View {
             } else {
                 ForEach(sections) { section in
                     Section {
-                        StructuredText(markdown: section.markdown)
-                            //.textual.structuredTextStyle(.gitHub)
-                            .textual.textSelection(.enabled)
+                        MarkdownTextView(markdown: section.markdown)
                             .padding(.vertical, 4)
                     } header: {
                         //Text(section.heading)
@@ -52,7 +49,6 @@ struct PrivacyPolicyView: View {
                 }
             }
         }
-        .formStyle(.grouped)
         .navigationTitle("Privacy Policy")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -146,7 +142,7 @@ struct PrivacyPolicyView: View {
 }
 
 #Preview {
-    NavigationStack {
+    CompatibleNavigationStack {
         PrivacyPolicyView()
     }
 }
