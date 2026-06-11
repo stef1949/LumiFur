@@ -119,9 +119,9 @@ struct InfoView: View {
                                 //.foregroundStyle()
                                 .frame(width: 36)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(feature.title)
+                                Text(LocalizedStringKey(feature.title))
                                     .font(.headline)
-                                Text(feature.description)
+                                Text(LocalizedStringKey(feature.description))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }

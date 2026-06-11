@@ -54,20 +54,19 @@ struct OptionToggleView: View, Equatable {
     let title: String
     @Binding var isOn: Bool
     let optionType: OptionType
-    
-    // Equatable conformance only looks at the data,
-    // not at any closures or view‐builder guts.
+
+    // Equatable conformance only looks at the data, not closures or view builders.
     static func ==(lhs: OptionToggleView, rhs: OptionToggleView) -> Bool {
-        lhs.title       == rhs.title &&
-        lhs.isOn        == rhs.isOn &&
-        lhs.optionType  == rhs.optionType
+        lhs.title == rhs.title &&
+        lhs.isOn == rhs.isOn &&
+        lhs.optionType == rhs.optionType
     }
-    
+
     var body: some View {
         Button(action: {
             isOn.toggle()
         }) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .fontWeight(.medium)
                 .minimumScaleFactor(0.75)
                 .lineLimit(2)

@@ -154,7 +154,7 @@ struct ContentView: View {
     
     let bleModel: AccessoryViewModel
     
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @AppStorage("fancyMode") private var fancyMode: Bool = false
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
@@ -498,15 +498,15 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
         
-        if !hasLaunchedBefore && showSplash {
-                SplashView(showSplash: $showSplash)
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: .scale(scale: 0.8).combined(with: .opacity)
-                        )
+        if !hasCompletedOnboarding && showSplash {
+            SplashView(showSplash: $showSplash)
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity,
+                        removal: .scale(scale: 0.8).combined(with: .opacity)
                     )
-            }
+                )
+        }
         }
     }
 

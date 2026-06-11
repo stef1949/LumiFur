@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
+		35B100012FC0000000010001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 35B100032FC0000000010001 /* Localizable.xcstrings */; };
+		35B100022FC0000000010001 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 35B100042FC0000000010001 /* InfoPlist.xcstrings */; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
 		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
 		3538DC832FB63745007206BC /* GitHubReadmeDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3538DC822FB63744007206BC /* GitHubReadmeDemo.swift */; };
@@ -173,6 +175,8 @@
 		35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "LumiFur WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		35AE1A4C2D5D24C600FDD29E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		35AE1A4E2D5D24C600FDD29E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		35B100032FC0000000010001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		35B100042FC0000000010001 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		35CD1DBB2E15AE1B0028A6C9 /* StatusSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusSectionView.swift; sourceTree = "<group>"; };
 		35CD1DBD2E15AE390028A6C9 /* HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderView.swift; sourceTree = "<group>"; };
 		35D04CA62DB29DAA00199C5D /* SharedKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedKeys.swift; sourceTree = "<group>"; };
@@ -433,6 +437,8 @@
 			children = (
 				355853E62EFE4E5C001666E6 /* LEDViewModel */,
 				35D1A1062D98FE7F00AEC573 /* LumiFurRelease.entitlements */,
+				35B100032FC0000000010001 /* Localizable.xcstrings */,
+				35B100042FC0000000010001 /* InfoPlist.xcstrings */,
 				35F817422FB0931400650ACC /* Onboarding */,
 				35DA3A5F2C8739FB0039D19D /* LumiFurApp.swift */,
 				35DA3A612C8739FB0039D19D /* ContentView.swift */,
@@ -732,6 +738,8 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				35F4A1012FB0000000A11001 /* PrivacyInfo.xcprivacy in Resources */,
+				35B100022FC0000000010001 /* InfoPlist.xcstrings in Resources */,
+				35B100012FC0000000010001 /* Localizable.xcstrings in Resources */,
 				35F936F42DBC808D00A45B64 /* Meloriac.ttf in Resources */,
 				354E0B9E2D8F1AA2008FD025 /* Launch Screen.storyboard in Resources */,
 				355853DA2EF716FB001666E6 /* Assets.xcassets in Resources */,

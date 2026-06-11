@@ -64,10 +64,10 @@ struct LegacyUnavailableView: View {
             Image(systemName: systemImage)
                 .font(.title2)
                 .foregroundColor(.secondary)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.headline)
             if let description {
-                Text(description)
+                Text(LocalizedStringKey(description))
                     .font(.footnote)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

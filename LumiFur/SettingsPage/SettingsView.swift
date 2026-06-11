@@ -47,6 +47,7 @@ struct SettingsView: View {
     // Local UI state.
     @State private var showAdvanced = false
     @State private var selectedIcon: String? = UIApplication.shared.alternateIconName
+    @State private var showOnboarding = false
     
     //@State private var selectedUnits: TempUnit = .℃
     private var selectedUnitsBinding: Binding<TempUnit> {
@@ -141,6 +142,10 @@ struct SettingsView: View {
                 controllerReleaseError: releaseViewModel.controllerReleaseError
             )
 
+            GettingStartedSection {
+                showOnboarding = true
+            }
+
             AppIconPickerSection()
 
             Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
@@ -159,6 +164,11 @@ struct SettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(bleModel.errorMessage)
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                showOnboarding = false
+            }
         }
         .task(id: isActive) {
             guard isActive else { return }
@@ -471,6 +481,18 @@ private struct ReleaseNotesSection: View {
                 Text("Controller releases failed to load: \(controllerReleaseError.localizedDescription)")
                     .font(.footnote)
                     .foregroundStyle(.red)
+            }
+        }
+    }
+}
+
+private struct GettingStartedSection: View {
+    let showOnboarding: () -> Void
+
+    var body: some View {
+        Section("Getting Started") {
+            Button(action: showOnboarding) {
+                Label("Replay Onboarding", systemImage: "sparkles.rectangle.stack")
             }
         }
     }

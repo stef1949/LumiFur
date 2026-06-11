@@ -69,10 +69,14 @@ struct RootView: View {
         appReleaseService: GitHubService(owner: "stef1949", repo: "LumiFur"),
         controllerReleaseService: GitHubService(owner: "stef1949", repo: "LumiFur_Controller")
     )
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+    @AppStorage("completedOnboardingVersion") private var completedOnboardingVersion: String = ""
     // Persist the last app version that has acknowledged the "What's New" sheet.
     @AppStorage("lastAppVersion") private var lastAppVersion: String = ""
     // Get the current version from the bundle
     private let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    private let currentOnboardingVersion: String = "2026.06"
+    @State private var showOnboarding: Bool = false
     // Controls whether to show the "What's New" sheet.
     @State private var showWhatsNew: Bool = false
     
@@ -87,6 +91,9 @@ struct RootView: View {
          */
         // RootView2()
         ContentView(bleModel: appContext.accessoryViewModel)
+            .fullScreenCover(isPresented: $showOnboarding, onDismiss: completeOnboarding) {
+                OnboardingView(onComplete: completeOnboarding)
+            }
             .sheet(isPresented: $showWhatsNew, onDismiss: markCurrentVersionSeen) {
                 WhatsNew(
                     appReleases: releaseViewModel.appReleases,
@@ -99,14 +106,39 @@ struct RootView: View {
                     }
                 )
             }
-            .onAppear(perform: updateWhatsNewPresentation)
+            .onAppear(perform: updateLaunchPresentation)
+            .onChange(of: completedOnboardingVersion) { version in
+                guard version == currentOnboardingVersion else { return }
+                updateWhatsNewPresentation()
+            }
             .task(id: showWhatsNew) {
                 await loadWhatsNewReleasesIfNeeded()
             }
         // }
     }
 
+    private func updateLaunchPresentation() {
+        updateOnboardingPresentation()
+        updateWhatsNewPresentation()
+    }
+
+    private func updateOnboardingPresentation() {
+        showOnboarding = !hasSeenCurrentOnboarding
+    }
+
+    private func completeOnboarding() {
+        hasCompletedOnboarding = true
+        completedOnboardingVersion = currentOnboardingVersion
+        showOnboarding = false
+        updateWhatsNewPresentation()
+    }
+
     private func updateWhatsNewPresentation() {
+        guard hasSeenCurrentOnboarding else {
+            showWhatsNew = false
+            return
+        }
+
         guard !lastAppVersion.isEmpty else {
             markCurrentVersionSeen()
             return
@@ -118,6 +150,10 @@ struct RootView: View {
     private func markCurrentVersionSeen() {
         lastAppVersion = currentVersion
         showWhatsNew = false
+    }
+
+    private var hasSeenCurrentOnboarding: Bool {
+        completedOnboardingVersion == currentOnboardingVersion
     }
 
     private func loadWhatsNewReleasesIfNeeded() async {
