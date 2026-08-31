@@ -53,7 +53,7 @@ struct FaceGridSection: View {
         }
         .compatibleScrollDismissesKeyboard()
         .compatibleScrollClipDisabled()
-        .onChange(of: selectedView) { newViewIndex in
+        .onChange(of: selectedView) { _, newViewIndex in
             let modelIndex = newViewIndex - 1
             if Self.items.indices.contains(modelIndex) {
                 selectedItemID = Self.items[modelIndex].id

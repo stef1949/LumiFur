@@ -53,6 +53,12 @@ struct StoredPeripheralStore {
         return devices
     }
 
+    func delete(id: String) -> [StoredPeripheral] {
+        let devices = load().filter { $0.id != id }
+        save(devices)
+        return devices
+    }
+
     func lastConnectedPeripheralUUID() -> String? {
         defaults.string(forKey: lastConnectedKey)
     }
@@ -67,7 +73,7 @@ struct StoredPeripheralStore {
 
     private static func defaultUserDefaults() -> UserDefaults {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil,
-           let isolated = UserDefaults(suiteName: "com.richies3d.LumiFur.tests") {
+           let isolated = UserDefaults(suiteName: "com.richies3d.LumiFur2.tests") {
             return isolated
         }
 

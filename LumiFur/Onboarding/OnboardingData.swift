@@ -15,8 +15,8 @@ let onboardingData: [Onboarding] = [
         id: "welcome",
         title: "Welcome to LumiFur",
         headline: "Control expressive face modes, lighting, and live controller status from one place.",
-        image: "mps3",
         systemImage: "sparkles",
+        previewImage: "mps3",
         highlights: [
             "Browse face presets from the dashboard",
             "Send quick lighting and motion commands",
@@ -32,8 +32,8 @@ let onboardingData: [Onboarding] = [
         id: "connect",
         title: "Connect your controller",
         headline: "Use Bluetooth scanning to find a nearby LumiFur controller and reconnect to saved devices faster.",
-        image: "LumiFur_Controller_AK",
         systemImage: "antenna.radiowaves.left.and.right",
+        previewImage: "LumiFur_Controller_AK",
         highlights: [
             "Scan from Settings when no controller is connected",
             "Reconnect to previously paired controllers",
@@ -49,8 +49,9 @@ let onboardingData: [Onboarding] = [
         id: "customize",
         title: "Tune the experience",
         headline: "Adjust brightness, temperature units, sleep behavior, motion effects, and custom messages as your setup changes.",
-        image: "Protogen",
         systemImage: "slider.horizontal.3",
+        previewImage: "Mockup_fullres",
+        //systemImage: "slider.horizontal.3",
         highlights: [
             "Use dashboard quick controls while connected",
             "Create custom LED views from the Custom tab",
@@ -66,8 +67,9 @@ let onboardingData: [Onboarding] = [
         id: "updates",
         title: "Stay current",
         headline: "Review app and controller release notes, then update compatible controller firmware from the Settings tab.",
-        image: "ESP32-S3",
+        //image: "ESP32-S3",
         systemImage: "arrow.up.circle",
+        previewImage: "ESP32-S3",
         highlights: [
             "Check app and controller release notes",
             "Run OTA updates when a controller is connected",

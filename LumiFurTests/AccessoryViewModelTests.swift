@@ -36,6 +36,39 @@ struct AccessoryViewModelLogicTests {
         #expect(loaded == testDevices, "Loaded devices should match saved devices.")
     }
 
+    @Test("Deleting StoredPeripheral updates persisted devices")
+    @MainActor
+    func testDeleteStoredPeripheralPersistence() throws {
+        let vm = makeViewModel()
+        let firstDevice = StoredPeripheral(id: "UUID-1234", name: "TestDevice")
+        let secondDevice = StoredPeripheral(id: "UUID-5678", name: "OtherDevice")
+
+        vm.saveStoredPeripherals([firstDevice, secondDevice])
+        vm.deleteStoredPeripheral(firstDevice)
+
+        #expect(vm.previouslyConnectedDevices == [secondDevice])
+        #expect(vm.loadStoredPeripherals() == [secondDevice])
+    }
+
+    @Test("Deleting last connected StoredPeripheral clears remote reconnect target")
+    @MainActor
+    func testDeleteStoredPeripheralClearsLastConnectedPeripheral() throws {
+        let suiteName = "com.richies3d.LumiFur.tests.\(#function)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let store = StoredPeripheralStore(defaults: defaults)
+        let device = StoredPeripheral(id: "39F13A98-47D1-46B7-9F2D-8699A03C577C", name: "TestDevice")
+
+        store.save([device])
+        store.setLastConnectedPeripheralUUID(device.id)
+
+        let vm = AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
+        vm.deleteStoredPeripheral(device)
+
+        let reloadedVM = AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
+        #expect(reloadedVM.attemptRemoteConnect() == "Scanning for LumiFur controllers.")
+    }
+
     @Test("setView ignores invalid values and does not update selectedView")
     @MainActor
     func testSetViewValidation() throws {

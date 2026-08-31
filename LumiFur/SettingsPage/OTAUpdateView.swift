@@ -30,10 +30,10 @@ struct OTAUpdateView: View {
             coordinator.attach(releaseViewModel: releaseViewModel)
             await coordinator.refresh(usingInstalledFirmware: viewModel.firmwareVersion)
         }
-        .onChange(of: viewModel.firmwareVersion) { newValue in
+        .onChange(of: viewModel.firmwareVersion) { _, newValue in
             coordinator.updateInstalledVersion(newValue)
         }
-        .onChange(of: releaseViewModel.controllerReleases) { _ in
+        .onChange(of: releaseViewModel.controllerReleases) {
             coordinator.refreshSelection(usingInstalledFirmware: viewModel.firmwareVersion)
         }
         .fileImporter(
@@ -108,7 +108,7 @@ struct OTAUpdateView: View {
                     Text("Downloading \(coordinator.downloadedAssetName)")
                         .font(.subheadline)
                     ProgressView(value: coordinator.downloadProgress)
-                    Text("\(Int(coordinator.downloadProgress * 100))%")
+                    Text(coordinator.downloadProgress, format: .percent.precision(.fractionLength(0)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -127,7 +127,7 @@ struct OTAUpdateView: View {
                         .foregroundStyle(viewModel.otaState.isError ? .red : .primary)
                     if viewModel.otaProgress > 0 {
                         ProgressView(value: viewModel.otaProgress)
-                        Text("\(Int(viewModel.otaProgress * 100))% uploaded")
+                        Text("\(viewModel.otaProgress, format: .percent.precision(.fractionLength(0))) uploaded")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -397,7 +397,7 @@ private final class FirmwareUpdateCoordinator: ObservableObject {
 
         do {
             let data = try await firmwareService.downloadAssetData(asset) { progress in
-                Task { @MainActor [weak self] in
+                Task { @MainActor [weak self = self] in
                     self?.downloadProgress = progress
                 }
             }

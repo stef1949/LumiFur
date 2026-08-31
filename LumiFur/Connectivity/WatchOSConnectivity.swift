@@ -29,6 +29,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     private let session: WCSession
     private var lastPublishedTemperatureTimestamp: Date?
     private var accessoryViewModel: AccessoryViewModel?
+    private var phoneLaunchSyncPending = false
+    private var phoneLaunchDate: Date?
 
     private override init() {
         session = WCSession.default
@@ -50,6 +52,33 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         self.accessoryViewModel = accessoryViewModel
     }
 
+    /// Wakes the watchOS counterpart in the background with the latest app state.
+    /// watchOS does not allow an iPhone app to force the Watch app into the foreground.
+    func notifyWatchOfPhoneAppLaunch(from viewModel: AccessoryViewModel) {
+        accessoryViewModel = viewModel
+        phoneLaunchSyncPending = true
+        phoneLaunchDate = Date()
+        deliverPendingPhoneLaunchSync()
+    }
+
+    private func deliverPendingPhoneLaunchSync() {
+        guard phoneLaunchSyncPending, session.activationState == .activated else { return }
+
+        guard session.isPaired, session.isWatchAppInstalled else {
+            phoneLaunchSyncPending = false
+            logger.info("Skipping launch wake because no paired watch app is available.")
+            return
+        }
+
+        do {
+            try session.updateApplicationContext(launchAwareMessage(for: currentSnapshot()))
+            phoneLaunchSyncPending = false
+            logger.info("Queued phone launch state for the watchOS app.")
+        } catch {
+            logger.error("Failed to wake and sync the watchOS app: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     func syncStateToWatch(from viewModel: AccessoryViewModel) {
         guard session.isPaired, session.isWatchAppInstalled else {
             logger.info("Skipping watch sync because no paired watch app is available.")
@@ -58,7 +87,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
 
         do {
             let snapshot = viewModel.currentWatchSnapshot(deviceName: UIDevice.current.name)
-            try session.updateApplicationContext(SharedTransportCodec.encodeMessage(snapshot))
+            try session.updateApplicationContext(launchAwareMessage(for: snapshot))
         } catch {
             logger.error("Failed to sync state to watch: \(error.localizedDescription, privacy: .public)")
         }
@@ -103,6 +132,16 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             temperatureC: nil,
             temperatureTimestamp: nil
         )
+    }
+
+    private func launchAwareMessage(for snapshot: WatchStateSnapshot) throws -> [String: Any] {
+        var message = try SharedTransportCodec.encodeMessage(snapshot)
+        if let phoneLaunchDate {
+            // Keep the launch token on subsequent context updates so they cannot
+            // overwrite the wake request before watchOS receives it.
+            message["phoneAppLaunchDate"] = phoneLaunchDate
+        }
+        return message
     }
 
     private func currentReply(status: String) -> WatchCommandReply {
@@ -217,6 +256,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             switch activationState {
             case .activated:
                 self.connectionStatus = "Connected"
+                self.deliverPendingPhoneLaunchSync()
             case .inactive:
                 self.connectionStatus = "Inactive"
             case .notActivated:
@@ -335,7 +375,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         let installed = session.isWatchAppInstalled
 
         Task { @MainActor [weak self] in
-            self?.logger.info("Watch state changed. paired=\(paired, privacy: .public) installed=\(installed, privacy: .public)")
+            guard let self else { return }
+            self.logger.info("Watch state changed. paired=\(paired, privacy: .public) installed=\(installed, privacy: .public)")
+            self.deliverPendingPhoneLaunchSync()
         }
     }
 }
@@ -358,6 +400,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     let messageSubject = PassthroughSubject<[String: Any], Never>()
 
     func attach(accessoryViewModel: AccessoryViewModel) {}
+    func notifyWatchOfPhoneAppLaunch(from viewModel: AccessoryViewModel) {}
     func syncStateToWatch(from viewModel: AccessoryViewModel) {}
 
     private override init() { super.init() }

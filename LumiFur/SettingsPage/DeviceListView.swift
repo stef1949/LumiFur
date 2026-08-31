@@ -45,6 +45,15 @@ struct DeviceListView: View {
                             isDisabled: viewModel.isConnecting,
                             action: { viewModel.connectToStoredPeripheral(storedDevice) }
                         )
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                withAnimation {
+                                    viewModel.deleteStoredPeripheral(storedDevice)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
             }

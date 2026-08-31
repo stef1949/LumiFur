@@ -94,9 +94,7 @@ struct SettingsView: View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("SettingsView")
 
         List {
-            Section {
-                UnifiedConnectionView(accessoryViewModel: bleModel)
-            }
+            UnifiedConnectionSection(accessoryViewModel: bleModel)
 
             if bleModel.isConnected {
                 otaUpdateLink
@@ -256,33 +254,32 @@ struct SettingsView: View {
 
 /// A self-contained view that displays connection status, scan buttons,
 /// and lists of discovered or connected devices.
-private struct UnifiedConnectionView: View {
+private struct UnifiedConnectionSection: View {
     @ObservedObject var accessoryViewModel: AccessoryViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
+        Section {
             if !accessoryViewModel.isConnected {
                 statusAndScanSection
                     .connectionCard()
                 //.padding(.horizontal)
             }
-            ZStack {
-                if accessoryViewModel.isConnected {
-                    connectedSection
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .move(edge: .top).combined(with: .opacity)
-                        ))
-                } else {
-                    discoveredSection
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .move(edge: .bottom).combined(with: .opacity)
-                        ))
-                }
+
+            if accessoryViewModel.isConnected {
+                connectedSection
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
+            } else {
+                discoveredSection
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .move(edge: .bottom).combined(with: .opacity)
+                    ))
             }
-            .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         }
+        .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         //.padding(.vertical)
     }
 
@@ -369,46 +366,53 @@ private struct UnifiedConnectionView: View {
         }
     }
 
+    @ViewBuilder
     private var discoveredSection: some View {
-        VStack(spacing: 12) {
-            if accessoryViewModel.discoveredDevices.isEmpty && !accessoryViewModel.isScanning {
-                Text("No devices found.")
-                    .foregroundStyle(.secondary)
-                    .connectionRow(interactive: false)
-            } else {
-                ForEach(accessoryViewModel.discoveredDevices) { device in
-                    DeviceRowButton(
-                        leadingIcon: "antenna.radiowaves.left.and.right",
-                        title: device.name,
-                        rssi: device.rssi,
-                        isConnecting: accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id,
-                        isDisabled: accessoryViewModel.isConnecting,
-                        action: { accessoryViewModel.connect(to: device) }
-                    )
-                }
+        if accessoryViewModel.discoveredDevices.isEmpty && !accessoryViewModel.isScanning {
+            Text("No devices found.")
+                .foregroundStyle(.secondary)
+                .connectionRow(interactive: false)
+        } else {
+            ForEach(accessoryViewModel.discoveredDevices) { device in
+                DeviceRowButton(
+                    leadingIcon: "antenna.radiowaves.left.and.right",
+                    title: device.name,
+                    rssi: device.rssi,
+                    isConnecting: accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id,
+                    isDisabled: accessoryViewModel.isConnecting,
+                    action: { accessoryViewModel.connect(to: device) }
+                )
             }
+        }
 
-            if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
-                Text("Previously Connected")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 6)
-                    .padding(.horizontal)
+        if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
+            Text("Previously Connected")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 6)
+                .padding(.horizontal)
 
-                ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
-                    DeviceRowButton(
-                        leadingIcon: "clock.arrow.circlepath",
-                        title: storedDevice.name,
-                        rssi: nil,
-                        isConnecting: accessoryViewModel.isConnecting &&
-                                     accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
-                        isDisabled: accessoryViewModel.isConnecting,
-                        action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }
-                    )
+            ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
+                DeviceRowButton(
+                    leadingIcon: "clock.arrow.circlepath",
+                    title: storedDevice.name,
+                    rssi: nil,
+                    isConnecting: accessoryViewModel.isConnecting &&
+                                 accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
+                    isDisabled: accessoryViewModel.isConnecting,
+                    action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }
+                )
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        withAnimation {
+                            accessoryViewModel.deleteStoredPeripheral(storedDevice)
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 }
             }
         }
-        //.padding(.horizontal)
     }
 }
 // MARK: - Subviews as Structs (MAJOR OPTIMIZATION)

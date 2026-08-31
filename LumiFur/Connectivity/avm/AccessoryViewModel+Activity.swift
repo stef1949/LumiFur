@@ -119,25 +119,38 @@ extension AccessoryViewModel {
         isCreatingActivity = true
         defer { isCreatingActivity = false }
 
-        await endAllLumiFurActivities()
-
-        if let currentActivity,
-           currentActivity.activityState == .active || currentActivity.activityState == .stale {
-            await updateLumiFur_WidgetLiveActivityIfNeeded()
-            return
+        if let currentActivity {
+            switch currentActivity.activityState {
+            case .active, .stale:
+                await updateLumiFur_WidgetLiveActivityIfNeeded()
+                return
+            case .pending:
+                return
+            case .dismissed, .ended:
+                self.currentActivity = nil
+                lastSentActivityState = nil
+            @unknown default:
+                self.currentActivity = nil
+                lastSentActivityState = nil
+            }
         }
 
-        if let strayActivity = Activity<LumiFur_WidgetAttributes>.activities.first {
-            currentActivity = strayActivity
+        if let existingActivity = Activity<LumiFur_WidgetAttributes>.activities.first(where: {
+            $0.activityState == .active || $0.activityState == .stale
+        }) {
+            currentActivity = existingActivity
             activityStateTask?.cancel()
             activityStateTask = Task { [weak self] in
-                await self?.monitorActivityState(activity: strayActivity)
+                await self?.monitorActivityState(activity: existingActivity)
             }
             await updateLumiFur_WidgetLiveActivityIfNeeded()
             return
         }
 
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            logger.warning("Live Activities are disabled for LumiFur")
+            return
+        }
         guard let targetPeripheral, isConnected else { return }
 
         do {
@@ -185,7 +198,8 @@ extension AccessoryViewModel {
 
     @MainActor
     private func updateLumiFur_WidgetLiveActivityIfNeeded() async {
-        guard let currentActivity, currentActivity.activityState == .active else { return }
+        guard let currentActivity,
+              currentActivity.activityState == .active || currentActivity.activityState == .stale else { return }
         let activityBox = UncheckedSendableBox(currentActivity)
 
         let newState = createContentState()
@@ -206,14 +220,21 @@ extension AccessoryViewModel {
         finalContent: LumiFur_WidgetAttributes.ContentState? = nil,
         dismissalPolicy: ActivityUIDismissalPolicy = .default
     ) async {
-        guard let currentActivity else { return }
-        let activityBox = UncheckedSendableBox(currentActivity)
+        let activities = Activity<LumiFur_WidgetAttributes>.activities
+        guard !activities.isEmpty else {
+            currentActivity = nil
+            lastSentActivityState = nil
+            return
+        }
 
         activityStateTask?.cancel()
         activityStateTask = nil
 
         let finalActivityContent = finalContent.map { ActivityContent(state: $0, staleDate: nil) }
-        await activityBox.value.end(finalActivityContent, dismissalPolicy: dismissalPolicy)
+        for activity in activities {
+            let activityBox = UncheckedSendableBox(activity)
+            await activityBox.value.end(finalActivityContent, dismissalPolicy: dismissalPolicy)
+        }
 
         self.currentActivity = nil
         lastSentActivityState = nil

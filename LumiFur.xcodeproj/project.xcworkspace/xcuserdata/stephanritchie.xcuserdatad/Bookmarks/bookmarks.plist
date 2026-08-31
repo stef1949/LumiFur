@@ -618,7 +618,7 @@
 					<key>StartingLineNumber</key>
 					<string>411</string>
 					<key>Timestamp</key>
-					<string>802194263.89652</string>
+					<string>807813538.8108</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -634,16 +634,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    let firmwareVersion: String
+				<string>                    }
 </string>
 				<key>leading</key>
-				<string>
-private struct AboutSection: View {
+				<string>                    } label: {
+                        Label("Delete", systemImage: "trash")
 </string>
 				<key>trailing</key>
-				<string>    let isConnected: Bool
-    
-    var body: some View {
+				<string>                }
+            }
+        }
 </string>
 			</dict>
 			<key>type</key>
@@ -663,7 +663,7 @@ private struct AboutSection: View {
 					<key>StartingLineNumber</key>
 					<string>313</string>
 					<key>Timestamp</key>
-					<string>802194263.8965451</string>
+					<string>807813538.8107589</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -679,16 +679,16 @@ private struct AboutSection: View {
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                            .lineLimit(1)
+				<string>            VStack(alignment: .leading, spacing: 16) {
 </string>
 				<key>leading</key>
-				<string>                            .font(.headline)
-                            .fontWeight(.semibold)
+				<string>    private var connectedSection: some View {
+        if let device = accessoryViewModel.targetPeripheral {
 </string>
 				<key>trailing</key>
-				<string>                            .accessibilityAddTraits(.isHeader)
-                        Text(accessoryViewModel.connectionStatus)
-                            .font(.caption.weight(.semibold))
+				<string>                // Header: device name and connection status, with signal strength as a trailing accessory
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
 </string>
 			</dict>
 			<key>type</key>

@@ -1,6 +1,75 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld" : {
+
+    },
+    "%lld dBm" : {
+
+    },
+    "%llddBm" : {
+
+    },
+    "Advance to the next display view on your LumiFur device." : {
+
+    },
+    "Change LumiFur View" : {
+
+    },
+    "Changes the currently displayed view on the LumiFur device." : {
+
+    },
+    "Connected" : {
+
+    },
+    "Controls and status for your LumiFur device." : {
+
+    },
+    "Disconnected" : {
+
+    },
+    "Gauge" : {
+
+    },
+    "LF-052618" : {
+
+    },
+    "LumiFur" : {
+
+    },
+    "LumiFur Controller" : {
+
+    },
+    "LumiFur Home Widget" : {
+
+    },
+    "LumiFur Status" : {
+
+    },
+    "Monitor your LumiFur device connection and status." : {
+
+    },
+    "Next View" : {
+
+    },
+    "Options" : {
+
+    },
+    "Reading" : {
+
+    },
+    "Signal: %lld dBm" : {
+
+    },
+    "Temperature" : {
+
+    },
+    "Time" : {
+
+    },
+    "View: %lld" : {
+
+    }
   },
   "version" : "1.0"
 }

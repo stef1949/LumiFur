@@ -77,16 +77,16 @@ struct ChartView: View, Equatable {
         }
         .onAppear(perform: refreshActivityState)
         .onDisappear(perform: stopSubscription)
-        .onChange(of: connected) { _ in
+        .onChange(of: connected) { _, _ in
             refreshActivityState()
         }
-        .onChange(of: isExpanded) { _ in
+        .onChange(of: isExpanded) { _, _ in
             refreshActivityState()
         }
-        .onChange(of: scenePhase) { _ in
+        .onChange(of: scenePhase) { _, _ in
             refreshActivityState()
         }
-        .onChange(of: selectedUnits) { _ in
+        .onChange(of: selectedUnits) { _, _ in
             updateYAxisDomain(with: samples)
         }
     }
@@ -164,7 +164,7 @@ struct ChartView: View, Equatable {
                     GeometryReader { geometry in
                         Color.clear
                             .onAppear { chartPlotSize = geometry.size }
-                            .onChange(of: geometry.size) { newSize in
+                            .onChange(of: geometry.size) { _, newSize in
                                 chartPlotSize = newSize
                             }
                     }

@@ -84,6 +84,47 @@ extension View {
     }
 
     @ViewBuilder
+    func compatibleLiquidGlass(
+        cornerRadius: CGFloat = 20,
+        tint: Color = .white.opacity(0.18),
+        interactive: Bool = false
+    ) -> some View {
+        if #available(iOS 26.0, *) {
+            self
+                .glassEffect(
+                    .regular.tint(tint).interactive(interactive),
+                    in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 16, x: 0, y: 10)
+        } else {
+            self
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(.white.opacity(0.22), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.14), radius: 14, x: 0, y: 8)
+        }
+    }
+
+    @ViewBuilder
+    func compatibleLiquidGlassButtonStyle(prominent: Bool = false) -> some View {
+        if #available(iOS 26.0, *) {
+            if prominent {
+                self.buttonStyle(.glassProminent)
+            } else {
+                self.buttonStyle(.glass)
+            }
+        } else {
+            if prominent {
+                self.buttonStyle(.borderedProminent)
+            } else {
+                self.buttonStyle(.bordered)
+            }
+        }
+    }
+
+    @ViewBuilder
     func compatibleClearPopoverPresentation() -> some View {
         if #available(iOS 16.4, *) {
             presentationBackground(.clear)
@@ -104,30 +145,19 @@ extension View {
 
     @ViewBuilder
     func compatibleSheetPresentation(cornerRadius: CGFloat? = nil) -> some View {
-        if #available(iOS 16.4, *) {
-            if let cornerRadius {
-                presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(cornerRadius)
-            } else {
-                presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-            }
-        } else if #available(iOS 16.0, *) {
+        if let cornerRadius {
             presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .presentationCornerRadius(cornerRadius)
         } else {
-            self
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 
     @ViewBuilder
     func compatibleScrollClipDisabled(_ disabled: Bool = true) -> some View {
-        if #available(iOS 17.0, *) {
-            scrollClipDisabled(disabled)
-        } else {
-            self
-        }
+        scrollClipDisabled(disabled)
     }
 
     @ViewBuilder

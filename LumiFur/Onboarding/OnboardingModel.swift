@@ -12,9 +12,12 @@ struct Onboarding: Identifiable {
     let id: String
     let title: String
     let headline: String
-    let image: String
+    //let image: String
     let systemImage: String
+    let previewImage: String
     let highlights: [String]
     let gradientColors: [Color]
     let accentColor: Color
+    var zoomScale: CGFloat = 1.2
+    var zoomAnchor: UnitPoint = .bottom
 }

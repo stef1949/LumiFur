@@ -19,7 +19,7 @@ import os
 let actions = SharedOptions.protoActionOptions
 let configs = SharedOptions.protoConfigOptions
 private let contentLogger = Logger(
-    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur",
+    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur3.app",
     category: "ContentView"
 )
 
@@ -575,7 +575,7 @@ struct ContentView: View {
                         isOn: option.binding,
                         optionType: option.type
                     )
-                    .onChange(of: option.binding.wrappedValue) { newValue in
+                    .onChange(of: option.binding.wrappedValue) { _, newValue in
                         option.action?(newValue)
                     }
                 }
@@ -763,7 +763,7 @@ struct ContentView: View {
                 .compatibleScrollDismissesKeyboard()
                 //.border(.red)
             // This watches for external changes (e.g., from the watch) and updates the local UI.
-            .onChange(of: selectedView) { newViewIndex in
+            .onChange(of: selectedView) { _, newViewIndex in
                 let modelIndex = newViewIndex - 1
                 if items.indices.contains(modelIndex) {
                     selectedItemID = items[modelIndex].id
@@ -898,7 +898,7 @@ private struct DashboardContentView: View {
             }
         }
         .onAppear(perform: onPrepareHaptics)
-        .onChange(of: receivedFaceFromWatch) { newFace in
+        .onChange(of: receivedFaceFromWatch) { _, newFace in
             onHandleWatchFaceSelection(newFace)
         }
     }
@@ -989,7 +989,7 @@ struct AdvancedSettingsView: View {
             // Connection Options Section
             Section(header: Text("Connection Options")) {
                 Toggle("Auto Reconnect", isOn: $autoReconnect)
-                    .onChange(of: autoReconnect) { newValue in
+                    .onChange(of: autoReconnect) { _, newValue in
                         bleModel.autoReconnectEnabled = newValue
                         contentLogger.debug("Auto reconnect changed to \(newValue, privacy: .public)")
                     }
@@ -1018,7 +1018,7 @@ struct AdvancedSettingsView: View {
                 )
             ) {
                 Toggle("Enable RSSI Monitoring", isOn: $rssiMonitoringEnabled)
-                    .onChange(of: rssiMonitoringEnabled) { newValue in
+                    .onChange(of: rssiMonitoringEnabled) { _, newValue in
                         Task { @MainActor in
                             if newValue {
                                 bleModel.startRSSIMonitoring()
@@ -1034,7 +1034,7 @@ struct AdvancedSettingsView: View {
                         in: 0.5...5.0,
                         step: 0.5
                     )
-                    .onChange(of: rssiUpdateInterval) { newValue in
+                    .onChange(of: rssiUpdateInterval) { _, newValue in
                         // If your model supports adjustable intervals for reading RSSI, update it here.
                         contentLogger.debug("RSSI interval changed to \(newValue, privacy: .public)")
                     }

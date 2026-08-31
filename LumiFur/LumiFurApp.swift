@@ -60,6 +60,7 @@ final class LumiFurAppContext: ObservableObject {
         self.accessoryViewModel = accessoryViewModel
         self.watchConnectivityManager = watchConnectivityManager
         self.watchConnectivityManager.attach(accessoryViewModel: accessoryViewModel)
+        self.watchConnectivityManager.notifyWatchOfPhoneAppLaunch(from: accessoryViewModel)
     }
 }
 
@@ -107,7 +108,7 @@ struct RootView: View {
                 )
             }
             .onAppear(perform: updateLaunchPresentation)
-            .onChange(of: completedOnboardingVersion) { version in
+            .onChange(of: completedOnboardingVersion) { _, version in
                 guard version == currentOnboardingVersion else { return }
                 updateWhatsNewPresentation()
             }
