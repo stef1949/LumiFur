@@ -9,7 +9,7 @@ import SwiftUI
 
 
 enum OptionType: Equatable {
-    case autoBrightness, accelerometer, sleepMode, auroraMode, customMessage
+    case autoBrightness, accelerometer, sleepMode, auroraMode, customMessage //, mouthBrightnessOverride
 }
 
 // Cached shape styles to avoid rebuilding gradients on each render
@@ -42,6 +42,7 @@ private extension OptionType {
     var activeShapeStyle: AnyShapeStyle {
         switch self {
         case .autoBrightness: return OptionToggleStyleCache.autoBrightness
+        //case .mouthBrightnessOverride: return OptionToggleStyleCache.mouthBrightnessOverride
         case .auroraMode:     return OptionToggleStyleCache.auroraMode
         case .sleepMode:      return OptionToggleStyleCache.sleepMode
         case .accelerometer, .customMessage:

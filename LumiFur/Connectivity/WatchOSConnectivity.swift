@@ -125,7 +125,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 autoBrightness: true,
                 accelerometerEnabled: true,
                 sleepModeEnabled: true,
-                auroraModeEnabled: true
+                auroraModeEnabled: true,
+                staticColorEnabled: true,
+                mouthBrightnessOverrideEnabled: true
             ),
             customMessage: "",
             temperatureText: "--",
@@ -164,14 +166,18 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             autoBrightness: message["autoBrightness"] as? Bool ?? accessoryViewModel.autoBrightness,
             accelerometerEnabled: message["accelerometer"] as? Bool ?? accessoryViewModel.accelerometerEnabled,
             sleepModeEnabled: message["sleepMode"] as? Bool ?? accessoryViewModel.sleepModeEnabled,
-            auroraModeEnabled: ((message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool)) ?? accessoryViewModel.auroraModeEnabled
+            auroraModeEnabled: ((message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool)) ?? accessoryViewModel.auroraModeEnabled,
+            staticColorEnabled: message["staticColor"] as? Bool ?? accessoryViewModel.staticColorEnabled,
+            mouthBrightnessOverrideEnabled: message["mouthBrightnessOverride"] as? Bool ?? accessoryViewModel.mouthBrightnessOverrideEnabled
         )
 
         if message["autoBrightness"] != nil ||
             message["accelerometer"] != nil ||
             message["sleepMode"] != nil ||
             message["auroraMode"] != nil ||
-            message["arouraMode"] != nil {
+            message["arouraMode"] != nil ||
+            message["staticColor"] != nil ||
+            message["mouthBrightnessOverride"] != nil {
             _ = accessoryViewModel.applyUserConfiguration(configuration)
         }
 
@@ -190,6 +196,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             "accelerometer": snapshot.configuration.accelerometerEnabled,
             "sleepMode": snapshot.configuration.sleepModeEnabled,
             "auroraMode": snapshot.configuration.auroraModeEnabled,
+            "staticColor": snapshot.configuration.staticColorEnabled,
+            "mouthBrightnessOverride": snapshot.configuration.mouthBrightnessOverrideEnabled,
             "customMessage": snapshot.customMessage,
             "controllerConnectionStatus": snapshot.controllerConnectionState.rawValue,
             "controllerName": snapshot.controllerName ?? "",

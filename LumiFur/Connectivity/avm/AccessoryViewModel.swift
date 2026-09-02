@@ -27,6 +27,134 @@ private struct TemperatureWindowReducer: Sendable {
     }
 }
 
+/// The complete set of states the dashboard can present.
+///
+/// This keeps Bluetooth availability, connection progress, recovery, and controller
+/// action availability in one place instead of making each view infer them separately.
+enum DashboardState: Equatable {
+    case checkingBluetooth
+    case permissionDenied
+    case bluetoothOff
+    case unsupported
+    case temporarilyUnavailable
+    case disconnected
+    case scanning
+    case connecting
+    case reconnecting
+    case connected
+    case failed(message: String)
+
+    init(
+        connectionState: ConnectionState,
+        bluetoothState: CBManagerState,
+        errorMessage: String = ""
+    ) {
+        switch bluetoothState {
+        case .unauthorized:
+            self = .permissionDenied
+            return
+        case .poweredOff:
+            self = .bluetoothOff
+            return
+        case .unsupported:
+            self = .unsupported
+            return
+        case .resetting:
+            self = .temporarilyUnavailable
+            return
+        case .unknown:
+            self = .checkingBluetooth
+            return
+        case .poweredOn:
+            break
+        @unknown default:
+            self = .temporarilyUnavailable
+            return
+        }
+
+        switch connectionState {
+        case .disconnected:
+            self = .disconnected
+        case .scanning:
+            self = .scanning
+        case .connecting:
+            self = .connecting
+        case .connected:
+            self = .connected
+        case .failed:
+            let message = errorMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            self = .failed(
+                message: message.isEmpty
+                    ? "LumiFur couldn't connect to the controller."
+                    : message
+            )
+        case .bluetoothOff:
+            self = .bluetoothOff
+        case .reconnecting:
+            self = .reconnecting
+        case .unknown:
+            let message = errorMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            self = .failed(
+                message: message.isEmpty
+                    ? "Bluetooth status couldn't be determined."
+                    : message
+            )
+        }
+    }
+
+    var allowsControllerActions: Bool {
+        self == .connected
+    }
+
+    var toolbarStatusText: String {
+        switch self {
+        case .checkingBluetooth:
+            return "Checking Bluetooth…"
+        case .permissionDenied:
+            return "Bluetooth Permission"
+        case .bluetoothOff:
+            return "Bluetooth Off"
+        case .unsupported:
+            return "Bluetooth Unsupported"
+        case .temporarilyUnavailable:
+            return "Bluetooth Unavailable"
+        case .disconnected:
+            return "Disconnected"
+        case .scanning:
+            return "Scanning…"
+        case .connecting:
+            return "Connecting…"
+        case .reconnecting:
+            return "Reconnecting…"
+        case .connected:
+            return "Connected"
+        case .failed:
+            return "Connection Error"
+        }
+    }
+
+    var statusConnectionState: ConnectionState {
+        switch self {
+        case .checkingBluetooth, .temporarilyUnavailable:
+            return .unknown
+        case .permissionDenied, .unsupported, .failed:
+            return .failed
+        case .bluetoothOff:
+            return .bluetoothOff
+        case .disconnected:
+            return .disconnected
+        case .scanning:
+            return .scanning
+        case .connecting:
+            return .connecting
+        case .reconnecting:
+            return .reconnecting
+        case .connected:
+            return .connected
+        }
+    }
+}
+
 // MARK: - AccessoryViewModel
 
 /// UI-facing state and orchestration for the LumiFur accessory.
@@ -105,6 +233,8 @@ final class AccessoryViewModel: ObservableObject {
     @Published private(set) var otaEstimatedRemainingSeconds: TimeInterval?
     @Published private(set) var otaState: OTAState = .idle
     @Published var autoBrightness = true
+    @Published var staticColorEnabled = false
+    @Published var mouthBrightnessOverrideEnabled = true
     @Published var accelerometerEnabled = true
     @Published var sleepModeEnabled = true
     @Published var auroraModeEnabled = true
@@ -122,6 +252,16 @@ final class AccessoryViewModel: ObservableObject {
     var connectionStatus: String { connectionState.rawValue }
     var connectionColor: Color { connectionState.color }
     var connectionImageName: Image { connectionState.image }
+    var dashboardState: DashboardState {
+        DashboardState(
+            connectionState: connectionState,
+            bluetoothState: bluetoothState,
+            errorMessage: errorMessage
+        )
+    }
+    var hasInlineFeedback: Bool {
+        showError && !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
     var temperatureString: String {
         guard let currentTempC else { return "--" }
         return String(format: "%.1f°C", currentTempC)
@@ -293,6 +433,16 @@ final class AccessoryViewModel: ObservableObject {
             key: "autoBrightness",
             defaultValue: autoBrightness
         )
+        staticColorEnabled = persistedBool(
+            in: defaults,
+            key: "staticColor",
+            defaultValue: staticColorEnabled
+        )
+        mouthBrightnessOverrideEnabled = persistedBool(
+            in: defaults,
+            key: "mouthBrightnessOverride",
+            defaultValue: mouthBrightnessOverrideEnabled
+        )
         accelerometerEnabled = persistedBool(
             in: defaults,
             key: "accelerometer",
@@ -355,6 +505,8 @@ final class AccessoryViewModel: ObservableObject {
 
     private func persistCurrentPreferences() {
         defaults.set(autoBrightness, forKey: "autoBrightness")
+        defaults.set(staticColorEnabled, forKey: "staticColor")
+        defaults.set(mouthBrightnessOverrideEnabled, forKey: "mouthBrightnessOverride")
         defaults.set(accelerometerEnabled, forKey: "accelerometer")
         defaults.set(sleepModeEnabled, forKey: "sleepMode")
         defaults.set(auroraModeEnabled, forKey: "auroraMode")
@@ -368,6 +520,16 @@ final class AccessoryViewModel: ObservableObject {
             "autoBrightness",
             current: &autoBrightness,
             newValue: configuration.autoBrightness
+        )
+        let didChangeStaticColor = assignIfChanged(
+            "staticColorEnabled",
+            current: &staticColorEnabled,
+            newValue: configuration.staticColorEnabled
+        )
+        let didChangeMouthBrightnessOverride = assignIfChanged(
+            "mouthBrightnessOverrideEnabled",
+            current: &mouthBrightnessOverrideEnabled,
+            newValue: configuration.mouthBrightnessOverrideEnabled
         )
         let didChangeAccelerometer = assignIfChanged(
             "accelerometerEnabled",
@@ -385,11 +547,11 @@ final class AccessoryViewModel: ObservableObject {
             newValue: configuration.auroraModeEnabled
         )
 
-        if persist, didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+        if persist, didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode || didChangeStaticColor || didChangeMouthBrightnessOverride {
             persistCurrentPreferences()
         }
 
-        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode || didChangeStaticColor || didChangeMouthBrightnessOverride {
             scheduleExternalStateSync()
         }
     }
@@ -431,9 +593,11 @@ final class AccessoryViewModel: ObservableObject {
         applyUserConfiguration(
             AccessoryConfiguration(
                 autoBrightness: true,
-                accelerometerEnabled: true,
+                accelerometerEnabled: false,
                 sleepModeEnabled: true,
-                auroraModeEnabled: true
+                auroraModeEnabled: true,
+                staticColorEnabled: false,
+                mouthBrightnessOverrideEnabled: true
             ),
             syncToDevice: syncToDevice
         )
@@ -520,6 +684,8 @@ final class AccessoryViewModel: ObservableObject {
 
     func encodedAccessorySettingsPayload(
         autoBrightness: Bool,
+        staticColorEnabled: Bool,
+        mouthBrightnessOverrideEnabled: Bool,
         accelerometerEnabled: Bool,
         sleepModeEnabled: Bool,
         auroraModeEnabled: Bool
@@ -528,7 +694,9 @@ final class AccessoryViewModel: ObservableObject {
             autoBrightness: autoBrightness,
             accelerometerEnabled: accelerometerEnabled,
             sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
+            auroraModeEnabled: auroraModeEnabled,
+            staticColorEnabled: staticColorEnabled,
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
         )
     }
 
@@ -560,6 +728,8 @@ final class AccessoryViewModel: ObservableObject {
 
 
     func scanForDevices() {
+        clearFeedback()
+
         if isRunningPreview {
             discoveredDevices = [
                 PeripheralDevice(
@@ -971,6 +1141,7 @@ final class AccessoryViewModel: ObservableObject {
 
         targetPeripheral = peripheral
         connectionState = .connected
+        clearFeedback()
         isScanning = false
         connectingPeripheral = nil
         retainOnlyConnectedDiscoveredDevice(peripheral)
@@ -1009,6 +1180,10 @@ final class AccessoryViewModel: ObservableObject {
         if !isScanning {
             scanForDevices()
         }
+
+        presentError(
+            failure.message ?? "LumiFur couldn't connect to \(failure.name ?? "the controller")."
+        )
     }
 
     
@@ -1157,13 +1332,20 @@ final class AccessoryViewModel: ObservableObject {
         showError = true
     }
 
+    func clearFeedback() {
+        errorMessage = ""
+        showError = false
+    }
+
     
     func currentConfiguration() -> AccessoryConfiguration {
         AccessoryConfiguration(
             autoBrightness: autoBrightness,
             accelerometerEnabled: accelerometerEnabled,
             sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
+            auroraModeEnabled: auroraModeEnabled,
+            staticColorEnabled: staticColorEnabled,
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
         )
     }
 

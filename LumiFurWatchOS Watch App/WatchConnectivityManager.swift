@@ -46,7 +46,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         autoBrightness: false,
         accelerometerEnabled: false,
         sleepModeEnabled: false,
-        auroraModeEnabled: false
+        auroraModeEnabled: false,
+        staticColorEnabled: false,
+        mouthBrightnessOverrideEnabled: false
     )
     @Published private(set) var customMessage = ""
     @Published private(set) var temperatureText = "--"
@@ -153,7 +155,16 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         updated.autoBrightness = enabled
         updateConfiguration(updated)
     }
-
+    func setStaticColorEnabled(_ enabled: Bool) {
+        var updated = configuration
+        updated.staticColorEnabled = enabled
+        updateConfiguration(updated)
+    }
+    func setmouthBrightnessOverride(_ enabled: Bool) {
+        var updated = configuration
+        updated.mouthBrightnessOverrideEnabled = enabled
+        updateConfiguration(updated)
+    }
     func setAccelerometerEnabled(_ enabled: Bool) {
         var updated = configuration
         updated.accelerometerEnabled = enabled
@@ -360,7 +371,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             sleepModeEnabled: data["sleepMode"] as? Bool ?? configuration.sleepModeEnabled,
             auroraModeEnabled: (data["auroraMode"] as? Bool)
                 ?? (data["arouraMode"] as? Bool)
-                ?? configuration.auroraModeEnabled
+                ?? configuration.auroraModeEnabled,
+            staticColorEnabled: data["staticColor"] as? Bool ?? configuration.staticColorEnabled,
+            mouthBrightnessOverrideEnabled: data["mouthBrightnessOverride"] as? Bool ?? configuration.mouthBrightnessOverrideEnabled
         )
 
         apply(snapshot: WatchStateSnapshot(

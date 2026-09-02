@@ -11,13 +11,18 @@ enum AccessoryCommandEncoder {
         autoBrightness: Bool,
         accelerometerEnabled: Bool,
         sleepModeEnabled: Bool,
-        auroraModeEnabled: Bool
+        auroraModeEnabled: Bool,
+        staticColorEnabled: Bool, //FIX: Incorrect data type
+        //NEW: Implement static color to payload
+        mouthBrightnessOverrideEnabled: Bool
     ) -> Data {
         Data([
             autoBrightness ? 1 : 0,
             accelerometerEnabled ? 1 : 0,
             sleepModeEnabled ? 1 : 0,
             auroraModeEnabled ? 1 : 0,
+            staticColorEnabled ? 1: 0,
+            mouthBrightnessOverrideEnabled ? 1: 0
         ])
     }
 
@@ -27,7 +32,9 @@ enum AccessoryCommandEncoder {
             autoBrightness: configuration.autoBrightness,
             accelerometerEnabled: configuration.accelerometerEnabled,
             sleepModeEnabled: configuration.sleepModeEnabled,
-            auroraModeEnabled: configuration.auroraModeEnabled
+            auroraModeEnabled: configuration.auroraModeEnabled,
+            staticColorEnabled: configuration.staticColorEnabled,
+            mouthBrightnessOverrideEnabled: configuration.mouthBrightnessOverrideEnabled
         )
     }
 

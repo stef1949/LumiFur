@@ -70,7 +70,8 @@ struct ChartView: View, Equatable {
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.vertical, 4)
             } else {
                 EmptyView()
             }
@@ -92,19 +93,26 @@ struct ChartView: View, Equatable {
     }
 
     private var header: some View {
-        HStack {
-            Text("Temperature")
-                .font(.headline)
-            Spacer()
-            Image(systemName: "chevron.up")
-                .rotationEffect(.degrees(isExpanded ? 0 : 180))
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             withAnimation(.easeInOut(duration: 0.4)) {
                 isExpanded.toggle()
             }
+        } label: {
+            HStack {
+                Text("Temperature")
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "chevron.up")
+                    .rotationEffect(.degrees(isExpanded ? 0 : 180))
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Temperature chart")
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityHint(isExpanded ? "Collapses the chart" : "Expands the chart")
     }
 
     private func refreshActivityState() {

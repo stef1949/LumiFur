@@ -8,6 +8,9 @@ struct WatchSettingsView: View {
         List {
             Section("Controller") {
                 Toggle("Auto Brightness", isOn: autoBrightness)
+                
+                Toggle("Max Maw Brightness", isOn: mouthBrightnessOverride)
+                    .disabled(!model.configuration.autoBrightness)
 
                 Toggle("Accelerometer", isOn: accelerometer)
 
@@ -42,6 +45,20 @@ struct WatchSettingsView: View {
         Binding(
             get: { model.configuration.autoBrightness },
             set: { model.setAutoBrightness($0) }
+        )
+    }
+    
+    private var staticColor: Binding<Bool> {
+        Binding(
+            get: { model.configuration.staticColorEnabled },
+            set: { model.setStaticColorEnabled($0) }
+        )
+    }
+    
+    private var mouthBrightnessOverride: Binding<Bool> {
+        Binding(
+            get: { model.configuration.mouthBrightnessOverrideEnabled },
+            set: { model.setmouthBrightnessOverride($0) }
         )
     }
 

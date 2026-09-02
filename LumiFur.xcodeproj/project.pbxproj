@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
-		350B2A822F4F7A3B0016E06C /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		350B2A822F4F7A3B0016E06C /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
 		35382F522E4CC7DE0087A8BE /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35382F512E4CC7DD0087A8BE /* SettingsStore.swift */; };
 		3538DC832FB63745007206BC /* GitHubReadmeDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3538DC822FB63744007206BC /* GitHubReadmeDemo.swift */; };
@@ -904,6 +904,7 @@
 /* Begin PBXTargetDependency section */
 		350B2A852F4F7A3B0016E06C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 35AE1A492D5D24C600FDD29E /* LumiFur WidgetExtension */;
 			targetProxy = 35E3D4FA30112A5200E104F9 /* PBXContainerItemProxy */;
 		};
@@ -1162,7 +1163,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13.0.1;
+				CURRENT_PROJECT_VERSION = 14.0.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1189,7 +1190,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = NO;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 13.1;
+				MARKETING_VERSION = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1242,7 +1243,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13.0.1;
+				CURRENT_PROJECT_VERSION = 14.0.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1262,7 +1263,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				LLVM_LTO = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 13.1;
+				MARKETING_VERSION = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -1325,8 +1326,8 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -1384,8 +1385,8 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;

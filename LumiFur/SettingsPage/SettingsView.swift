@@ -96,6 +96,15 @@ struct SettingsView: View {
         List {
             UnifiedConnectionSection(accessoryViewModel: bleModel)
 
+            if bleModel.hasInlineFeedback {
+                Section("Connection") {
+                    ConnectionFeedbackView(
+                        message: bleModel.errorMessage,
+                        onDismiss: bleModel.clearFeedback
+                    )
+                }
+            }
+
             if bleModel.isConnected {
                 otaUpdateLink
                     .sheet(isPresented: $showOTAUpdate) {
@@ -158,16 +167,20 @@ struct SettingsView: View {
                 }
             }
         }
-        .alert("Connection Error", isPresented: $bleModel.showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(bleModel.errorMessage)
+        #if targetEnvironment(macCatalyst)
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView {
+                showOnboarding = false
+            }
+            .frame(minWidth: 680, minHeight: 520)
         }
+        #else
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 showOnboarding = false
             }
         }
+        #endif
         .task(id: isActive) {
             guard isActive else { return }
             await activateIfNeeded()
@@ -598,7 +611,16 @@ private struct ConfigSection: View {
             }
         )
     }
-
+    private var mouthBrightnessOverrideBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.mouthBrightnessOverrideEnabled },
+            set: { newValue in
+                var configuration = bleModel.currentConfiguration()
+                configuration.mouthBrightnessOverrideEnabled = newValue
+                bleModel.applyUserConfiguration(configuration)
+            }
+        )
+    }
     private var accelerometerBinding: Binding<Bool> {
         Binding(
             get: { bleModel.accelerometerEnabled },
@@ -645,7 +667,8 @@ private struct ConfigSection: View {
                 .pickerStyle(.segmented)
                 .disabled(!bleModel.isConnected)
             }
-            BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
+            
+            BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation, mouthBrightnessOverride: mouthBrightnessOverrideBinding)
             
             Toggle(isOn: accelerometerBinding) {
                 Label("Accelerometer", systemImage: "rotate.3d.fill")
@@ -673,6 +696,7 @@ private struct ConfigSection: View {
 private struct BrightnessControls: View {
     @ObservedObject var bleModel: AccessoryViewModel
     @Binding var autoBrightness: Bool
+    @Binding var mouthBrightnessOverride: Bool
     
     var body: some View {
         VStack {
@@ -700,6 +724,11 @@ private struct BrightnessControls: View {
                     insertion: .move(edge: .top).combined(with: .opacity),
                     removal: .move(edge: .bottom).combined(with: .opacity)
                 ))
+            } else {
+                Toggle(isOn: $mouthBrightnessOverride) {
+                    Label("Maw Brightness Override", systemImage: "eye.fill")
+                }
+                .disabled(!bleModel.isConnected)
             }
         }
         // Apply animation at the container level for coordinated transitions.

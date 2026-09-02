@@ -5,11 +5,11 @@
 //  Created by Stephan Ritchie on 2/12/25.
 //
 
-import ActivityKit
 import SwiftUI
 import WidgetKit
 
-#if canImport(ActivityKit) && !LUMIFUR_LEGACY_IOS15
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+import ActivityKit
 
 // MARK: - BLE Activity Attributes
 

@@ -45,6 +45,9 @@ struct LumiFurApp: App {
             RootView(appContext: appContext)
                 .environment(\.repositoryConfig, repositoryConfiguration) // <<< CHECK THIS LINE
         }
+        #if targetEnvironment(macCatalyst)
+        .defaultSize(width: 1100, height: 720)
+        #endif
     }
 }
 
@@ -92,9 +95,16 @@ struct RootView: View {
          */
         // RootView2()
         ContentView(bleModel: appContext.accessoryViewModel)
+            #if targetEnvironment(macCatalyst)
+            .sheet(isPresented: $showOnboarding, onDismiss: completeOnboarding) {
+                OnboardingView(onComplete: completeOnboarding)
+                    .frame(minWidth: 680, minHeight: 520)
+            }
+            #else
             .fullScreenCover(isPresented: $showOnboarding, onDismiss: completeOnboarding) {
                 OnboardingView(onComplete: completeOnboarding)
             }
+            #endif
             .sheet(isPresented: $showWhatsNew, onDismiss: markCurrentVersionSeen) {
                 WhatsNew(
                     appReleases: releaseViewModel.appReleases,

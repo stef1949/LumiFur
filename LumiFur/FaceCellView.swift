@@ -8,6 +8,7 @@ import SwiftUI
 
 struct FaceCellView: View, Equatable {
     let item: FaceItem
+    let faceNumber: Int
     let isSelected: Bool
     let overlayColor: Color
     let backgroundColor: Color
@@ -17,6 +18,7 @@ struct FaceCellView: View, Equatable {
 
     init(
         item: FaceItem,
+        faceNumber: Int,
         isSelected: Bool,
         overlayColor: Color,
         backgroundColor: Color,
@@ -25,6 +27,7 @@ struct FaceCellView: View, Equatable {
         action: @escaping (FaceItem) -> Void
     ) {
         self.item = item
+        self.faceNumber = faceNumber
         self.isSelected = isSelected
         self.overlayColor = overlayColor
         self.backgroundColor = backgroundColor
@@ -35,6 +38,7 @@ struct FaceCellView: View, Equatable {
 
     static func == (lhs: FaceCellView, rhs: FaceCellView) -> Bool {
         lhs.item == rhs.item &&
+        lhs.faceNumber == rhs.faceNumber &&
         lhs.isSelected == rhs.isSelected &&
         lhs.overlayColor == rhs.overlayColor &&
         lhs.backgroundColor == rhs.backgroundColor &&
@@ -48,9 +52,8 @@ struct FaceCellView: View, Equatable {
 
         ZStack(alignment: .topTrailing) {
             Button {
-                let gen = UIImpactFeedbackGenerator(style: .heavy)
-                gen.prepare()
-                gen.impactOccurred()
+                let feedback = UISelectionFeedbackGenerator()
+                feedback.selectionChanged()
                 action(item)
             } label: {
                 contentView
@@ -58,17 +61,33 @@ struct FaceCellView: View, Equatable {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Face \(faceNumber), \(item.content.accessibilityName)")
+            .accessibilityValue(isSelected ? "Selected" : "Not selected")
+            .accessibilityHint("Activates this face on the LumiFur controller")
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(backgroundColor, overlayColor)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
 
             if showsMenuButton, let onMenuTap {
                 Button(action: onMenuTap) {
                     Image(systemName: "line.3.horizontal")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(isSelected ? backgroundColor : overlayColor)
-                        .padding(10)
+                        .frame(width: 44, height: 44)
                         .background(.ultraThinMaterial, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .padding(10)
+                .accessibilityLabel("Strobe settings")
+                .accessibilityHint("Shows controls for the selected strobe face")
             }
         }
         .frame(maxWidth: 160, maxHeight: 160)

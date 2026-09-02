@@ -88,7 +88,7 @@ private struct FaceTile: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Face \(view), \(action.rawValue)")
+        .accessibilityLabel("Face \(view), \(action.accessibilityName)")
         .accessibilityValue(isSelected ? "Selected" : "Not selected")
         .accessibilityHint("Selects this face on the LumiFur controller")
     }

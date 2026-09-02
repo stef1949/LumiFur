@@ -42,3 +42,28 @@ extension ConnectionState {
         }
     }
 }
+
+struct ConnectionFeedbackView: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Label {
+                Text(message)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+
+            Spacer(minLength: 8)
+
+            Button("Dismiss", systemImage: "xmark", action: onDismiss)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .accessibilityHint("Removes this message")
+        }
+        .font(.callout)
+    }
+}

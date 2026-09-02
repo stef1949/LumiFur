@@ -1,5 +1,6 @@
 import Testing
 @testable import LumiFur
+import CoreBluetooth
 import Foundation
 
 @Suite("AccessoryViewModel - Logic Tests")
@@ -19,11 +20,13 @@ struct AccessoryViewModelLogicTests {
         let vm = makeViewModel()
         let data = vm.encodedAccessorySettingsPayload(
             autoBrightness: true,
+            staticColorEnabled: false,
+            mouthBrightnessOverrideEnabled: false,
             accelerometerEnabled: false,
             sleepModeEnabled: true,
             auroraModeEnabled: false
         )
-        #expect(data == Data([1, 0, 1, 0]), "Payload should match expected encoding")
+        #expect(data == Data([1, 0, 1, 0, 0]), "Payload should include the disabled maw brightness override flag")
     }
     
     @Test("Saving and loading StoredPeripheral roundtrips")
@@ -80,5 +83,65 @@ struct AccessoryViewModelLogicTests {
         #expect(vm.selectedView == original)
         _ = vm.setView(original) // Same as current
         #expect(vm.selectedView == original)
+    }
+
+    @Test("Dashboard state distinguishes recovery and connected states")
+    func testDashboardStateMapping() {
+        #expect(
+            DashboardState(
+                connectionState: .disconnected,
+                bluetoothState: .poweredOn
+            ) == .disconnected
+        )
+        #expect(
+            DashboardState(
+                connectionState: .connected,
+                bluetoothState: .poweredOn
+            ) == .connected
+        )
+        #expect(
+            DashboardState(
+                connectionState: .disconnected,
+                bluetoothState: .unauthorized
+            ) == .permissionDenied
+        )
+        #expect(
+            DashboardState(
+                connectionState: .disconnected,
+                bluetoothState: .poweredOff
+            ) == .bluetoothOff
+        )
+        #expect(
+            DashboardState(
+                connectionState: .failed,
+                bluetoothState: .poweredOn,
+                errorMessage: "Controller is out of range."
+            ) == .failed(message: "Controller is out of range.")
+        )
+    }
+
+    @Test("Only a connected dashboard allows controller actions")
+    func testDashboardActionAvailability() {
+        #expect(DashboardState.connected.allowsControllerActions)
+        #expect(!DashboardState.disconnected.allowsControllerActions)
+        #expect(!DashboardState.scanning.allowsControllerActions)
+        #expect(!DashboardState.permissionDenied.allowsControllerActions)
+        #expect(!DashboardState.failed(message: "No controller").allowsControllerActions)
+    }
+
+    @Test("Inline connection feedback can be dismissed")
+    @MainActor
+    func testClearFeedback() {
+        let vm = makeViewModel()
+        vm.errorMessage = "Controller is unavailable."
+        vm.showError = true
+
+        #expect(vm.hasInlineFeedback)
+
+        vm.clearFeedback()
+
+        #expect(!vm.hasInlineFeedback)
+        #expect(vm.errorMessage.isEmpty)
+        #expect(!vm.showError)
     }
 }
