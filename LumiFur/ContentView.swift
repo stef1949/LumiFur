@@ -8,21 +8,22 @@
 //
 
 import AVKit
-import Charts
 import Combine
 import CoreBluetooth
 import CoreHaptics
 import CoreImage
-//import MarkdownUI
-import Textual
 import SwiftUI
 import UniformTypeIdentifiers
 import os
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 let actions = SharedOptions.protoActionOptions
 let configs = SharedOptions.protoConfigOptions
 private let contentLogger = Logger(
-    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur",
+    subsystem: Bundle.main.bundleIdentifier ?? "com.richies3d.LumiFur3.app",
     category: "ContentView"
 )
 
@@ -134,30 +135,15 @@ struct AppInfo {
     }
 }
 
-extension ConnectionState {
-    var toolbarStatusText: String {
-        switch self {
-        case .connected:    return "Connected"
-        case .connecting:   return "Connecting…"
-        case .disconnected: return "Disconnected"
-        case .scanning:     return "Scanning…"
-        case .bluetoothOff: return "Turn on Bluetooth"
-        case .reconnecting: return "Reconnecting…"
-        case .failed:       return "Error"
-        case .unknown:      return "Unknown Error"
-        }
-    }
-}
-
 // MARK: ContentView
 struct ContentView: View {
     @StateObject private var ledModel = LEDPreviewModel()
     @Environment(\.scenePhase) private var scenePhase
     //@StateObject private var accessoryViewModel = AccessoryViewModel()
     
-    let bleModel: AccessoryViewModel
+    @ObservedObject var bleModel: AccessoryViewModel
     
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = true
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @AppStorage("fancyMode") private var fancyMode: Bool = false
     //@AppStorage("charts") var isChartsExpanded = false
     @AppStorage("charts") var isChartsExpanded = false // This now drives the ChartView
@@ -221,6 +207,16 @@ struct ContentView: View {
             }
         )
     }
+    
+    private var mouthBrightnessOverrideBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.mouthBrightnessOverrideEnabled },
+            set: { newValue in
+                bleModel.mouthBrightnessOverrideEnabled = newValue
+                bleModel.writeConfigToCharacteristic()
+            }
+        )
+    }
 
     private var accelerometerBinding: Binding<Bool> {
         Binding(
@@ -275,6 +271,15 @@ struct ContentView: View {
         case profile = "Custom"
         case settings = "Settings"
         var id: String { rawValue }
+
+        /// Keep the editor implementation available to development builds while
+        /// removing the unfinished destination from the shipped navigation.
+        static let isCustomEditorAvailable = false
+        static var visibleCases: [SidebarItem] {
+            allCases.filter { item in
+                item != .profile || isCustomEditorAvailable
+            }
+        }
 
         var iconName: String {
             switch self {
@@ -332,68 +337,104 @@ struct ContentView: View {
     var body: some View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("ContentView")
 
-        #if os(macOS)
+        #if targetEnvironment(macCatalyst)
             NavigationSplitView {
-                List(SidebarItem.allCases, selection: $selectedSidebarItem) {
-                    item in
-                    Text(item.rawValue)
+                List(selection: $selectedSidebarItem) {
+                    ForEach(SidebarItem.visibleCases) { item in
+                        Label(item.rawValue, systemImage: item.iconName)
+                            .tag(item)
+                    }
                 }
-                .navigationTitle("Menu")
+                .listStyle(.sidebar)
+                .navigationTitle("LumiFur")
+                .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
             } detail: {
-                detailContent
+                CompatibleNavigationStack {
+                    macDetailContent
+                        .navigationTitle(selectedSidebarItem?.rawValue ?? "LumiFur")
+                        .toolbar {
+                            if selectedSidebarItem == .dashboard,
+                               bleModel.dashboardState.allowsControllerActions {
+                                ToolbarItem(placement: .primaryAction) {
+                                    Button {
+                                        showQuickControls.toggle()
+                                    } label: {
+                                        Label("Quick Controls", systemImage: "slider.horizontal.3")
+                                    }
+                                    .popover(isPresented: $showQuickControls, arrowEdge: .top) {
+                                        quickControlsContent
+                                            .frame(width: 280)
+                                    }
+                                }
+                            }
+
+                            ToolbarItem(placement: .automatic) {
+                                ToolbarStatusHost(bleModel: bleModel)
+                            }
+                        }
+                }
+            }
+            .navigationSplitViewStyle(.balanced)
+            .onAppear(perform: normalizeSidebarSelection)
+            .onChange(of: bleModel.dashboardState.allowsControllerActions) { _, actionsAvailable in
+                if !actionsAvailable {
+                    showQuickControls = false
+                }
             }
         #else
             TabView(selection: $selectedSidebarItem) {
                 // MARK: – Custom Tab
-                NavigationStack {
-                    CustomLedView()
-                        .navigationTitle("Custom View")
+                if SidebarItem.isCustomEditorAvailable {
+                    CompatibleNavigationStack {
+                        CustomLedView()
+                            .navigationTitle("Custom View")
+                    }
+                    .tabItem {
+                        Label(
+                            SidebarItem.profile.rawValue,
+                            systemImage: SidebarItem.profile.iconName
+                        )
+                    }
+                    .tag(SidebarItem.profile)
                 }
-                .tabItem {
-                    Label(
-                        SidebarItem.profile.rawValue,
-                        systemImage: SidebarItem.profile.iconName
-                    )
-                }
-                .tag(SidebarItem.profile)
-                //.disabled(true)
                 // MARK: – Dashboard Tab
-                NavigationStack {
+                CompatibleNavigationStack {
                     detailContent
                     //.navigationTitle("LumiFur")
                     //.navigationBarTitleDisplayMode(.large)
                         .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button { showQuickControls.toggle() } label: {
-                                    Image(systemName: "line.3.horizontal")
-                                }
-                                .accessibilityLabel("Quick Controls")
-                                .accessibilityHint("Shows quick controls and the LumiFur logo")
-                            
-                                // Present as popover on regular width (iPad), sheet on compact (iPhone)
-                                .popover(
-                                    isPresented: Binding(
-                                        get: { showQuickControls && horizontalSizeClass == .regular },
-                                        set: { if !$0 { showQuickControls = false } }
-                                    ),
-                                    attachmentAnchor: .rect(.bounds),
-                                    arrowEdge: .top
-                                ) {
-                                    quickControlsContent
-                                }
-                                .popover(
-                                    isPresented: Binding(
-                                        get: { showQuickControls && horizontalSizeClass == .compact },
-                                        set: { if !$0 { showQuickControls = false } }
-                                    )
-                                ) {
-                                    quickControlsContent
-                                        .presentationBackground(.clear)
-                                        .presentationCompactAdaptation(.popover)
-                                        .padding()
+                            if bleModel.dashboardState.allowsControllerActions {
+                                ToolbarItem(placement: .navigationBarLeading) {
+                                    Button { showQuickControls.toggle() } label: {
+                                        Image(systemName: "line.3.horizontal")
+                                    }
+                                    .accessibilityLabel("Quick Controls")
+                                    .accessibilityHint("Shows controller settings")
+
+                                    // Present as popover on regular width (iPad), sheet on compact (iPhone)
+                                    .popover(
+                                        isPresented: Binding(
+                                            get: { showQuickControls && horizontalSizeClass == .regular },
+                                            set: { if !$0 { showQuickControls = false } }
+                                        ),
+                                        attachmentAnchor: .rect(.bounds),
+                                        arrowEdge: .top
+                                    ) {
+                                        quickControlsContent
+                                    }
+                                    .popover(
+                                        isPresented: Binding(
+                                            get: { showQuickControls && horizontalSizeClass == .compact },
+                                            set: { if !$0 { showQuickControls = false } }
+                                        )
+                                    ) {
+                                        quickControlsContent
+                                            .compatibleClearPopoverPresentation()
+                                            .padding()
+                                    }
                                 }
                             }
-                            ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarItem(placement: .navigationBarTrailing) {
                                 ToolbarStatusHost(bleModel: bleModel)
                             }
                         }
@@ -405,7 +446,7 @@ struct ContentView: View {
                 // MARK: – Settings Tab
                 
                 //Divider()
-                NavigationStack {
+                CompatibleNavigationStack {
                     SettingsView(
                         bleModel: bleModel,
                         selectedMatrix: $matrixStyle,
@@ -420,12 +461,17 @@ struct ContentView: View {
                     )
                 }
                 .tag(SidebarItem.settings)
-                .badge("!")
             }
-            .navigationTransition(.zoom(sourceID: "expand", in: namespace))
             .onAppear {
+                normalizeSidebarSelection()
+
                 if selectedSidebarItem == .dashboard {
                     prepareHaptics()
+                }
+            }
+            .onChange(of: bleModel.dashboardState.allowsControllerActions) { _, actionsAvailable in
+                if !actionsAvailable {
+                    showQuickControls = false
                 }
             }
         //.tabBarMinimizeBehavior(.automatic)
@@ -455,6 +501,50 @@ struct ContentView: View {
          */
         
     }
+
+    private func normalizeSidebarSelection() {
+        guard let selectedSidebarItem,
+              SidebarItem.visibleCases.contains(selectedSidebarItem) else {
+            self.selectedSidebarItem = .dashboard
+            return
+        }
+    }
+
+    #if targetEnvironment(macCatalyst)
+    @ViewBuilder
+    private var macDetailContent: some View {
+        switch selectedSidebarItem ?? .dashboard {
+        case .dashboard:
+            DashboardContentView(
+                bleModel: bleModel,
+                isChartsExpanded: $isChartsExpanded,
+                selectedUnits: selectedUnitsBinding,
+                receivedFaceFromWatch: viewModel.receivedFaceFromWatch,
+                onPrepareHaptics: prepareHaptics,
+                onHandleWatchFaceSelection: handleWatchFaceSelection
+            )
+
+        case .settings:
+            SettingsView(
+                bleModel: bleModel,
+                selectedMatrix: $matrixStyle,
+                isActive: true
+            )
+
+        case .profile:
+            if SidebarItem.isCustomEditorAvailable {
+                CustomLedView()
+            } else {
+                ContentUnavailableView(
+                    "Custom Editor Unavailable",
+                    systemImage: "hammer",
+                    description: Text("The custom editor is still being developed.")
+                )
+            }
+        }
+    }
+    #endif
+
     @AppStorage("tempUnit") private var tempUnitRaw: String = TempUnit.celsius.rawValue
     private var selectedUnitsBinding: Binding<TempUnit> {
         Binding(
@@ -503,15 +593,15 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
         
-        if !hasLaunchedBefore && showSplash {
-                SplashView(showSplash: $showSplash)
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: .scale(scale: 0.8).combined(with: .opacity)
-                        )
+        if !hasCompletedOnboarding && showSplash {
+            SplashView(showSplash: $showSplash)
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity,
+                        removal: .scale(scale: 0.8).combined(with: .opacity)
                     )
-            }
+                )
+        }
         }
     }
 
@@ -554,6 +644,13 @@ struct ContentView: View {
                 binding: autoBrightnessBinding,
                 type: .autoBrightness
             ),
+            /*
+            OptionConfig(
+                title: "Maw Max Brightness Override",
+                binding: mouthBrightnessOverrideBinding,
+                type: .mouthBrightnessOverride
+            ),
+             */
             OptionConfig(
                 title: "Accelerometer",
                 binding: accelerometerBinding,
@@ -580,7 +677,7 @@ struct ContentView: View {
                         isOn: option.binding,
                         optionType: option.type
                     )
-                    .onChange(of: option.binding.wrappedValue) { oldValue, newValue in
+                    .onChange(of: option.binding.wrappedValue) { _, newValue in
                         option.action?(newValue)
                     }
                 }
@@ -596,8 +693,7 @@ struct ContentView: View {
                     arrowEdge: .top
                 ) {
                     customMessagePopoverView
-                        .presentationBackground(.clear)
-                        .presentationCompactAdaptation(.popover)
+                        .compatibleClearPopoverPresentation()
                         .padding()
                 }
             }
@@ -605,7 +701,7 @@ struct ContentView: View {
         }
         //.frame(maxWidth: .infinity, maxHeight: 80)
         //.scrollContentBackground(.hidden)
-        .scrollClipDisabled(true)  // Explicitly false, default is true in some contexts. Check if still needed.
+        .compatibleScrollClipDisabled(true)
         // If you want content to extend beyond scroll view bounds, set true.
         .ignoresSafeArea(.keyboard, edges: .all)  // Keep this for keyboard behavior
     }
@@ -699,11 +795,10 @@ struct ContentView: View {
         */
         
         // Access the static property directly and use .map to convert it.
-        @State private var items: [FaceItem] = SharedOptions.protoActionOptions.map { FaceItem(content: $0) }
+        private static let items: [FaceItem] = SharedOptions.protoActionOptions.map { FaceItem(content: $0) }
         
         
         // --- The rest of your view remains the same ---
-        @State private var selectedItemID: FaceItem.ID?
         @State private var showStrobeOptions = false
         
         //@Namespace private var glassNamespace
@@ -722,33 +817,36 @@ struct ContentView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: Self.twoColumnGrid) {  // Use Self.twoColumnGrid
                         // 2. ForEach loops over identifiable data, not indices.
-                        ForEach(items, id: \.id) { item in
+                        ForEach(Self.items.indices, id: \.self) { index in
+                            let item = Self.items[index]
+                            let faceNumber = index + 1
+                            let showsStrobeMenu = shouldShowStrobeMenu(
+                                for: item,
+                                faceNumber: faceNumber
+                            )
+
                             FaceCellView(
                                 // 3. Pass the item and selection state cleanly.
                                 item: item,
-                                isSelected: isSelectedFaceItem(item),
+                                faceNumber: faceNumber,
+                                isSelected: selectedView == faceNumber,
                                 overlayColor: lightColor,
                                 backgroundColor: darkColor,
-                                showsMenuButton: shouldShowStrobeMenu(for: item),
-                                onMenuTap: shouldShowStrobeMenu(for: item) ? { showStrobeOptions = true } : nil
+                                showsMenuButton: showsStrobeMenu,
+                                onMenuTap: showsStrobeMenu ? { showStrobeOptions = true } : nil
                                 //namespace: glassNamespace,
                                 
                                 // The action now provides the item directly.
-                            ) {tappedItem in
-                                // Update selection state using the stable ID
-                                selectedItemID = tappedItem.id
-                                // 2. Find the 0-based index of the tapped item in our array.
-                                if let index = items.firstIndex(where: { $0.id == tappedItem.id }) {
-                                    // 3. Convert to the 1-based command index that the hardware expects.
-                                    let commandIndex = index + 1
-                                    // 4. Call the parent's `onSetView` function to send the command.
-                                    onSetView(commandIndex)
-                                }
+                            ) { _ in
+                                onSetView(faceNumber)
                             }
                             .equatable()
                             .popover(
                                 isPresented: Binding(
-                                    get: { shouldShowStrobeMenu(for: item) && showStrobeOptions },
+                                    get: {
+                                        shouldShowStrobeMenu(for: item, faceNumber: faceNumber) &&
+                                        showStrobeOptions
+                                    },
                                     set: { showStrobeOptions = $0 }
                                 ),
                                 attachmentAnchor: .rect(.bounds),
@@ -758,33 +856,20 @@ struct ContentView: View {
                                     bleModel: bleModel,
                                     onDone: { showStrobeOptions = false }
                                 )
-                                .presentationCompactAdaptation(.popover)
+                                .compatiblePopoverPresentation()
                             }
                         }
                     }
                     .padding(.horizontal)
                     //.scrollContentBackground(.hidden)
                 }
-                .scrollClipDisabled()
-                .scrollDismissesKeyboard(.automatic)
+                .compatibleScrollClipDisabled()
+                .compatibleScrollDismissesKeyboard()
                 //.border(.red)
-            // This watches for external changes (e.g., from the watch) and updates the local UI.
-            .onChange(of: selectedView) { _, newViewIndex in
-                let modelIndex = newViewIndex - 1
-                if items.indices.contains(modelIndex) {
-                    selectedItemID = items[modelIndex].id
-                } else {
-                    selectedItemID = nil // Deselect if index is out of bounds
-                }
-            }
         }
 
-        private func isSelectedFaceItem(_ item: FaceItem) -> Bool {
-            selectedItemID == item.id
-        }
-
-        private func shouldShowStrobeMenu(for item: FaceItem) -> Bool {
-            guard isSelectedFaceItem(item) else { return false }
+        private func shouldShowStrobeMenu(for item: FaceItem, faceNumber: Int) -> Bool {
+            guard selectedView == faceNumber else { return false }
 
             switch item.content {
             case .symbol(let symbol):
@@ -805,6 +890,11 @@ struct ContentView: View {
     private func handleWatchFaceSelection(face: String?) {  // <--- DEFINITION INSIDE ContentView
         guard let selectedFace = face else {
             contentLogger.notice("Ignored empty watch face selection")
+            return
+        }
+
+        guard bleModel.dashboardState.allowsControllerActions else {
+            contentLogger.notice("Ignored watch face selection while no controller is available")
             return
         }
         
@@ -842,9 +932,11 @@ private struct ToolbarStatusHost: View {
     @ObservedObject var bleModel: AccessoryViewModel
 
     private var toolbarModel: ToolbarStatusModel {
-        .init(
-            connectionState: bleModel.connectionState,
-            toolbarStatusText: bleModel.connectionState.toolbarStatusText,
+        let dashboardState = bleModel.dashboardState
+
+        return .init(
+            connectionState: dashboardState.statusConnectionState,
+            toolbarStatusText: dashboardState.toolbarStatusText,
             signalStrength: bleModel.signalStrength,
             luxValue: Int(bleModel.luxValue)
         )
@@ -855,7 +947,7 @@ private struct ToolbarStatusHost: View {
 
         HeaderView(
             connectionState: toolbarModel.connectionState,
-            connectionStatus: toolbarModel.connectionState.toolbarStatusText,
+            connectionStatus: toolbarModel.toolbarStatusText,
             signalStrength: toolbarModel.signalStrength,
             luxValue: Double(toolbarModel.luxValue)
         )
@@ -875,6 +967,42 @@ private struct DashboardContentView: View {
     var body: some View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("DashboardContentView")
 
+        dashboardContent
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if shouldShowInlineFeedback {
+                    ConnectionFeedbackView(
+                        message: bleModel.errorMessage,
+                        onDismiss: bleModel.clearFeedback
+                    )
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(.bar)
+                    .overlay(alignment: .bottom) {
+                        Divider()
+                    }
+                }
+            }
+            .onAppear(perform: onPrepareHaptics)
+            .onChange(of: receivedFaceFromWatch) { _, newFace in
+                onHandleWatchFaceSelection(newFace)
+            }
+    }
+
+    @ViewBuilder
+    private var dashboardContent: some View {
+        switch bleModel.dashboardState {
+        case .connected:
+            connectedDashboard
+        default:
+            DashboardRecoveryView(
+                state: bleModel.dashboardState,
+                onScan: bleModel.scanForDevices,
+                onStopScanning: bleModel.stopScan
+            )
+        }
+    }
+
+    private var connectedDashboard: some View {
         GeometryReader { proxy in
             let isLandscape = proxy.size.width > proxy.size.height
 
@@ -903,10 +1031,16 @@ private struct DashboardContentView: View {
                 }
             }
         }
-        .onAppear(perform: onPrepareHaptics)
-        .onChange(of: receivedFaceFromWatch) { _, newFace in
-            onHandleWatchFaceSelection(newFace)
+    }
+
+    private var shouldShowInlineFeedback: Bool {
+        guard bleModel.hasInlineFeedback else { return false }
+
+        if case .failed = bleModel.dashboardState {
+            return false
         }
+
+        return true
     }
 
     private var faceGrid: some View {
@@ -930,12 +1064,136 @@ private struct DashboardContentView: View {
             connected: bleModel.isConnected
         )
         .equatable()
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 32))
+        .legacyGlassBackground(cornerRadius: 32)
         .frame(width: width, alignment: .top)
-        .onTapGesture {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                isChartsExpanded.toggle()
+    }
+}
+
+private struct DashboardRecoveryView: View {
+    let state: DashboardState
+    let onScan: () -> Void
+    let onStopScanning: () -> Void
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(state.recoveryTitle, systemImage: state.recoverySymbol)
+        } description: {
+            Text(state.recoveryMessage)
+        } actions: {
+            recoveryActions
+        }
+    }
+
+    @ViewBuilder
+    private var recoveryActions: some View {
+        switch state {
+        case .checkingBluetooth, .connecting, .reconnecting, .temporarilyUnavailable:
+            ProgressView()
+                .accessibilityLabel(state.toolbarStatusText)
+
+        case .scanning:
+            VStack(spacing: 12) {
+                ProgressView()
+                    .accessibilityLabel("Scanning for controllers")
+
+                Button("Stop Scanning", systemImage: "stop.circle", action: onStopScanning)
+                    .buttonStyle(.bordered)
             }
+
+        case .disconnected, .failed:
+            Button("Scan for Controllers", systemImage: "antenna.radiowaves.left.and.right", action: onScan)
+                .buttonStyle(.borderedProminent)
+
+        case .permissionDenied:
+            #if canImport(UIKit)
+            Button("Open Settings", systemImage: "gear") {
+                guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+                    return
+                }
+                openURL(settingsURL)
+            }
+            .buttonStyle(.borderedProminent)
+            #endif
+
+        case .bluetoothOff, .unsupported, .connected:
+            EmptyView()
+        }
+    }
+}
+
+private extension DashboardState {
+    var recoveryTitle: String {
+        switch self {
+        case .checkingBluetooth:
+            return "Checking Bluetooth"
+        case .permissionDenied:
+            return "Bluetooth Access Required"
+        case .bluetoothOff:
+            return "Bluetooth Is Off"
+        case .unsupported:
+            return "Bluetooth Isn't Supported"
+        case .temporarilyUnavailable:
+            return "Bluetooth Is Temporarily Unavailable"
+        case .disconnected:
+            return "No Controller Connected"
+        case .scanning:
+            return "Looking for Controllers"
+        case .connecting:
+            return "Connecting to Controller"
+        case .reconnecting:
+            return "Reconnecting to Controller"
+        case .connected:
+            return "Controller Connected"
+        case .failed:
+            return "Couldn't Connect"
+        }
+    }
+
+    var recoveryMessage: String {
+        switch self {
+        case .checkingBluetooth:
+            return "LumiFur is checking whether Bluetooth is available."
+        case .permissionDenied:
+            return "Allow LumiFur to use Bluetooth in Settings so it can find and connect to your controller."
+        case .bluetoothOff:
+            return "Turn on Bluetooth in Control Centre or Settings. LumiFur will resume automatically."
+        case .unsupported:
+            return "This device can't use the Bluetooth features required by LumiFur."
+        case .temporarilyUnavailable:
+            return "iOS is restoring Bluetooth. LumiFur will try again automatically."
+        case .disconnected:
+            return "Make sure your LumiFur controller is nearby and powered on, then scan to connect."
+        case .scanning:
+            return "Keep your controller nearby and powered on while LumiFur searches."
+        case .connecting:
+            return "Keep your controller nearby while LumiFur finishes connecting."
+        case .reconnecting:
+            return "LumiFur is reconnecting to your previous controller."
+        case .connected:
+            return "Your controller is ready."
+        case .failed(let message):
+            return "\(message) Try scanning again."
+        }
+    }
+
+    var recoverySymbol: String {
+        switch self {
+        case .checkingBluetooth, .scanning, .connecting, .reconnecting:
+            return "antenna.radiowaves.left.and.right"
+        case .permissionDenied:
+            return "hand.raised.fill"
+        case .bluetoothOff:
+            return "bluetooth"
+        case .unsupported:
+            return "xmark.circle"
+        case .temporarilyUnavailable, .failed:
+            return "exclamationmark.triangle"
+        case .disconnected:
+            return "link.badge.plus"
+        case .connected:
+            return "checkmark.circle"
         }
     }
 }
@@ -995,11 +1253,9 @@ struct AdvancedSettingsView: View {
             // Connection Options Section
             Section(header: Text("Connection Options")) {
                 Toggle("Auto Reconnect", isOn: $autoReconnect)
-                    .onChange(of: autoReconnect) { oldValue, newValue in
+                    .onChange(of: autoReconnect) { _, newValue in
                         bleModel.autoReconnectEnabled = newValue
-                        contentLogger.debug(
-                            "Auto reconnect changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
-                        )
+                        contentLogger.debug("Auto reconnect changed to \(newValue, privacy: .public)")
                     }
                 if bleModel.isConnected {
                     Button("Disconnect Device") {
@@ -1042,11 +1298,9 @@ struct AdvancedSettingsView: View {
                         in: 0.5...5.0,
                         step: 0.5
                     )
-                    .onChange(of: rssiUpdateInterval) { oldValue, newValue in
+                    .onChange(of: rssiUpdateInterval) { _, newValue in
                         // If your model supports adjustable intervals for reading RSSI, update it here.
-                        contentLogger.debug(
-                            "RSSI interval changed from \(oldValue, privacy: .public) to \(newValue, privacy: .public)"
-                        )
+                        contentLogger.debug("RSSI interval changed to \(newValue, privacy: .public)")
                     }
                 }
             }
@@ -1079,13 +1333,6 @@ struct AdvancedSettingsView: View {
 
 
 #Preview("ContentView") {
-    // 1. Create a @State variable to be the source of truth for this preview.
-    //    This variable only exists for the preview's lifetime.
-    @Previewable @State var previewMatrixStyle: MatrixStyle = .array
-
-    // 2. ContentView now uses this local state. When you use the picker
-    //    in the preview canvas, `previewMatrixStyle` will actually change.
-    //    (Assuming ContentView has an init that accepts these, or default values)
     ContentView(bleModel: AccessoryViewModel())
 }
  
@@ -1104,7 +1351,6 @@ struct AdvancedSettingsView: View {
 }
 
 #Preview("Settings") {
-    @Previewable @State var isScanningForButton = true
     SettingsView(
         bleModel: AccessoryViewModel(),
         selectedMatrix: .constant(MatrixStyle.array)
@@ -1157,7 +1403,7 @@ struct AdvancedSettingsView: View {
     
     // --- OPTIMIZATION 2: Preview the view inside a NavigationStack ---
     // This is crucial for seeing the navigation title correctly.
-    return NavigationStack {
+    CompatibleNavigationStack {
         ReleaseNotesView(
             title: "App Releases",
             releases: sampleReleases // Pass the mock data to the view
@@ -1167,7 +1413,7 @@ struct AdvancedSettingsView: View {
 
 #Preview("Release Notes (Empty)") {
     // It's also good practice to preview the empty state.
-    NavigationStack {
+    CompatibleNavigationStack {
         ReleaseNotesView(
             title: "Controller Releases",
             releases: [] // Pass an empty array

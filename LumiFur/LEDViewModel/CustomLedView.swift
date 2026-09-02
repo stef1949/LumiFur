@@ -70,7 +70,7 @@ struct CustomLedView: View {
                 .saturation(0.4)
             
             VStack{
-                GlassEffectContainer(spacing: 40.0) {
+                VStack(spacing: 40.0) {
                     // When scribble is selected we increase the spacing
                     HStack(spacing: isScribbleSelected ? 40.0 : 20.0) {
                         
@@ -156,25 +156,11 @@ struct CustomLedView: View {
                             // Scribble icon on the RIGHT of the slider
                             Image(systemName: "scribble.variable")
                                 .font(.system(size: 27))
-                            
-                                .phaseAnimator(SymbolPhase.allCases, trigger: isPencilTapped) { content, phase in
-                                    content
-                                        .symbolEffect(.drawOn, isActive: phase == .drawingOn)
-                                        .symbolEffect(.drawOff, isActive: phase == .drawingOff)
-                                } animation: { phase in
-                                    switch phase {
-                                    case .drawingOn: return .bouncy // Duration of first effect
-                                    case .drawingOff: return .easeInOut(duration: 1.0) // Duration of second
-                                    case .idle: return nil
-                                        
-                                    }
-                                }
+                                .scaleEffect(isPencilTapped ? 1.08 : 1.0)
                         }
                         .frame(height: 50)
                         .padding(.horizontal, 20)
-                        .glassEffect(.regular.interactive())
-                        .glassEffectID("scribbleGroup", in: namespace)
-                        .glassEffectUnion(id: "scribbleGroup", namespace: namespace)
+                        .legacyGlassBackground(cornerRadius: 24)
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 selectedTool = (selectedTool == .pencil) ? nil : .pencil
@@ -187,25 +173,21 @@ struct CustomLedView: View {
                             Image(systemName: "eraser.fill")
                                 .frame(width: 50.0, height: 50.0)
                                 .font(.system(size: 27))
-                                .glassEffect()
-                                .glassEffectID("eraser", in: namespace)
-                                .glassEffectUnion(id: "eraser", namespace: namespace)
+                                .legacyGlassBackground(cornerRadius: 18)
                                 .onTapGesture {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                         selectedTool = .eraser
                                     }
                                     isEraserTapped.toggle()
                                 }
-                                .symbolEffect(.wiggle, value: isEraserTapped)
+                                .scaleEffect(isEraserTapped ? 1.06 : 1.0)
                             //.border(.black)
                             
                             if isEraserSelected {
                                 Image(systemName: "xmark.bin")
                                     .frame(width: 50, height: 50)
                                     .font(.system(size: 27))
-                                    .glassEffect()
-                                    .glassEffectID("trash", in: namespace)
-                                    .glassEffectUnion(id: "trash", namespace: namespace)
+                                    .legacyGlassBackground(cornerRadius: 18)
                                     .onTapGesture {
                                             ledStates = Array(
                                                 repeating: Array(repeating: .black, count: ledRows),
@@ -222,13 +204,10 @@ struct CustomLedView: View {
                                         isBinTapped.toggle()
                                     }
                                     .transition(.move(edge: .trailing).combined(with: .opacity))
-                                
-                                    .symbolEffect(.bounce.down.byLayer, options: .nonRepeating, value: isBinTapped)
+                                    .scaleEffect(isBinTapped ? 1.06 : 1.0)
                             }
                         }
-                        .glassEffect()
-                        .glassEffectID("scribbleGroup", in: namespace)
-                        .glassEffectUnion(id: "scribbleGroup", namespace: namespace)
+                        .legacyGlassBackground(cornerRadius: 24)
                         //.border(.blue)
                     }
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selectedTool)
@@ -279,7 +258,7 @@ struct CustomLedView: View {
                     activeColor: activeColor
                 )
                     .padding()
-                    .glassEffect(in: .rect(cornerRadius: 38))
+                    .legacyGlassBackground(cornerRadius: 38)
                     .rotationEffect(.degrees(90))
                     .frame(width: 500)
                 
@@ -290,4 +269,3 @@ struct CustomLedView: View {
         }
     }
 }
-

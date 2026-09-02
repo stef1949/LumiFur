@@ -22,7 +22,8 @@ struct WhatsNew: View {
             VStack {
                 Spacer()
                 Text("What's New in LumiFur")
-                    .font(.system(.largeTitle, weight: .bold))
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                     .frame(width: 240)
                     .clipped()
                     .multilineTextAlignment(.center)
@@ -102,10 +103,10 @@ struct WhatsNew: View {
             }
             .frame(maxWidth: .infinity, minHeight: 220)
         } else if appReleases.isEmpty {
-            ContentUnavailableView(
+            LegacyUnavailableView(
                 "No Release Notes",
                 systemImage: "doc.text.magnifyingglass",
-                description: Text("No app release notes are available right now.")
+                description: "No app release notes are available right now."
             )
             .frame(maxWidth: .infinity, minHeight: 220)
         } else {

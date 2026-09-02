@@ -60,7 +60,7 @@ struct StatusSectionView: View, Equatable {
                 ConnectionStateIconView(state: connectionState)
             }
             .frame(height: 20)
-            .animation(.smooth(duration: 0.25), value: showSignalView)
+            .animation(.easeInOut(duration: 0.25), value: showSignalView)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -71,19 +71,18 @@ struct StatusSectionView: View, Equatable {
         let progress: Double
         let luxValue: Double
         var body: some View {
-            Gauge(
-                value: progress,
-                in: 0...1
-            ) {
+            ZStack {
+                Circle()
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(luxTintColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
                 Text("\(Int(luxValue))")
-            } currentValueLabel: {
-                EmptyView()
+                    .font(.system(size: 8, weight: .semibold))
             }
-            .gaugeStyle(.accessoryCircular)
-            .tint(luxTintColor)
-            .scaleEffect(0.55)
             .frame(width: 22, height: 22)
-            .animation(.smooth(duration: 2.0), value: progress)
+            .animation(.easeInOut(duration: 2.0), value: progress)
         }
         private var luxTintColor: Color {
             if progress < 0.2 {

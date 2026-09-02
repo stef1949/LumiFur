@@ -47,6 +47,7 @@ struct SettingsView: View {
     // Local UI state.
     @State private var showAdvanced = false
     @State private var selectedIcon: String? = UIApplication.shared.alternateIconName
+    @State private var showOnboarding = false
     
     //@State private var selectedUnits: TempUnit = .℃
     private var selectedUnitsBinding: Binding<TempUnit> {
@@ -93,8 +94,15 @@ struct SettingsView: View {
         let _ = IdleCPUDiagnostics.shared.recordViewBody("SettingsView")
 
         List {
-            Section {
-                UnifiedConnectionView(accessoryViewModel: bleModel)
+            UnifiedConnectionSection(accessoryViewModel: bleModel)
+
+            if bleModel.hasInlineFeedback {
+                Section("Connection") {
+                    ConnectionFeedbackView(
+                        message: bleModel.errorMessage,
+                        onDismiss: bleModel.clearFeedback
+                    )
+                }
             }
 
             if bleModel.isConnected {
@@ -104,9 +112,7 @@ struct SettingsView: View {
                             viewModel: bleModel,
                             releaseViewModel: releaseViewModel
                         )
-                            .presentationDetents([.medium, .large])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(46)
+                        .compatibleSheetPresentation(cornerRadius: 46)
                     }
             }
             if bleModel.isConnected {
@@ -115,10 +121,12 @@ struct SettingsView: View {
                     selectedUnits: selectedUnitsBinding
                 )
             }
+            /*
             MatrixSection(
                 isExpanded: $isLedArrayExpanded,
                 selectedMatrix: $selectedMatrix
             )
+            */
 
             AdvancedSettingsSection(
                 bleModel: bleModel,
@@ -141,6 +149,10 @@ struct SettingsView: View {
                 controllerReleaseError: releaseViewModel.controllerReleaseError
             )
 
+            GettingStartedSection {
+                showOnboarding = true
+            }
+
             AppIconPickerSection()
 
             Text("©️2026 Richies 3D Ltd. All Rights Reserved.")
@@ -155,11 +167,20 @@ struct SettingsView: View {
                 }
             }
         }
-        .alert("Connection Error", isPresented: $bleModel.showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(bleModel.errorMessage)
+        #if targetEnvironment(macCatalyst)
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView {
+                showOnboarding = false
+            }
+            .frame(minWidth: 680, minHeight: 520)
         }
+        #else
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                showOnboarding = false
+            }
+        }
+        #endif
         .task(id: isActive) {
             guard isActive else { return }
             await activateIfNeeded()
@@ -246,33 +267,32 @@ struct SettingsView: View {
 
 /// A self-contained view that displays connection status, scan buttons,
 /// and lists of discovered or connected devices.
-private struct UnifiedConnectionView: View {
+private struct UnifiedConnectionSection: View {
     @ObservedObject var accessoryViewModel: AccessoryViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
+        Section {
             if !accessoryViewModel.isConnected {
                 statusAndScanSection
                     .connectionCard()
                 //.padding(.horizontal)
             }
-            ZStack {
-                if accessoryViewModel.isConnected {
-                    connectedSection
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .move(edge: .top).combined(with: .opacity)
-                        ))
-                } else {
-                    discoveredSection
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .move(edge: .bottom).combined(with: .opacity)
-                        ))
-                }
+
+            if accessoryViewModel.isConnected {
+                connectedSection
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
+            } else {
+                discoveredSection
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .move(edge: .bottom).combined(with: .opacity)
+                    ))
             }
-            .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         }
+        .animation(.easeInOut(duration: 0.35), value: accessoryViewModel.isConnected)
         //.padding(.vertical)
     }
 
@@ -293,7 +313,7 @@ private struct UnifiedConnectionView: View {
             }
             if !accessoryViewModel.isConnected && !accessoryViewModel.isScanning {
                 Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.borderedProminent)
                     .padding(.top, 6)
             }
         }
@@ -359,46 +379,53 @@ private struct UnifiedConnectionView: View {
         }
     }
 
+    @ViewBuilder
     private var discoveredSection: some View {
-        VStack(spacing: 12) {
-            if accessoryViewModel.discoveredDevices.isEmpty && !accessoryViewModel.isScanning {
-                Text("No devices found.")
-                    .foregroundStyle(.secondary)
-                    .connectionRow(interactive: false)
-            } else {
-                ForEach(accessoryViewModel.discoveredDevices) { device in
-                    DeviceRowButton(
-                        leadingIcon: "antenna.radiowaves.left.and.right",
-                        title: device.name,
-                        rssi: device.rssi,
-                        isConnecting: accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id,
-                        isDisabled: accessoryViewModel.isConnecting,
-                        action: { accessoryViewModel.connect(to: device) }
-                    )
-                }
+        if accessoryViewModel.discoveredDevices.isEmpty && !accessoryViewModel.isScanning {
+            Text("No devices found.")
+                .foregroundStyle(.secondary)
+                .connectionRow(interactive: false)
+        } else {
+            ForEach(accessoryViewModel.discoveredDevices) { device in
+                DeviceRowButton(
+                    leadingIcon: "antenna.radiowaves.left.and.right",
+                    title: device.name,
+                    rssi: device.rssi,
+                    isConnecting: accessoryViewModel.isConnecting && accessoryViewModel.connectingPeripheral?.id == device.id,
+                    isDisabled: accessoryViewModel.isConnecting,
+                    action: { accessoryViewModel.connect(to: device) }
+                )
             }
+        }
 
-            if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
-                Text("Previously Connected")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 6)
-                    .padding(.horizontal)
+        if !accessoryViewModel.previouslyConnectedDevices.isEmpty {
+            Text("Previously Connected")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 6)
+                .padding(.horizontal)
 
-                ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
-                    DeviceRowButton(
-                        leadingIcon: "clock.arrow.circlepath",
-                        title: storedDevice.name,
-                        rssi: nil,
-                        isConnecting: accessoryViewModel.isConnecting &&
-                                     accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
-                        isDisabled: accessoryViewModel.isConnecting,
-                        action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }
-                    )
+            ForEach(accessoryViewModel.previouslyConnectedDevices) { storedDevice in
+                DeviceRowButton(
+                    leadingIcon: "clock.arrow.circlepath",
+                    title: storedDevice.name,
+                    rssi: nil,
+                    isConnecting: accessoryViewModel.isConnecting &&
+                                 accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
+                    isDisabled: accessoryViewModel.isConnecting,
+                    action: { accessoryViewModel.connectToStoredPeripheral(storedDevice) }
+                )
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        withAnimation {
+                            accessoryViewModel.deleteStoredPeripheral(storedDevice)
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 }
             }
         }
-        //.padding(.horizontal)
     }
 }
 // MARK: - Subviews as Structs (MAJOR OPTIMIZATION)
@@ -471,6 +498,18 @@ private struct ReleaseNotesSection: View {
                 Text("Controller releases failed to load: \(controllerReleaseError.localizedDescription)")
                     .font(.footnote)
                     .foregroundStyle(.red)
+            }
+        }
+    }
+}
+
+private struct GettingStartedSection: View {
+    let showOnboarding: () -> Void
+
+    var body: some View {
+        Section("Getting Started") {
+            Button(action: showOnboarding) {
+                Label("Replay Onboarding", systemImage: "sparkles.rectangle.stack")
             }
         }
     }
@@ -572,7 +611,16 @@ private struct ConfigSection: View {
             }
         )
     }
-
+    private var mouthBrightnessOverrideBinding: Binding<Bool> {
+        Binding(
+            get: { bleModel.mouthBrightnessOverrideEnabled },
+            set: { newValue in
+                var configuration = bleModel.currentConfiguration()
+                configuration.mouthBrightnessOverrideEnabled = newValue
+                bleModel.applyUserConfiguration(configuration)
+            }
+        )
+    }
     private var accelerometerBinding: Binding<Bool> {
         Binding(
             get: { bleModel.accelerometerEnabled },
@@ -619,7 +667,8 @@ private struct ConfigSection: View {
                 .pickerStyle(.segmented)
                 .disabled(!bleModel.isConnected)
             }
-            BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation)
+            
+            BrightnessControls(bleModel: bleModel, autoBrightness: autoBrightnessBindingWithAnimation, mouthBrightnessOverride: mouthBrightnessOverrideBinding)
             
             Toggle(isOn: accelerometerBinding) {
                 Label("Accelerometer", systemImage: "rotate.3d.fill")
@@ -647,6 +696,7 @@ private struct ConfigSection: View {
 private struct BrightnessControls: View {
     @ObservedObject var bleModel: AccessoryViewModel
     @Binding var autoBrightness: Bool
+    @Binding var mouthBrightnessOverride: Bool
     
     var body: some View {
         VStack {
@@ -674,6 +724,11 @@ private struct BrightnessControls: View {
                     insertion: .move(edge: .top).combined(with: .opacity),
                     removal: .move(edge: .bottom).combined(with: .opacity)
                 ))
+            } else {
+                Toggle(isOn: $mouthBrightnessOverride) {
+                    Label("Maw Brightness Override", systemImage: "eye.fill")
+                }
+                .disabled(!bleModel.isConnected)
             }
         }
         // Apply animation at the container level for coordinated transitions.
@@ -744,39 +799,33 @@ private extension AccessoryViewModel {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview("Disconnected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .array
-    
     SettingsView(
         bleModel: .previewDisconnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.array)
     )
 }
 
 #Preview("Scanning") {
-    @Previewable @State var matrixStyle: MatrixStyle = .array
-    
     SettingsView(
         bleModel: .previewScanning,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.array)
     )
 }
 
 #Preview("Connected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .dot
-    
     SettingsView(
         bleModel: .previewConnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.dot)
     )
     .preferredColorScheme(.dark)
 }
 
 #Preview("Error State") {
-    @Previewable @State var matrixStyle: MatrixStyle = .wled
-    
     SettingsView(
         bleModel: .previewError,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.wled)
     )
 }
+#endif

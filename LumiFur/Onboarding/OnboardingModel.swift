@@ -5,15 +5,19 @@
 //  Created by Stephan Ritchie on 08/05/2026.
 //
 
-import SwiftUI
 import Foundation
-
+import SwiftUI
 
 struct Onboarding: Identifiable {
-    var id = UUID()
-    var title: String
-    var headline: String
-    var image: String
-    var gradientColors: [Color]
+    let id: String
+    let title: String
+    let headline: String
+    //let image: String
+    let systemImage: String
+    let previewImage: String
+    let highlights: [String]
+    let gradientColors: [Color]
+    let accentColor: Color
+    var zoomScale: CGFloat = 1.2
+    var zoomAnchor: UnitPoint = .bottom
 }
-

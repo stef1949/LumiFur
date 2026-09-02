@@ -16,7 +16,8 @@ struct ConnectionStateIconView: View {
         Group {
             if state.isAnimated {
                 imageView()
-                    .symbolEffect(.variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeat(.continuous))
+                    .symbolRenderingMode(.hierarchical)
+                    .opacity(0.9)
             } else {
                 imageView()
                     .symbolRenderingMode(state == .connected ? .multicolor : .monochrome)
@@ -24,7 +25,6 @@ struct ConnectionStateIconView: View {
             }
         }
         .foregroundStyle(state.statecolor)
-        .contentTransition(.symbolEffect(.replace))
     }
 
     @ViewBuilder

@@ -38,7 +38,7 @@ struct InfoView: View {
         ),
     ]
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             List {
                 // MARK: – Logo Header
                 VStack {
@@ -119,9 +119,9 @@ struct InfoView: View {
                                 //.foregroundStyle()
                                 .frame(width: 36)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(feature.title)
+                                Text(LocalizedStringKey(feature.title))
                                     .font(.headline)
-                                Text(feature.description)
+                                Text(LocalizedStringKey(feature.description))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -152,7 +152,7 @@ struct InfoView: View {
                 }
             }
             .listStyle(.insetGrouped)  // iOS18 default grouping
-            .scrollContentBackground(.hidden)  // let our list sit over the material
+            .compatibleScrollContentBackgroundHidden()
             .background(.thinMaterial)  // global bg
             .navigationTitle("About")
             .navigationBarTitleDisplayMode(.inline)

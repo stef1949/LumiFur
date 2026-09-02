@@ -12,8 +12,6 @@ struct FaceGridSection: View {
     let onSetView: (Int) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selectedItemID: FaceItem.ID?
-
     private var lightColor: Color {
         colorScheme == .dark ? .white : .black
     }
@@ -33,33 +31,25 @@ struct FaceGridSection: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVGrid(columns: Self.twoColumnGrid) {
-                ForEach(Self.items) { item in
+                ForEach(Self.items.indices, id: \.self) { index in
+                    let item = Self.items[index]
+                    let faceNumber = index + 1
+
                     FaceCellView(
                         item: item,
-                        isSelected: selectedItemID == item.id,
+                        faceNumber: faceNumber,
+                        isSelected: selectedView == faceNumber,
                         overlayColor: lightColor,
                         backgroundColor: darkColor
-                    ) { tappedItem in
-                        selectedItemID = tappedItem.id
-                        guard let index = Self.items.firstIndex(where: { $0.id == tappedItem.id }) else {
-                            return
-                        }
-                        onSetView(index + 1)
+                    ) { _ in
+                        onSetView(faceNumber)
                     }
                     .equatable()
                 }
             }
             .padding(.horizontal)
         }
-        .scrollDismissesKeyboard(.automatic)
-        .scrollClipDisabled()
-        .onChange(of: selectedView) { _, newViewIndex in
-            let modelIndex = newViewIndex - 1
-            if Self.items.indices.contains(modelIndex) {
-                selectedItemID = Self.items[modelIndex].id
-            } else {
-                selectedItemID = nil
-            }
-        }
+        .compatibleScrollDismissesKeyboard()
+        .compatibleScrollClipDisabled()
     }
 }

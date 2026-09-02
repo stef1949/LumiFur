@@ -35,9 +35,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429235</string>
+					<string>809990425.759174</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -53,13 +53,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -76,9 +80,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429221</string>
+					<string>809990425.75921</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -94,13 +98,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -117,9 +125,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429194</string>
+					<string>809990425.759164</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -135,13 +143,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -158,9 +170,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429208</string>
+					<string>809990425.7591929</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -176,13 +188,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -199,9 +215,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.4292279</string>
+					<string>809990425.759124</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -217,13 +233,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -240,9 +260,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429186</string>
+					<string>809990425.759187</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -258,13 +278,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -281,9 +305,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429201</string>
+					<string>809990425.759181</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -299,13 +323,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>title</key>
 			<string>LED Preview grid</string>
@@ -324,9 +352,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429178</string>
+					<string>809990425.759216</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -342,13 +370,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -365,9 +397,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429215</string>
+					<string>809990425.759092</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -383,13 +415,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -452,9 +488,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.429154</string>
+					<string>809990425.759199</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -470,13 +506,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -575,9 +615,9 @@
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>1196</string>
+					<string>1195</string>
 					<key>Timestamp</key>
-					<string>800594447.4292409</string>
+					<string>809990425.759204</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -593,13 +633,17 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>            return "checkmark.circle"
+</string>
 				<key>leading</key>
-				<string> }
- */
+				<string>            return "link.badge.plus"
+        case .connected:
 </string>
 				<key>trailing</key>
-				<string></string>
+				<string>        }
+    }
+}
+</string>
 			</dict>
 			<key>type</key>
 			<string>bookmark</string>
@@ -612,13 +656,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>410</string>
+					<string>412</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>409</string>
+					<string>411</string>
 					<key>Timestamp</key>
-					<string>800466463.696461</string>
+					<string>807813538.8108</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -634,16 +678,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>
+				<string>                    rssi: nil,
 </string>
 				<key>leading</key>
-				<string>// 3. Simpler Dependencies: Each view declares exactly what data it needs.
-// 4. Faster Compilation: The compiler processes smaller, independent structs.
+				<string>                    leadingIcon: "clock.arrow.circlepath",
+                    title: storedDevice.name,
 </string>
 				<key>trailing</key>
-				<string>private struct AboutSection: View {
-    let firmwareVersion: String
-    let isConnected: Bool
+				<string>                    isConnecting: accessoryViewModel.isConnecting &amp;&amp;
+                                 accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
+                    isDisabled: accessoryViewModel.isConnecting,
 </string>
 			</dict>
 			<key>type</key>
@@ -657,13 +701,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>312</string>
+					<string>314</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>311</string>
+					<string>313</string>
 					<key>Timestamp</key>
-					<string>800465602.431334</string>
+					<string>807813538.8107589</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -679,16 +723,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                            .font(.headline)
+				<string>            if !accessoryViewModel.isConnected &amp;&amp; !accessoryViewModel.isScanning {
 </string>
 				<key>leading</key>
-				<string>                    VStack(alignment: .leading, spacing: 2) {
-                        Text(device.name ?? "LumiFur Controller")
+				<string>                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
 </string>
 				<key>trailing</key>
-				<string>                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                            .accessibilityAddTraits(.isHeader)
+				<string>                Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 6)
 </string>
 			</dict>
 			<key>type</key>

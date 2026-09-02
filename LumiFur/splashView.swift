@@ -17,7 +17,7 @@ struct SplashView: View {
     let animationDuration: Double =  2.0 //Duration for full hover effect
     
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             ZStack {
                 if #available(iOS 18.0, *) {
                     MeshGradientView()
@@ -72,7 +72,8 @@ struct SplashView: View {
                                                 }
                                             }
                                         Text("The worlds Most Advanced Fursuit software")
-                                            .font(.system(.headline, weight: .medium))
+                                            .font(.headline)
+                                            .fontWeight(.medium)
                                             .frame(width: 190, alignment: .leading)
                                             .clipped()
                                             .multilineTextAlignment(.leading)
@@ -135,13 +136,13 @@ struct SplashView: View {
                                 .frame(maxWidth: 250)
                                 .clipped()
                                 .padding()
-                                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 32))
+                                .legacyGlassBackground(cornerRadius: 32)
                             }
                             .padding()
                             .mask {RoundedRectangle(cornerRadius: 32, style: .continuous)}
                             .shadow(color: Color(.sRGBLinear, red: 0/255, green: 0/255, blue: 0/255).opacity(0.15), radius: 18, x: 0, y: 14)
                     }
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 25))
+                    .legacyGlassBackground(cornerRadius: 25)
                     .padding(30)
                     .frame(maxWidth: .infinity,maxHeight: 550)
                     
@@ -158,7 +159,7 @@ struct SplashView: View {
                         //.border (.green)
                         .padding(20)
                         .padding(.horizontal, 16)
-                        .glassEffect(.regular.interactive())
+                        .legacyGlassBackground(cornerRadius: 24)
                         .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
@@ -167,17 +168,16 @@ struct SplashView: View {
             }
             .background(Color.white)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     // Consider moving Info link into the About section?
                     NavigationLink(destination: InfoView()) {
                         Image(systemName: "info.circle")
                     }
                 }
             }
-            .toolbar(.hidden, for: .tabBar)
+            .compatibleHideTabBar()
         }
         //.drawingGroup()
         //.compositingGroup()
     }
 }
-

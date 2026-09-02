@@ -9,7 +9,7 @@ import SwiftUI
 
 
 enum OptionType: Equatable {
-    case autoBrightness, accelerometer, sleepMode, auroraMode, customMessage
+    case autoBrightness, accelerometer, sleepMode, auroraMode, customMessage //, mouthBrightnessOverride
 }
 
 // Cached shape styles to avoid rebuilding gradients on each render
@@ -42,6 +42,7 @@ private extension OptionType {
     var activeShapeStyle: AnyShapeStyle {
         switch self {
         case .autoBrightness: return OptionToggleStyleCache.autoBrightness
+        //case .mouthBrightnessOverride: return OptionToggleStyleCache.mouthBrightnessOverride
         case .auroraMode:     return OptionToggleStyleCache.auroraMode
         case .sleepMode:      return OptionToggleStyleCache.sleepMode
         case .accelerometer, .customMessage:
@@ -54,20 +55,19 @@ struct OptionToggleView: View, Equatable {
     let title: String
     @Binding var isOn: Bool
     let optionType: OptionType
-    
-    // Equatable conformance only looks at the data,
-    // not at any closures or view‐builder guts.
+
+    // Equatable conformance only looks at the data, not closures or view builders.
     static func ==(lhs: OptionToggleView, rhs: OptionToggleView) -> Bool {
-        lhs.title       == rhs.title &&
-        lhs.isOn        == rhs.isOn &&
-        lhs.optionType  == rhs.optionType
+        lhs.title == rhs.title &&
+        lhs.isOn == rhs.isOn &&
+        lhs.optionType == rhs.optionType
     }
-    
+
     var body: some View {
         Button(action: {
             isOn.toggle()
         }) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .fontWeight(.medium)
                 .minimumScaleFactor(0.75)
                 .lineLimit(2)

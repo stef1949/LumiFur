@@ -102,4 +102,41 @@ extension SharedOptions.ProtoAction {
     var isStrobeAction: Bool {
         !isEmoji && rawValue == SharedOptions.strobeActionSymbol
     }
+
+    /// A human-readable name shared by every platform's accessibility UI.
+    var accessibilityName: String {
+        switch rawValue {
+        case "apple.logo": String(localized: "Apple logo")
+        case "paintpalette.fill": String(localized: "Colour palette")
+        case "🏳️‍⚧️": String(localized: "Transgender flag")
+        case "🏳️‍🌈": String(localized: "Rainbow flag")
+        case "🙂": String(localized: "Smiling face")
+        case "😳": String(localized: "Flushed face")
+        case "😎": String(localized: "Smiling face with sunglasses")
+        case "☠️": String(localized: "Skull and crossbones")
+        case "😈": String(localized: "Smiling face with horns")
+        case "😵‍💫": String(localized: "Face with spiral eyes")
+        case "+": String(localized: "Plus")
+        case "UwU": String(localized: "UwU")
+        case "✨": String(localized: "Sparkles")
+        case "pc": String(localized: "Computer")
+        case "opticaldisc.fill": String(localized: "Optical disc")
+        case "flame.fill": String(localized: "Flame")
+        case "water.waves": String(localized: "Waves")
+        case "😲": String(localized: "Astonished face")
+        case "🌀": String(localized: "Cyclone")
+        case "꩜": String(localized: "Spiral")
+        case "bubble.and.pencil": String(localized: "Message")
+        case "🦖": String(localized: "Dinosaur")
+        case "laser.burst": String(localized: "Strobe")
+        case "rainbow fluid": String(localized: "Rainbow fluid")
+        case "rectangle.fill": String(localized: "Solid colour")
+        case "arrow.trianglehead.2.clockwise.rotate.90": String(localized: "Rotating arrows")
+        case "rainbow linear band": String(localized: "Rainbow band")
+        case "Alt Face": String(localized: "Alternative face")
+        case "movieclapper.fill": String(localized: "Movie")
+        default:
+            isEmoji ? rawValue : String(localized: "Face effect")
+        }
+    }
 }

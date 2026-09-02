@@ -8,7 +8,7 @@ import os
 import UIKit
 #endif
 
-#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
 import ActivityKit
 #endif
 
@@ -24,6 +24,134 @@ private struct TemperatureWindowReducer: Sendable {
         }
 
         return window
+    }
+}
+
+/// The complete set of states the dashboard can present.
+///
+/// This keeps Bluetooth availability, connection progress, recovery, and controller
+/// action availability in one place instead of making each view infer them separately.
+enum DashboardState: Equatable {
+    case checkingBluetooth
+    case permissionDenied
+    case bluetoothOff
+    case unsupported
+    case temporarilyUnavailable
+    case disconnected
+    case scanning
+    case connecting
+    case reconnecting
+    case connected
+    case failed(message: String)
+
+    init(
+        connectionState: ConnectionState,
+        bluetoothState: CBManagerState,
+        errorMessage: String = ""
+    ) {
+        switch bluetoothState {
+        case .unauthorized:
+            self = .permissionDenied
+            return
+        case .poweredOff:
+            self = .bluetoothOff
+            return
+        case .unsupported:
+            self = .unsupported
+            return
+        case .resetting:
+            self = .temporarilyUnavailable
+            return
+        case .unknown:
+            self = .checkingBluetooth
+            return
+        case .poweredOn:
+            break
+        @unknown default:
+            self = .temporarilyUnavailable
+            return
+        }
+
+        switch connectionState {
+        case .disconnected:
+            self = .disconnected
+        case .scanning:
+            self = .scanning
+        case .connecting:
+            self = .connecting
+        case .connected:
+            self = .connected
+        case .failed:
+            let message = errorMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            self = .failed(
+                message: message.isEmpty
+                    ? "LumiFur couldn't connect to the controller."
+                    : message
+            )
+        case .bluetoothOff:
+            self = .bluetoothOff
+        case .reconnecting:
+            self = .reconnecting
+        case .unknown:
+            let message = errorMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            self = .failed(
+                message: message.isEmpty
+                    ? "Bluetooth status couldn't be determined."
+                    : message
+            )
+        }
+    }
+
+    var allowsControllerActions: Bool {
+        self == .connected
+    }
+
+    var toolbarStatusText: String {
+        switch self {
+        case .checkingBluetooth:
+            return "Checking Bluetooth…"
+        case .permissionDenied:
+            return "Bluetooth Permission"
+        case .bluetoothOff:
+            return "Bluetooth Off"
+        case .unsupported:
+            return "Bluetooth Unsupported"
+        case .temporarilyUnavailable:
+            return "Bluetooth Unavailable"
+        case .disconnected:
+            return "Disconnected"
+        case .scanning:
+            return "Scanning…"
+        case .connecting:
+            return "Connecting…"
+        case .reconnecting:
+            return "Reconnecting…"
+        case .connected:
+            return "Connected"
+        case .failed:
+            return "Connection Error"
+        }
+    }
+
+    var statusConnectionState: ConnectionState {
+        switch self {
+        case .checkingBluetooth, .temporarilyUnavailable:
+            return .unknown
+        case .permissionDenied, .unsupported, .failed:
+            return .failed
+        case .bluetoothOff:
+            return .bluetoothOff
+        case .disconnected:
+            return .disconnected
+        case .scanning:
+            return .scanning
+        case .connecting:
+            return .connecting
+        case .reconnecting:
+            return .reconnecting
+        case .connected:
+            return .connected
+        }
     }
 }
 
@@ -105,6 +233,8 @@ final class AccessoryViewModel: ObservableObject {
     @Published private(set) var otaEstimatedRemainingSeconds: TimeInterval?
     @Published private(set) var otaState: OTAState = .idle
     @Published var autoBrightness = true
+    @Published var staticColorEnabled = false
+    @Published var mouthBrightnessOverrideEnabled = true
     @Published var accelerometerEnabled = true
     @Published var sleepModeEnabled = true
     @Published var auroraModeEnabled = true
@@ -122,6 +252,16 @@ final class AccessoryViewModel: ObservableObject {
     var connectionStatus: String { connectionState.rawValue }
     var connectionColor: Color { connectionState.color }
     var connectionImageName: Image { connectionState.image }
+    var dashboardState: DashboardState {
+        DashboardState(
+            connectionState: connectionState,
+            bluetoothState: bluetoothState,
+            errorMessage: errorMessage
+        )
+    }
+    var hasInlineFeedback: Bool {
+        showError && !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
     var temperatureString: String {
         guard let currentTempC else { return "--" }
         return String(format: "%.1f°C", currentTempC)
@@ -225,11 +365,11 @@ final class AccessoryViewModel: ObservableObject {
     private var otaGeneration: UInt64 = 0
     private var otaInProgress = false
     private static let chartProcessingQueue = DispatchQueue(
-        label: "com.richies3d.lumifur.chart-processing",
+        label: "com.richies3d.lumifur3.chart-processing",
         qos: .utility
     )
 
-    #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
+    #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
     var currentActivity: Activity<LumiFur_WidgetAttributes>?
     var activityStateTask: Task<Void, Never>?
     var lastSentActivityState: LumiFur_WidgetAttributes.ContentState?
@@ -239,7 +379,7 @@ final class AccessoryViewModel: ObservableObject {
 
     // MARK: Init
 
-    @MainActor
+    
     init(
         client: BLEClient = BLEClient(),
         store: StoredPeripheralStore = StoredPeripheralStore(),
@@ -264,29 +404,27 @@ final class AccessoryViewModel: ObservableObject {
         configureTransport()
         registerObservers()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        if !isRunningPreview {
-            Task { @MainActor [weak self] in
-                await self?.endAllLumiFurActivities()
+    }
+
+    isolated deinit {
+            notificationTokens.forEach {
+                NotificationCenter.default.removeObserver($0)
             }
+
+            pendingExternalUpdateTask?.cancel()
+            pendingWatchSyncTask?.cancel()
+            pendingStrobeWriteTask?.cancel()
+            otaTask?.cancel()
+
+            #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+            if #available(iOS 16.1, *) {
+                pendingLiveActivityUpdateTask?.cancel()
+                activityStateTask?.cancel()
+            }
+            #endif
         }
-        #endif
-    }
 
-    deinit {
-        notificationTokens.forEach(NotificationCenter.default.removeObserver)
-        pendingExternalUpdateTask?.cancel()
-        pendingWatchSyncTask?.cancel()
-        pendingStrobeWriteTask?.cancel()
-        otaTask?.cancel()
-
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        pendingLiveActivityUpdateTask?.cancel()
-        activityStateTask?.cancel()
-        #endif
-    }
-
-    @MainActor
+    
     private func restorePersistedPreferences() {
         migrateLegacyPreferenceKeysIfNeeded(defaults)
 
@@ -294,6 +432,16 @@ final class AccessoryViewModel: ObservableObject {
             in: defaults,
             key: "autoBrightness",
             defaultValue: autoBrightness
+        )
+        staticColorEnabled = persistedBool(
+            in: defaults,
+            key: "staticColor",
+            defaultValue: staticColorEnabled
+        )
+        mouthBrightnessOverrideEnabled = persistedBool(
+            in: defaults,
+            key: "mouthBrightnessOverride",
+            defaultValue: mouthBrightnessOverrideEnabled
         )
         accelerometerEnabled = persistedBool(
             in: defaults,
@@ -316,7 +464,6 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
     private func migrateLegacyPreferenceKeysIfNeeded(_ defaults: UserDefaults) {
         if defaults.object(forKey: "auroraMode") == nil,
            let legacyAuroraMode = defaults.object(forKey: "arouraMode") as? Bool {
@@ -343,7 +490,7 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
+    
     private func persistedBool(
         in defaults: UserDefaults,
         key: String,
@@ -358,6 +505,8 @@ final class AccessoryViewModel: ObservableObject {
 
     private func persistCurrentPreferences() {
         defaults.set(autoBrightness, forKey: "autoBrightness")
+        defaults.set(staticColorEnabled, forKey: "staticColor")
+        defaults.set(mouthBrightnessOverrideEnabled, forKey: "mouthBrightnessOverride")
         defaults.set(accelerometerEnabled, forKey: "accelerometer")
         defaults.set(sleepModeEnabled, forKey: "sleepMode")
         defaults.set(auroraModeEnabled, forKey: "auroraMode")
@@ -371,6 +520,16 @@ final class AccessoryViewModel: ObservableObject {
             "autoBrightness",
             current: &autoBrightness,
             newValue: configuration.autoBrightness
+        )
+        let didChangeStaticColor = assignIfChanged(
+            "staticColorEnabled",
+            current: &staticColorEnabled,
+            newValue: configuration.staticColorEnabled
+        )
+        let didChangeMouthBrightnessOverride = assignIfChanged(
+            "mouthBrightnessOverrideEnabled",
+            current: &mouthBrightnessOverrideEnabled,
+            newValue: configuration.mouthBrightnessOverrideEnabled
         )
         let didChangeAccelerometer = assignIfChanged(
             "accelerometerEnabled",
@@ -388,11 +547,11 @@ final class AccessoryViewModel: ObservableObject {
             newValue: configuration.auroraModeEnabled
         )
 
-        if persist, didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+        if persist, didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode || didChangeStaticColor || didChangeMouthBrightnessOverride {
             persistCurrentPreferences()
         }
 
-        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode {
+        if didChangeAutoBrightness || didChangeAccelerometer || didChangeSleepMode || didChangeAuroraMode || didChangeStaticColor || didChangeMouthBrightnessOverride {
             scheduleExternalStateSync()
         }
     }
@@ -434,9 +593,11 @@ final class AccessoryViewModel: ObservableObject {
         applyUserConfiguration(
             AccessoryConfiguration(
                 autoBrightness: true,
-                accelerometerEnabled: true,
+                accelerometerEnabled: false,
                 sleepModeEnabled: true,
-                auroraModeEnabled: true
+                auroraModeEnabled: true,
+                staticColorEnabled: false,
+                mouthBrightnessOverrideEnabled: true
             ),
             syncToDevice: syncToDevice
         )
@@ -523,6 +684,8 @@ final class AccessoryViewModel: ObservableObject {
 
     func encodedAccessorySettingsPayload(
         autoBrightness: Bool,
+        staticColorEnabled: Bool,
+        mouthBrightnessOverrideEnabled: Bool,
         accelerometerEnabled: Bool,
         sleepModeEnabled: Bool,
         auroraModeEnabled: Bool
@@ -531,7 +694,9 @@ final class AccessoryViewModel: ObservableObject {
             autoBrightness: autoBrightness,
             accelerometerEnabled: accelerometerEnabled,
             sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
+            auroraModeEnabled: auroraModeEnabled,
+            staticColorEnabled: staticColorEnabled,
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
         )
     }
 
@@ -544,8 +709,27 @@ final class AccessoryViewModel: ObservableObject {
         previouslyConnectedDevices = devices
     }
 
-    @MainActor
+    
+    func deleteStoredPeripheral(_ stored: StoredPeripheral) {
+        previouslyConnectedDevices = store.delete(id: stored.id)
+
+        if lastConnectedPeripheralUUID == stored.id {
+            lastConnectedPeripheralUUID = nil
+            store.setLastConnectedPeripheralUUID(nil)
+            didAttemptAutoReconnect = false
+
+            if connectionState == .reconnecting {
+                connectionState = .disconnected
+            }
+        }
+
+        scheduleExternalStateSync()
+    }
+
+
     func scanForDevices() {
+        clearFeedback()
+
         if isRunningPreview {
             discoveredDevices = [
                 PeripheralDevice(
@@ -581,7 +765,7 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
-    @MainActor
+
     func stopScan() {
         client.stopScan()
         isScanning = false
@@ -593,7 +777,7 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
-    @MainActor
+
     func connect(to device: PeripheralDevice) {
         guard isBluetoothReady else {
             connectionState = .bluetoothOff
@@ -613,13 +797,13 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
-    @MainActor
+
     func disconnect() {
         isManualDisconnect = true
         client.disconnect()
     }
 
-    @MainActor
+
     func connectToStoredPeripheral(_ stored: StoredPeripheral) {
         guard isBluetoothReady else {
             connectionState = .bluetoothOff
@@ -633,7 +817,6 @@ final class AccessoryViewModel: ObservableObject {
     }
 
     @discardableResult
-    @MainActor
     func setView(_ view: Int) -> Bool {
         guard (1...50).contains(view), selectedView != view else { return false }
         guard isConnected else {
@@ -650,22 +833,22 @@ final class AccessoryViewModel: ObservableObject {
         return true
     }
 
-    @MainActor
+
     func faceButtonTapped(_ faceIndex: Int) {
         setView(faceIndex)
     }
 
-    @MainActor
+
     func sendScrollText(_ text: String) {
         _ = updateCustomMessage(text)
     }
 
-    @MainActor
+
     func sendScrollSpeed(_ speed: UInt8) {
         client.writeScrollSpeed(speed)
     }
 
-    @MainActor
+
     func setBrightness(_ value: UInt8) {
         guard brightness != value else { return }
         guard client.canWriteBrightness() else {
@@ -676,7 +859,7 @@ final class AccessoryViewModel: ObservableObject {
         client.writeBrightness(value)
     }
 
-    @MainActor
+    
     func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
         guard client.canWriteStrobeSettings() else {
             presentError("Accessory is not ready to accept strobe settings yet.")
@@ -692,28 +875,28 @@ final class AccessoryViewModel: ObservableObject {
 
         pendingStrobeWriteTask?.cancel()
         pendingStrobeWriteTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 120_000_000)
+            try? await Task.sleep(for: .milliseconds(120))
             guard !Task.isCancelled else { return }
             self?.client.writeStrobe(payload)
         }
     }
 
-    @MainActor
+
     func writeConfigToCharacteristic() {
         _ = applyUserConfiguration(currentConfiguration())
     }
 
-    @MainActor
+
     func startRSSIMonitoring() {
         client.startRSSIMonitoring(interval: preferredRSSIMonitoringInterval())
     }
 
-    @MainActor
+
     func stopRSSIMonitoring() {
         client.stopRSSIMonitoring()
     }
 
-    @MainActor
+    
     func startOTAUpdate(firmwareData: Data) {
         guard isConnected else {
             transitionOTAState(to: .failed(message: "Peripheral not ready"))
@@ -747,7 +930,7 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
+    
     func abortOTAUpdate() {
         otaTask?.cancel()
         otaGeneration &+= 1
@@ -757,7 +940,7 @@ final class AccessoryViewModel: ObservableObject {
         client.writeOTAAbort()
     }
 
-    @MainActor
+    
     func syncStateToWatch() {
         let digest = makeWatchStateDigest()
         guard digest != lastSentWatchDigest else { return }
@@ -769,15 +952,18 @@ final class AccessoryViewModel: ObservableObject {
 
     // MARK: Transport wiring
 
-    @MainActor
+    
     private func configureTransport() {
         let selfBox = WeakUncheckedSendableBox(self)
+
         client.onEvent = { event in
-            selfBox.value?.handleTransportEvent(event)
+            Task { @MainActor in
+                selfBox.value?.handleTransportEvent(event)
+            }
         }
     }
 
-    @MainActor
+    
     private func registerObservers() {
         let selfBox = WeakUncheckedSendableBox(self)
         #if canImport(UIKit)
@@ -806,7 +992,7 @@ final class AccessoryViewModel: ObservableObject {
         #endif
     }
 
-    @MainActor
+    
     private func handleTransportEvent(_ event: BLEClient.Event) {
         IdleCPUDiagnostics.shared.recordTransportEvent(event.idleCPUCounterName)
 
@@ -838,7 +1024,7 @@ final class AccessoryViewModel: ObservableObject {
             handleConnectionFailure(failure)
 
         case .disconnected(let disconnection):
-            Task { @MainActor [weak self] in
+            Task { [weak self] in
                 await self?.handleDisconnect(disconnection)
             }
 
@@ -914,7 +1100,7 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
+    
     private func handleBluetoothStateChange(_ state: CBManagerState) {
         bluetoothState = state
 
@@ -948,13 +1134,14 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
-    @MainActor
+    
     private func handleConnected(_ connection: PeripheralConnection) {
         let peripheral = connection.peripheral.value
         let uuid = peripheral.identifier.uuidString
 
         targetPeripheral = peripheral
         connectionState = .connected
+        clearFeedback()
         isScanning = false
         connectingPeripheral = nil
         retainOnlyConnectedDiscoveredDevice(peripheral)
@@ -970,14 +1157,16 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
         processPendingWidgetCommandIfNeeded()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        Task { [weak self] in
-            await self?.startLumiFur_WidgetLiveActivity()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            Task { [weak self] in
+                await self?.startLumiFur_WidgetLiveActivity()
+            }
         }
         #endif
     }
 
-    @MainActor
+    
     private func handleConnectionFailure(_ failure: PeripheralFailure) {
         if targetPeripheral?.identifier.uuidString == failure.id {
             targetPeripheral = nil
@@ -991,9 +1180,13 @@ final class AccessoryViewModel: ObservableObject {
         if !isScanning {
             scanForDevices()
         }
+
+        presentError(
+            failure.message ?? "LumiFur couldn't connect to \(failure.name ?? "the controller")."
+        )
     }
 
-    @MainActor
+    
     private func handleDisconnect(_ disconnection: PeripheralDisconnection) async {
         let wasManualDisconnect = isManualDisconnect
         isManualDisconnect = false
@@ -1003,16 +1196,18 @@ final class AccessoryViewModel: ObservableObject {
         connectingPeripheral = nil
         scheduleExternalStateSync()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        let finalState = createContentState(connected: false, status: ConnectionState.disconnected.rawValue)
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            let finalState = createContentState(connected: false, status: ConnectionState.disconnected.rawValue)
 
-        if wasManualDisconnect {
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
-        } else if disconnection.message != nil {
-            let dismissalDate = Date().addingTimeInterval(15 * 60)
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
-        } else {
-            await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            if wasManualDisconnect {
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            } else if disconnection.message != nil {
+                let dismissalDate = Date().addingTimeInterval(15 * 60)
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .after(dismissalDate))
+            } else {
+                await endLiveActivity(finalContent: finalState, dismissalPolicy: .immediate)
+            }
         }
         #endif
 
@@ -1026,12 +1221,12 @@ final class AccessoryViewModel: ObservableObject {
 
     // MARK: State mutation helpers
 
-    @MainActor
+    
     private func apply(configuration: AccessoryConfiguration) {
         applyConfigurationState(configuration)
     }
 
-    @MainActor
+    
     private func applyLiveTemperature(_ celsius: Double) {
         currentTempC = celsius
         IdleCPUDiagnostics.shared.recordPublishedChange("currentTempC")
@@ -1050,7 +1245,7 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
+    
     private func apply(history: [TemperatureData]) {
         let cappedHistory = Array(history.suffix(maxTemperatureDataPoints))
         temperatureData = cappedHistory
@@ -1062,7 +1257,7 @@ final class AccessoryViewModel: ObservableObject {
         scheduleExternalStateSync()
     }
 
-    @MainActor
+    
     private func appendTemperatureSample(_ sample: TemperatureData) {
         temperatureData.append(sample)
 
@@ -1081,7 +1276,7 @@ final class AccessoryViewModel: ObservableObject {
         publishTemperatureDataSnapshot()
     }
 
-    @MainActor
+    
     private func upsertDiscoveredDevice(_ device: PeripheralDevice) {
         if let existingIndex = discoveredDevices.firstIndex(where: { $0.id == device.id }) {
             discoveredDevices[existingIndex] = device
@@ -1094,7 +1289,7 @@ final class AccessoryViewModel: ObservableObject {
         }
     }
 
-    @MainActor
+    
     private func retainOnlyConnectedDiscoveredDevice(_ peripheral: CBPeripheral) {
         if let connectedDevice = discoveredDevices.first(where: { $0.id == peripheral.identifier }) {
             discoveredDevices = [connectedDevice]
@@ -1112,7 +1307,7 @@ final class AccessoryViewModel: ObservableObject {
         ]
     }
 
-    @MainActor
+    
     private func clearConnectionState() {
         targetPeripheral = nil
         deviceInfo = nil
@@ -1131,28 +1326,35 @@ final class AccessoryViewModel: ObservableObject {
         client.stopRSSIMonitoring()
     }
 
-    @MainActor
+    
     private func presentError(_ message: String) {
         errorMessage = message
         showError = true
     }
 
-    @MainActor
+    func clearFeedback() {
+        errorMessage = ""
+        showError = false
+    }
+
+    
     func currentConfiguration() -> AccessoryConfiguration {
         AccessoryConfiguration(
             autoBrightness: autoBrightness,
             accelerometerEnabled: accelerometerEnabled,
             sleepModeEnabled: sleepModeEnabled,
-            auroraModeEnabled: auroraModeEnabled
+            auroraModeEnabled: auroraModeEnabled,
+            staticColorEnabled: staticColorEnabled,
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
         )
     }
 
     // MARK: OTA helpers
 
-    @MainActor
+    
     private func runOTAUpdate(firmwareData: Data, generation: UInt64) async throws {
         try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaStart(size: firmwareData.count))
-        try await Task.sleep(nanoseconds: 120_000_000)
+        try? await Task.sleep(for: .milliseconds(120))
 
         let chunkSize = client.preferredOTAChunkPayloadSize()
         var offset = 0
@@ -1192,7 +1394,7 @@ final class AccessoryViewModel: ObservableObject {
         transitionOTAState(to: .completed)
     }
 
-    @MainActor
+    
     private func transitionOTAState(to newState: OTAState) {
         otaState = newState
         otaProgress = newState.progress
@@ -1211,7 +1413,7 @@ final class AccessoryViewModel: ObservableObject {
 
     // MARK: Notifications
 
-    @MainActor
+    
     private func handleAppDidBecomeActive() {
         isAppActive = true
         processPendingWidgetCommandIfNeeded()
@@ -1219,26 +1421,28 @@ final class AccessoryViewModel: ObservableObject {
         guard isConnected else { return }
         startRSSIMonitoring()
 
-        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS)
-        Task { [weak self] in
-            await self?.startLumiFur_WidgetLiveActivity()
+        #if canImport(ActivityKit) && !targetEnvironment(macCatalyst) && !os(macOS) && !LUMIFUR_LEGACY_IOS15
+        if #available(iOS 16.1, *) {
+            Task { [weak self] in
+                await self?.startLumiFur_WidgetLiveActivity()
+            }
         }
         #endif
     }
 
-    @MainActor
+    
     private func handleAppWillResignActive() {
         isAppActive = false
         stopRSSIMonitoring()
     }
 
-    @MainActor
+    
     private func publishTemperatureDataSnapshot() {
         IdleCPUDiagnostics.shared.recordPublishedChange("temperatureData")
         temperatureDataSubject.send(temperatureData)
     }
 
-    @MainActor
+    
     private func preferredRSSIMonitoringInterval() -> TimeInterval {
         guard isAppActive else { return idleRSSIInterval }
 
@@ -1250,7 +1454,7 @@ final class AccessoryViewModel: ObservableObject {
         return configured > 0 ? configured : defaultRSSIInterval
     }
 
-    @MainActor
+    
     private func shouldPublishRSSI(_ rssi: Int) -> Bool {
         if defaults.bool(forKey: "rssiMonitoringEnabled") {
             return signalStrength != rssi
@@ -1259,20 +1463,20 @@ final class AccessoryViewModel: ObservableObject {
         return signalStrengthBucket(for: signalStrength) != signalStrengthBucket(for: rssi)
     }
 
-    @MainActor
+    
     private func signalStrengthBucket(for rssi: Int) -> Int {
         let normalized = Double(rssi + 100) / 30
         return min(max(Int(normalized * 4), 0), 4)
     }
 
-    @MainActor
+    
     private func applyLuxValueIfNeeded(_ value: UInt16) {
         guard luxBucket(for: luxValue) != luxBucket(for: value) else { return }
         luxValue = value
         IdleCPUDiagnostics.shared.recordPublishedChange("luxValue")
     }
 
-    @MainActor
+    
     private func luxBucket(for value: UInt16) -> Int {
         let minLux = 1.0
         let maxLux = 4097.0
@@ -1282,7 +1486,6 @@ final class AccessoryViewModel: ObservableObject {
     }
 
     @discardableResult
-    @MainActor
     private func assignIfChanged<Value: Equatable>(
         _ key: String,
         current: inout Value,
@@ -1298,7 +1501,6 @@ final class AccessoryViewModel: ObservableObject {
 // MARK: - Preview Helpers
 
 #if DEBUG
-@MainActor
 extension AccessoryViewModel {
     convenience init(
         isConnected: Bool,
@@ -1359,12 +1561,12 @@ extension AccessoryViewModel {
 }
 #endif // DEBUG
 
+#if DEBUG
 #Preview("Connected") {
-    @Previewable @State var matrixStyle: MatrixStyle = .dot
-
     SettingsView(
         bleModel: .previewConnected,
-        selectedMatrix: $matrixStyle
+        selectedMatrix: .constant(.dot)
     )
     .preferredColorScheme(.dark)
 }
+#endif

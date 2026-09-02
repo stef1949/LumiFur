@@ -35,6 +35,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LumiFur", category: "BLEClient")
     private let queue = DispatchQueue(label: "com.richies3d.lumifur.ble", qos: .userInitiated)
+    private let queueKey = DispatchSpecificKey<Void>()
     private let previewMode: Bool
 
     private var centralManager: CBCentralManager?
@@ -54,21 +55,24 @@ final class BLEClient: NSObject, @unchecked Sendable {
             environment["XCTestConfigurationFilePath"] != nil
 
         super.init()
+        queue.setSpecific(key: queueKey, value: ())
 
         guard !previewMode else { return }
         centralManager = CBCentralManager(delegate: self, queue: queue)
     }
 
     deinit {
-        cancelRSSIMonitoringTimer()
-        resumePendingWrite(with: BLEClientError.deinitialized)
-        writeTimeoutWorkItem?.cancel()
+        syncOnQueue {
+            cancelRSSIMonitoringTimer()
+            resumePendingWrite(with: BLEClientError.deinitialized)
+            writeTimeoutWorkItem?.cancel()
+        }
     }
 
     // MARK: Public API
 
     func startScan() {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let centralManager = self.centralManager else { return }
             guard centralManager.state == .poweredOn else {
                 self.emit(.stateChanged(centralManager.state))
@@ -83,14 +87,14 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func stopScan() {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let centralManager = self.centralManager else { return }
             centralManager.stopScan()
         }
     }
 
     func connect(to peripheral: CBPeripheral) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let centralManager = self.centralManager else { return }
             guard centralManager.state == .poweredOn else {
                 self.emit(.stateChanged(centralManager.state))
@@ -105,7 +109,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func connectToStoredUUID(_ uuidString: String) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let centralManager = self.centralManager else { return }
             guard let uuid = UUID(uuidString: uuidString) else {
                 self.emit(.storedPeripheralNotFound(uuidString))
@@ -125,14 +129,14 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func disconnect() {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let centralManager = self.centralManager, let targetPeripheral = self.targetPeripheral else { return }
             centralManager.cancelPeripheralConnection(targetPeripheral)
         }
     }
 
     func startRSSIMonitoring(interval: TimeInterval = 1.0) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             self.rssiTimer?.cancel()
@@ -158,7 +162,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func stopRSSIMonitoring() {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
             self.cancelRSSIMonitoringTimer()
         }
@@ -185,7 +189,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func writeStrobe(_ settings: StrobeSettingsPayload) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let peripheral = self.targetPeripheral, let characteristic = self.characteristics[.strobeSettings] else {
                 return
             }
@@ -226,7 +230,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
     /// Returns an OTA payload size (excluding the 1-byte command prefix) based on negotiated ATT write limits.
     func preferredOTAChunkPayloadSize(fallback: Int = 182) -> Int {
-        queue.sync {
+        syncOnQueue {
             guard let peripheral = targetPeripheral, peripheral.state == .connected else {
                 return fallback
             }
@@ -251,7 +255,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
             try Task.checkCancellation()
 
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                queue.async { [weak self] in
+                performOnQueue { [weak self] in
                     guard let self else {
                         continuation.resume(throwing: BLEClientError.deinitialized)
                         return
@@ -271,7 +275,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
             }
         } onCancel: { [weak self] in
             guard let client = self else { return }
-            client.queue.async { [weak client] in
+            client.performOnQueue { [weak client] in
                 client?.resumePendingWrite(with: CancellationError())
             }
         }
@@ -287,12 +291,28 @@ final class BLEClient: NSObject, @unchecked Sendable {
         }
     }
 
+    private func performOnQueue(_ work: @escaping @Sendable () -> Void) {
+        if DispatchQueue.getSpecific(key: queueKey) != nil {
+            work()
+        } else {
+            queue.async(execute: work)
+        }
+    }
+
+    private func syncOnQueue<Value>(_ work: () -> Value) -> Value {
+        if DispatchQueue.getSpecific(key: queueKey) != nil {
+            return work()
+        }
+
+        return queue.sync(execute: work)
+    }
+
     private func write(
         _ data: Data,
         to kind: AccessoryCharacteristic,
         type: CBCharacteristicWriteType
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let peripheral = self.targetPeripheral, let characteristic = self.characteristics[kind] else { return }
             peripheral.writeValue(data, for: characteristic, type: type)
         }
@@ -303,7 +323,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
         to kind: AccessoryCharacteristic,
         preferredWriteTypeForCharacteristic: Bool
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self, let peripheral = self.targetPeripheral, let characteristic = self.characteristics[kind] else { return }
             let writeType = self.preferredWriteType(for: characteristic)
             peripheral.writeValue(data, for: characteristic, type: writeType)
@@ -316,7 +336,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     private func canWrite(to kind: AccessoryCharacteristic) -> Bool {
-        queue.sync {
+        syncOnQueue {
             guard let targetPeripheral else { return false }
             guard targetPeripheral.state == .connected else { return false }
             return characteristics[kind] != nil
@@ -464,7 +484,7 @@ extension BLEClient: CBCentralManagerDelegate {
         emit(.stateChanged(central.state))
 
         if central.state != .poweredOn {
-            queue.async { [weak self] in
+            performOnQueue { [weak self] in
                 self?.resetConnectionState()
             }
         }
@@ -493,7 +513,7 @@ extension BLEClient: CBCentralManagerDelegate {
     }
 
     nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
             self.targetPeripheral = peripheral
             self.characteristics.reset()
@@ -509,7 +529,7 @@ extension BLEClient: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
             self.resetConnectionState()
             self.emit(
@@ -529,7 +549,7 @@ extension BLEClient: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             self.resetConnectionState()
@@ -551,7 +571,7 @@ extension BLEClient: CBCentralManagerDelegate {
 
 extension BLEClient: CBPeripheralDelegate {
     nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             if let error {
@@ -579,7 +599,7 @@ extension BLEClient: CBPeripheralDelegate {
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             if let error {
@@ -615,7 +635,7 @@ extension BLEClient: CBPeripheralDelegate {
         didUpdateValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             if let error {
@@ -695,7 +715,7 @@ extension BLEClient: CBPeripheralDelegate {
     }
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        queue.async { [weak self] in
+        performOnQueue { [weak self] in
             guard let self else { return }
 
             if let error {

@@ -9,6 +9,185 @@
 
 import SwiftUI
 
+struct CompatibleNavigationStack<Content: View>: View {
+    private let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                content()
+            }
+        } else {
+            NavigationView {
+                content()
+            }
+            .navigationViewStyle(.stack)
+        }
+    }
+}
+
+struct MarkdownTextView: View {
+    let markdown: String
+
+    var body: some View {
+        Text(attributedString)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
+    }
+
+    private var attributedString: AttributedString {
+        if let parsed = try? AttributedString(markdown: markdown) {
+            return parsed
+        }
+
+        return AttributedString(markdown)
+    }
+}
+
+struct LegacyUnavailableView: View {
+    let title: String
+    let systemImage: String
+    let description: String?
+
+    init(_ title: String, systemImage: String, description: String? = nil) {
+        self.title = title
+        self.systemImage = systemImage
+        self.description = description
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundColor(.secondary)
+            Text(LocalizedStringKey(title))
+                .font(.headline)
+            if let description {
+                Text(LocalizedStringKey(description))
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+    }
+}
+
+extension View {
+    func legacyGlassBackground(cornerRadius: CGFloat = 20) -> some View {
+        background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    @ViewBuilder
+    func compatibleLiquidGlass(
+        cornerRadius: CGFloat = 20,
+        tint: Color = .white.opacity(0.18),
+        interactive: Bool = false
+    ) -> some View {
+        if #available(iOS 26.0, *) {
+            self
+                .glassEffect(
+                    .regular.tint(tint).interactive(interactive),
+                    in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 16, x: 0, y: 10)
+        } else {
+            self
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(.white.opacity(0.22), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.14), radius: 14, x: 0, y: 8)
+        }
+    }
+
+    @ViewBuilder
+    func compatibleLiquidGlassButtonStyle(prominent: Bool = false) -> some View {
+        if #available(iOS 26.0, *) {
+            if prominent {
+                self.buttonStyle(.glassProminent)
+            } else {
+                self.buttonStyle(.glass)
+            }
+        } else {
+            if prominent {
+                self.buttonStyle(.borderedProminent)
+            } else {
+                self.buttonStyle(.bordered)
+            }
+        }
+    }
+
+    @ViewBuilder
+    func compatibleClearPopoverPresentation() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationBackground(.clear)
+                .presentationCompactAdaptation(.popover)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatiblePopoverPresentation() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationCompactAdaptation(.popover)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleSheetPresentation(cornerRadius: CGFloat? = nil) -> some View {
+        if let cornerRadius {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(cornerRadius)
+        } else {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    @ViewBuilder
+    func compatibleScrollClipDisabled(_ disabled: Bool = true) -> some View {
+        scrollClipDisabled(disabled)
+    }
+
+    @ViewBuilder
+    func compatibleScrollDismissesKeyboard() -> some View {
+        if #available(iOS 16.0, *) {
+            scrollDismissesKeyboard(.automatic)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleScrollContentBackgroundHidden() -> some View {
+        if #available(iOS 16.0, *) {
+            scrollContentBackground(.hidden)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatibleHideTabBar() -> some View {
+        if #available(iOS 16.0, *) {
+            toolbar(.hidden, for: .tabBar)
+        } else {
+            self
+        }
+    }
+}
+
 /*
 extension View {
     // Reusable function to display and animate the "Protogen" image
@@ -59,7 +238,7 @@ struct BouncingButton<Label: View>: View{
                 .animation(spring, value: isPressed)
         }
         //.buttonStyle(.glass)
-        .glassEffect(.regular.interactive())
+        .legacyGlassBackground(cornerRadius: 16)
     }
 }
 

@@ -1,0 +1,49 @@
+{
+  "configurations" : [
+    {
+      "id" : "FFB0BB55-D220-410F-A257-82ADCF161EB7",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "environmentVariableEntries" : [
+      {
+        "key" : "LUMIFUR_IDLE_CPU_DIAGNOSTICS",
+        "value" : "0"
+      },
+      {
+        "enabled" : false,
+        "key" : "CG_NUMERICS_SHOW_BACKTRACE",
+        "value" : "1"
+      }
+    ],
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:LumiFur.xcodeproj",
+      "identifier" : "35DA3A5B2C8739FB0039D19D",
+      "name" : "LumiFur"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LumiFur.xcodeproj",
+        "identifier" : "35DA3A6C2C8739FD0039D19D",
+        "name" : "LumiFurTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LumiFur.xcodeproj",
+        "identifier" : "35DA3A762C8739FD0039D19D",
+        "name" : "LumiFurUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -8,53 +8,55 @@
 import SwiftUI
 
 struct OnboardingCardView: View {
-    
-    var onboarding: Onboarding
-    
-    @State private var isAnimating: Bool = false
-    
+    let onboarding: Onboarding
+
+    /// Image name from Assets.xcassets.
+    let previewImage: String
+
+    var isSelected: Bool = true
+    var activeZoomScale: CGFloat = 1.2
+    var activeZoomAnchor: UnitPoint = .bottom
+
+    @State private var isAnimating = false
+
     var body: some View {
-          ZStack {
-            VStack(spacing: 20) {
-              // FRUIT: IMAGE
-              Image(onboarding.image)
+        GeometryReader { proxy in
+            Image(onboarding.previewImage)
                 .resizable()
                 .scaledToFit()
-                .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.15), radius: 8, x: 6, y: 8)
-                .scaleEffect(isAnimating ? 1.0 : 0.6)
-              
-              // FRUIT: TITLE
-              Text(onboarding.title)
-                .foregroundColor(Color.white)
-                .font(.largeTitle)
-                .fontWeight(.heavy)
-                .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.15), radius: 2, x: 2, y: 2)
-              
-              // FRUIT: HEADLINE
-              Text(onboarding.headline)
-                .foregroundColor(Color.white)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .frame(maxWidth: 480)
-              
-              // BUTTON: START
-              // MARK: StartButtonView()
-            } //: VSTACK
-          } //: ZSTACK
-          .onAppear {
-            withAnimation(.easeOut(duration: 0.5)) {
-              isAnimating = true
+                .frame(
+                    width: proxy.size.width,
+                    height: proxy.size.height
+                )
+                .scaleEffect(
+                    isSelected ? 1 : activeZoomScale,
+                    anchor: activeZoomAnchor
+                )
+                .scaleEffect(isAnimating ? 1 : 0.94)
+                .opacity(isAnimating ? 1 : 0.72)
+                .frame(
+                    width: proxy.size.width,
+                    height: proxy.size.height
+                )
+                .clipped()
+                .accessibilityHidden(true)
+        }
+        .onAppear {
+            withAnimation(
+                .spring(
+                    response: 0.55,
+                    dampingFraction: 0.82
+                )
+            ) {
+                isAnimating = true
             }
-          }
-          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .center)
-          .background(LinearGradient(gradient: Gradient(colors: onboarding.gradientColors), startPoint: .top, endPoint: .bottom))
-          .cornerRadius(20)
-          .padding(.horizontal, 20)
         }
     }
+}
 
-    struct FruitCardView_Previews: PreviewProvider {
-        static var previews: some View {
-            OnboardingCardView(onboarding: onboardingData[0])
-        }
-    }
+#Preview {
+    OnboardingCardView(
+        onboarding: onboardingData[0], previewImage: "mps3"
+    )
+    .background(Color.black)
+}

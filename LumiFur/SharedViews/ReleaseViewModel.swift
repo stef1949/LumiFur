@@ -105,6 +105,7 @@ final class ReleaseViewModel: ObservableObject {
 // MARK: - Reusable SwiftUI Views
 // (These view implementations remain unchanged as they were already well-structured)
 
+@MainActor
 @ViewBuilder
 private func repositoryLink(owner: String, repo: String) -> some View {
     if let url = URL(string: "https://github.com/\(owner)/\(repo)") {
@@ -119,6 +120,7 @@ private func repositoryLink(owner: String, repo: String) -> some View {
     }
 }
 
+@MainActor
 @ViewBuilder
 private func releaseRow(for release: GitHubRelease) -> some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -146,7 +148,6 @@ private struct ExpandableReleaseBody: View {
             Text(text)
                 .font(.headline)
                 .foregroundStyle(.green)
-                .backgroundStyle(.clear)
                 .lineLimit(isExpanded ? nil : 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

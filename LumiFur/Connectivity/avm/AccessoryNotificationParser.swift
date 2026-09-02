@@ -32,13 +32,15 @@ enum AccessoryNotificationParser {
     }
 
     static func configuration(from data: Data) -> AccessoryConfiguration? {
-        guard data.count >= 4 else { return nil }
+        guard data.count >= 5 else { return nil }
 
         return AccessoryConfiguration(
             autoBrightness: data[0] == 1,
             accelerometerEnabled: data[1] == 1,
             sleepModeEnabled: data[2] == 1,
-            auroraModeEnabled: data[3] == 1
+            auroraModeEnabled: data[3] == 1,
+            staticColorEnabled: data[4] == 1,
+            mouthBrightnessOverrideEnabled: data[5] == 1
         )
     }
 
