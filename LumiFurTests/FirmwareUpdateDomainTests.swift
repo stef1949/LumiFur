@@ -124,6 +124,17 @@ struct FirmwareUpdateDomainTests {
         #expect(asset.expectedSHA256Digest == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
     }
 
+    @Test("Firmware selection never falls back to boot, partition or merged flash images")
+    func preferredAssetRejectsNonApplicationImages() {
+        let names = ["partitions.bin", "bootloader.bin", "boot_app0.bin", "ota_data_initial.bin", "otadata.bin", "firmware-merged.bin"]
+        let assets = names.enumerated().map { makeAsset(id: $0.offset, name: $0.element) }
+        let release = GitHubRelease(id: 4, tagName: "v5.0.2", name: nil, body: nil, publishedAt: .now, assets: assets)
+        #expect(release.preferredFirmwareAsset == nil)
+        let withApplication = GitHubRelease(id: 5, tagName: "v5.0.2", name: nil, body: nil, publishedAt: .now,
+                                            assets: assets + [makeAsset(id: 6, name: "controller.bin")])
+        #expect(withApplication.preferredFirmwareAsset?.name == "controller.bin")
+    }
+
     @Test("SHA-256 helper matches a known digest")
     func sha256HelperMatchesKnownValue() {
         let digest = GitHubService.sha256Hex(of: Data("abc".utf8))
@@ -156,4 +167,80 @@ struct FirmwareUpdateDomainTests {
         #expect(vm.otaProgress == 0)
         #expect(vm.otaStatusMessage == "OTA Aborted")
     }
+    @Test("START and END need both ATT and firmware acknowledgements, in either order")
+    func controlAcknowledgements() {
+        for command: UInt8 in [0x01, 0x03] {
+            var attFirst = OTAWriteAcknowledgement(command: command, requiresFirmwareResponse: true)
+            attFirst.acknowledgeTransport()
+            #expect(!attFirst.isComplete)
+            attFirst.receive(AccessoryOTAResponse(code: command, detail: 0))
+            #expect(attFirst.isComplete)
+
+            var firmwareFirst = OTAWriteAcknowledgement(command: command, requiresFirmwareResponse: true)
+            firmwareFirst.receive(AccessoryOTAResponse(code: command, detail: 0))
+            #expect(!firmwareFirst.isComplete)
+            firmwareFirst.acknowledgeTransport()
+            #expect(firmwareFirst.isComplete)
+        }
+    }
+
+    @Test("Unrelated, malformed and error notifications cannot acknowledge END")
+    func rejectsUnrelatedAcknowledgements() {
+        var pending = OTAWriteAcknowledgement(command: 0x03, requiresFirmwareResponse: true)
+        pending.acknowledgeTransport()
+        for response in [
+            AccessoryOTAResponse(code: 0x01, detail: 0),
+            AccessoryOTAResponse(code: 0x03, detail: 1),
+            AccessoryOTAResponse(code: 0xFF, detail: 8)
+        ] {
+            pending.receive(response)
+            #expect(!pending.isComplete)
+        }
+        #expect(AccessoryNotificationParser.otaResponse(from: Data([0xFF, 8]))?.isError == true)
+        #expect(AccessoryNotificationParser.otaResponse(from: Data([0x03])) == nil)
+    }
+
+    @Test("Chunk acknowledgements are negotiated without breaking legacy START")
+    func chunkAcknowledgementCompatibility() {
+        #expect(AccessoryCommandEncoder.otaStart(size: 0x123456) == Data([1, 0x56, 0x34, 0x12, 0]))
+        #expect(AccessoryCommandEncoder.otaStart(size: 0x123456, requestChunkAcknowledgements: true)
+                == Data([1, 0x56, 0x34, 0x12, 0, 1]))
+        let legacy = AccessoryNotificationParser.otaResponse(from: Data([1, 0]))!
+        let current = AccessoryNotificationParser.otaResponse(from: Data([1, 1]))!
+        #expect(!legacy.supportsChunkAcknowledgements)
+        #expect(current.supportsChunkAcknowledgements)
+        for enabled in [false, true] {
+            var pending = OTAWriteAcknowledgement(command: 2, requiresFirmwareResponse: enabled)
+            pending.acknowledgeTransport()
+            #expect(pending.isComplete == !enabled)
+            pending.receive(AccessoryOTAResponse(code: 2, detail: 0))
+            #expect(pending.isComplete)
+        }
+    }
+
+    @Test("OTA packets respect minimum ATT MTU and the controller worker's 512-byte limit")
+    func chunkLimits() {
+        for (maximum, expected) in [(0, 0), (1, 0), (20, 19), (182, 181), (512, 511), (514, 511)] {
+            #expect(OTAProtocol.chunkPayloadSize(maximumWriteLength: maximum) == expected)
+        }
+        let firmware = Data((0..<37).map(UInt8.init))
+        let chunks = stride(from: 0, to: firmware.count, by: 19).map { start in
+            AccessoryCommandEncoder.otaChunk(from: firmware, range: start..<min(start + 19, firmware.count))
+        }
+        #expect(chunks.map(\.count) == [20, 19])
+        #expect(chunks.reduce(into: Data()) { $0.append($1.dropFirst()) } == firmware)
+    }
+
+    @Test("Finalization retains full upload progress")
+    func finalizationProgress() {
+        #expect(AccessoryViewModel.OTAState.finalizing.progress == 1)
+        #expect(AccessoryViewModel.OTAState.completed.progress == 1)
+    }
+
+    @Test("Five-byte settings from legacy firmware remain readable after reconnect")
+    func legacyConfiguration() {
+        #expect(AccessoryNotificationParser.configuration(from: Data([1, 0, 1, 0, 1]))?.mouthBrightnessOverrideEnabled == false)
+        #expect(AccessoryNotificationParser.configuration(from: Data([1, 0, 1, 0, 1, 1]))?.mouthBrightnessOverrideEnabled == true)
+    }
+
 }

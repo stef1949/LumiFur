@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B1E000000000000000000004 /* FirmwareUpdateDomainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E000000000000000000003 /* FirmwareUpdateDomainTests.swift */; };
+		B1E000000000000000000002 /* OTAProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E000000000000000000001 /* OTAProtocol.swift */; };
 		350B2A812F4F7A3B0016E06C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 35A391A32DD784BD00F60E47 /* Assets.xcassets */; };
 		350B2A822F4F7A3B0016E06C /* LumiFur WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35AE1A4A2D5D24C600FDD29E /* LumiFur WidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		352B631A2DA2B9B3004E5E74 /* OptionToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */; };
@@ -137,6 +139,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B1E000000000000000000003 /* FirmwareUpdateDomainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareUpdateDomainTests.swift; sourceTree = "<group>"; };
+		B1E000000000000000000001 /* OTAProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTAProtocol.swift; sourceTree = "<group>"; };
 		350811AD2C8B49160071C68C /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		35239A242CCFE06300DD483B /* AccessoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryViewModel.swift; sourceTree = "<group>"; };
 		352B63192DA2B9A7004E5E74 /* OptionToggleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionToggleView.swift; sourceTree = "<group>"; };
@@ -327,6 +331,7 @@
 			children = (
 				3555D6C32F55D8C200EB6256 /* RRGGBBHelper.swift */,
 				354B42932F02B62B00074B7F /* BLEClient.swift */,
+				B1E000000000000000000001 /* OTAProtocol.swift */,
 				354B428D2F02B62B00074B7F /* AccessoryCommandEncoder.swift */,
 				354B428F2F02B62B00074B7F /* AccessoryNotificationParser.swift */,
 				35239A242CCFE06300DD483B /* AccessoryViewModel.swift */,
@@ -493,6 +498,7 @@
 			isa = PBXGroup;
 			children = (
 				35DA3A712C8739FD0039D19D /* LumiFurTests.swift */,
+				B1E000000000000000000003 /* FirmwareUpdateDomainTests.swift */,
 				358151AA2E16FF48003CE8A3 /* AccessoryViewModelTests.swift */,
 			);
 			path = LumiFurTests;
@@ -854,6 +860,7 @@
 				355853DF2EF71DAC001666E6 /* InfoView.swift in Sources */,
 				357EEA692E0EE0140085E438 /* CustomLedView.swift in Sources */,
 				354B428A2F02B62B00074B7F /* ActivityHelpers.swift in Sources */,
+				B1E000000000000000000002 /* OTAProtocol.swift in Sources */,
 				354B428E2F02B62B00074B7F /* AccessoryCommandEncoder.swift in Sources */,
 				354B42902F02B62B00074B7F /* AccessoryNotificationParser.swift in Sources */,
 				35A53A882FAD0CC2004A562E /* OnboardingCardView.swift in Sources */,
@@ -889,6 +896,7 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				35DA3A722C8739FD0039D19D /* LumiFurTests.swift in Sources */,
+				B1E000000000000000000004 /* FirmwareUpdateDomainTests.swift in Sources */,
 				358151AB2E16FF48003CE8A3 /* AccessoryViewModelTests.swift in Sources */,
 			);
 		};

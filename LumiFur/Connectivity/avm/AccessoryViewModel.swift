@@ -180,7 +180,7 @@ final class AccessoryViewModel: ObservableObject {
             case .finalizing:
                 return "Finalizing OTA..."
             case .completed:
-                return "Update uploaded. Device will finalize and reboot."
+                return "Update verified. Device is rebooting."
             case .aborted:
                 return "OTA Aborted"
             case .failed(let message):
@@ -192,6 +192,8 @@ final class AccessoryViewModel: ObservableObject {
             switch self {
             case .uploading(let progress):
                 return min(max(progress, 0), 1)
+            case .finalizing, .completed:
+                return 1
             default:
                 return 0
             }
@@ -363,7 +365,7 @@ final class AccessoryViewModel: ObservableObject {
     private var pendingStrobeWriteTask: Task<Void, Never>?
     private var otaTask: Task<Void, Never>?
     private var otaGeneration: UInt64 = 0
-    private var otaInProgress = false
+    @Published private(set) var otaInProgress = false
     private static let chartProcessingQueue = DispatchQueue(
         label: "com.richies3d.lumifur3.chart-processing",
         qos: .utility
@@ -898,8 +900,14 @@ final class AccessoryViewModel: ObservableObject {
 
     
     func startOTAUpdate(firmwareData: Data) {
+        guard !otaInProgress else { return }
         guard isConnected else {
             transitionOTAState(to: .failed(message: "Peripheral not ready"))
+            return
+        }
+
+        guard !firmwareData.isEmpty, UInt64(firmwareData.count) <= UInt64(UInt32.max) else {
+            transitionOTAState(to: .failed(message: "Firmware file is empty or too large."))
             return
         }
 
@@ -919,26 +927,42 @@ final class AccessoryViewModel: ObservableObject {
 
         otaTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer {
+                if self.otaGeneration == generation {
+                    self.otaInProgress = false
+                    self.otaTask = nil
+                }
+            }
             do {
                 try await self.runOTAUpdate(firmwareData: firmwareData, generation: generation)
-            } catch is CancellationError {
-                return
             } catch {
-                self.otaInProgress = false
-                self.transitionOTAState(to: .failed(message: error.localizedDescription))
+                guard self.otaGeneration == generation else { return }
+                if error is CancellationError {
+                    self.transitionOTAState(to: .aborted)
+                } else {
+                    self.transitionOTAState(to: .failed(message: error.localizedDescription))
+                }
+                // A fresh task can send ABORT even when the upload task has been cancelled.
+                let client = self.client
+                await Task {
+                    do {
+                        try await client.writeOTAAbort()
+                    } catch {
+                        // A retry needs a clean connection if the controller never confirms cleanup.
+                        client.disconnect()
+                    }
+                }.value
             }
         }
     }
 
-    
     func abortOTAUpdate() {
+        guard otaState != .finalizing else { return }
         otaTask?.cancel()
-        otaGeneration &+= 1
-        otaInProgress = false
         otaEstimatedRemainingSeconds = nil
         transitionOTAState(to: .aborted)
-        client.writeOTAAbort()
     }
+
 
     
     func syncStateToWatch() {
@@ -1061,14 +1085,6 @@ final class AccessoryViewModel: ObservableObject {
 
         case .brightnessUpdated(let value):
             assignIfChanged("brightness", current: &brightness, newValue: value)
-
-        case .otaResponseUpdated(let response):
-            if !response.statusMessage.isEmpty {
-                otaStatusMessage = response.statusMessage
-            }
-            if response.resetsProgress {
-                transitionOTAState(to: .idle)
-            }
 
         case .luxUpdated(let value):
             applyLuxValueIfNeeded(value)
@@ -1353,10 +1369,13 @@ final class AccessoryViewModel: ObservableObject {
 
     
     private func runOTAUpdate(firmwareData: Data, generation: UInt64) async throws {
-        try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaStart(size: firmwareData.count))
-        try? await Task.sleep(for: .milliseconds(120))
+        try Task.checkCancellation()
+        try await client.writeOTAWithResponse(
+            AccessoryCommandEncoder.otaStart(size: firmwareData.count, requestChunkAcknowledgements: true)
+        )
 
         let chunkSize = client.preferredOTAChunkPayloadSize()
+        guard chunkSize > 0 else { throw OTAUpdateError.invalidWriteLength }
         var offset = 0
         let uploadStart = Date()
         var lastProgressPublishAt = Date.distantPast
@@ -1366,10 +1385,12 @@ final class AccessoryViewModel: ObservableObject {
             guard otaGeneration == generation else { throw CancellationError() }
 
             let end = min(offset + chunkSize, firmwareData.count)
-            try await client.writeCommandWithResponse(
+            try await client.writeOTAWithResponse(
                 AccessoryCommandEncoder.otaChunk(from: firmwareData, range: offset..<end)
             )
 
+            try Task.checkCancellation()
+            guard otaGeneration == generation else { throw CancellationError() }
             offset = end
             let progress = Double(offset) / Double(max(firmwareData.count, 1))
             let now = Date()
@@ -1387,10 +1408,13 @@ final class AccessoryViewModel: ObservableObject {
             }
         }
 
-        try await client.writeCommandWithResponse(AccessoryCommandEncoder.otaFinish())
+        try Task.checkCancellation()
+        guard otaGeneration == generation else { throw CancellationError() }
         otaEstimatedRemainingSeconds = nil
         transitionOTAState(to: .finalizing)
-        otaInProgress = false
+        try await client.writeOTAWithResponse(AccessoryCommandEncoder.otaFinish())
+        try Task.checkCancellation()
+        guard otaGeneration == generation else { throw CancellationError() }
         transitionOTAState(to: .completed)
     }
 
@@ -1570,3 +1594,11 @@ extension AccessoryViewModel {
     .preferredColorScheme(.dark)
 }
 #endif
+
+private enum OTAUpdateError: LocalizedError {
+    case invalidWriteLength
+
+    var errorDescription: String? {
+        "The Bluetooth connection cannot carry firmware packets. Reconnect and try again."
+    }
+}

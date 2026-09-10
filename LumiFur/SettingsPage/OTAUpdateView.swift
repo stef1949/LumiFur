@@ -120,7 +120,7 @@ struct OTAUpdateView: View {
                     .foregroundStyle(.green)
             }
 
-            if viewModel.otaState.isActive || viewModel.otaState == .completed {
+            if viewModel.otaState != .idle {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(viewModel.otaStatusMessage)
                         .font(.subheadline)
@@ -174,16 +174,16 @@ struct OTAUpdateView: View {
             } label: {
                 Label("Start OTA Upload", systemImage: "arrow.up.circle")
             }
-            .disabled(coordinator.downloadedFirmwareData == nil || viewModel.otaState.isActive || !viewModel.isConnected)
+            .disabled(coordinator.downloadedFirmwareData == nil || viewModel.otaInProgress || !viewModel.isConnected)
 
             Button {
                 showingFileImporter = true
             } label: {
                 Label("Select Local Firmware File", systemImage: "folder")
             }
-            .disabled(viewModel.otaState.isActive || coordinator.isBusy)
+            .disabled(viewModel.otaInProgress || coordinator.isBusy || !viewModel.isConnected)
 
-            if viewModel.otaState.isActive {
+            if viewModel.otaState.isActive && viewModel.otaState != .finalizing {
                 Button(role: .destructive) {
                     viewModel.abortOTAUpdate()
                 } label: {

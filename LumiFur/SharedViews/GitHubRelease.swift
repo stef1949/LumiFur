@@ -56,7 +56,7 @@ struct GitHubRelease: Codable, Identifiable, Hashable {
             return firstFirmwareLike
         }
 
-        return assets.first(where: { $0.name.lowercased().hasSuffix(".bin") })
+        return assets.first(where: { $0.isOTAFirmwareCandidate })
     }
 }
 
@@ -93,16 +93,16 @@ struct GitHubReleaseAsset: Codable, Identifiable, Hashable {
         self.digest = digest
     }
 
-    var isLikelyFirmwareBinary: Bool {
+    var isOTAFirmwareCandidate: Bool {
         let normalized = name.lowercased()
         guard normalized.hasSuffix(".bin") else { return false }
+        return !["partition", "bootloader", "boot_app0", "ota_data", "otadata", "merged"]
+            .contains(where: { normalized.contains($0) })
+    }
 
-        if normalized.contains("partition") ||
-            normalized.contains("bootloader") ||
-            normalized.contains("ota_data") {
-            return false
-        }
-
+    var isLikelyFirmwareBinary: Bool {
+        guard isOTAFirmwareCandidate else { return false }
+        let normalized = name.lowercased()
         return normalized.contains("firmware") || normalized.contains("app")
     }
 

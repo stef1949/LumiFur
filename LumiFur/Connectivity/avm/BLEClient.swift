@@ -21,7 +21,6 @@ final class BLEClient: NSObject, @unchecked Sendable {
         case historyDownloaded([TemperatureData])
         case historyDownloadFailed(String)
         case brightnessUpdated(UInt8)
-        case otaResponseUpdated(AccessoryOTAResponse)
         case luxUpdated(UInt16)
         case scrollTextUpdated(String)
         case strobeUpdated(StrobeState)
@@ -43,8 +42,16 @@ final class BLEClient: NSObject, @unchecked Sendable {
     private var characteristics = CharacteristicRegistry()
     private var historyAssembler = TemperatureHistoryAssembler()
     private var lastLuxValue: UInt16 = 0
-    private var writeContinuation: CheckedContinuation<Void, Error>?
+    private var writeContinuation: CheckedContinuation<AccessoryOTAResponse?, Error>?
     private var writeTimeoutWorkItem: DispatchWorkItem?
+    private var writeID: UUID?
+    private var writeAcknowledgement: OTAWriteAcknowledgement?
+    // ATT callbacks carry no request ID. Keep cancelled writes until their callback arrives.
+    private var outstandingOTAWrites: [UUID] = []
+    private var otaChunkAcknowledgements = false
+    private var otaFailure: Error?
+    private var pendingOTAData: Data?
+    private var pendingOTAWriteType: CBCharacteristicWriteType = .withResponse
     private var rssiTimer: DispatchSourceTimer?
     private let writeTimeout: TimeInterval = 10
 
@@ -200,8 +207,8 @@ final class BLEClient: NSObject, @unchecked Sendable {
         }
     }
 
-    func writeOTAAbort() {
-        write(AccessoryCommandEncoder.otaAbort(), to: .ota, type: .withResponse)
+    func writeOTAAbort() async throws {
+        _ = try await writeOTAWithResponse(AccessoryCommandEncoder.otaAbort())
     }
 
     func canWriteView() -> Bool {
@@ -225,58 +232,82 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     func canWriteOTA() -> Bool {
-        canWrite(to: .ota)
-    }
-
-    /// Returns an OTA payload size (excluding the 1-byte command prefix) based on negotiated ATT write limits.
-    func preferredOTAChunkPayloadSize(fallback: Int = 182) -> Int {
         syncOnQueue {
-            guard let peripheral = targetPeripheral, peripheral.state == .connected else {
-                return fallback
-            }
-
-            // OTA packets currently go through the command characteristic using write-with-response.
-            guard characteristics[.command] != nil else {
-                return fallback
-            }
-
-            let maxWriteLength = peripheral.maximumWriteValueLength(for: .withResponse)
-            guard maxWriteLength > 1 else { return fallback }
-
-            // Subtract one byte for the OTA command discriminator (0x02 for chunk packets).
-            let payload = maxWriteLength - 1
-            // Cap to a practical upper bound to avoid oversized writes on edge stacks.
-            return max(20, min(payload, 512))
+            guard let peripheral = targetPeripheral, peripheral.state == .connected,
+                  let characteristic = characteristics[.ota] else { return false }
+            return (characteristic.properties.contains(.write) || characteristic.properties.contains(.writeWithoutResponse))
+                && characteristic.isNotifying
         }
     }
 
-    func writeCommandWithResponse(_ data: Data) async throws {
-        try await withTaskCancellationHandler {
-            try Task.checkCancellation()
+    func preferredOTAChunkPayloadSize() -> Int {
+        syncOnQueue {
+            guard let peripheral = targetPeripheral, peripheral.state == .connected,
+                  let characteristic = characteristics[.ota] else { return 0 }
+            return OTAProtocol.chunkPayloadSize(
+                maximumWriteLength: peripheral.maximumWriteValueLength(for: preferredWriteType(for: characteristic))
+            )
+        }
+    }
 
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+    @discardableResult
+    func writeOTAWithResponse(_ data: Data) async throws -> AccessoryOTAResponse? {
+        let cancellation = OTAWriteCancellation()
+        return try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation { continuation in
                 performOnQueue { [weak self] in
                     guard let self else {
                         continuation.resume(throwing: BLEClientError.deinitialized)
+                        return
+                    }
+                    guard !cancellation.isCancelled else {
+                        continuation.resume(throwing: CancellationError())
                         return
                     }
                     guard self.writeContinuation == nil else {
                         continuation.resume(throwing: BLEClientError.writeAlreadyInProgress)
                         return
                     }
-                    guard let peripheral = self.targetPeripheral, let characteristic = self.characteristics[.command] else {
-                        continuation.resume(throwing: BLEClientError.missingCharacteristic("command"))
+                    guard let peripheral = self.targetPeripheral, peripheral.state == .connected else {
+                        continuation.resume(throwing: BLEClientError.disconnected)
                         return
                     }
-
-                    self.beginPendingWrite(continuation)
-                    peripheral.writeValue(data, for: characteristic, type: .withResponse)
+                    guard let characteristic = self.characteristics[.ota],
+                          characteristic.properties.contains(.write) || characteristic.properties.contains(.writeWithoutResponse),
+                          characteristic.isNotifying else {
+                        continuation.resume(throwing: BLEClientError.missingCharacteristic("OTA with notifications"))
+                        return
+                    }
+                    let writeType = self.preferredWriteType(for: characteristic)
+                    guard let command = data.first,
+                          data.count <= min(512, peripheral.maximumWriteValueLength(for: writeType)) else {
+                        continuation.resume(throwing: BLEClientError.invalidOTAPacket)
+                        return
+                    }
+                    if command == 0x01 || command == 0x04 {
+                        self.otaFailure = nil
+                    }
+                    if let error = self.otaFailure {
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    if command == 0x01 { self.otaChunkAcknowledgements = false }
+                    self.writeAcknowledgement = OTAWriteAcknowledgement(
+                        command: command,
+                        requiresFirmwareResponse: command != 0x02 || self.otaChunkAcknowledgements
+                    )
+                    self.beginPendingWrite(continuation, id: cancellation.id, timeout: command == 0x01 || command == 0x03 ? 60 : self.writeTimeout)
+                    self.pendingOTAData = data
+                    self.pendingOTAWriteType = writeType
+                    self.sendPendingOTAWrite()
                 }
             }
         } onCancel: { [weak self] in
-            guard let client = self else { return }
-            client.performOnQueue { [weak client] in
-                client?.resumePendingWrite(with: CancellationError())
+            cancellation.cancel()
+            self?.performOnQueue { [weak self] in
+                guard self?.writeID == cancellation.id else { return }
+                self?.resumePendingWrite(with: CancellationError())
             }
         }
     }
@@ -426,6 +457,10 @@ final class BLEClient: NSObject, @unchecked Sendable {
     }
 
     private func resetConnectionState() {
+        resumePendingWrite(with: BLEClientError.disconnected)
+        outstandingOTAWrites.removeAll()
+        otaChunkAcknowledgements = false
+        otaFailure = nil
         stopRSSIMonitoring()
         targetPeripheral = nil
         characteristics.reset()
@@ -453,28 +488,79 @@ final class BLEClient: NSObject, @unchecked Sendable {
         return false
     }
 
-    private func beginPendingWrite(_ continuation: CheckedContinuation<Void, Error>) {
+    private func beginPendingWrite(
+        _ continuation: CheckedContinuation<AccessoryOTAResponse?, Error>, id: UUID, timeout: TimeInterval
+    ) {
         writeContinuation = continuation
-
+        writeID = id
         let timeoutWorkItem = DispatchWorkItem { [weak self] in
-            self?.resumePendingWrite(with: BLEClientError.writeTimedOut)
+            guard let self, self.writeID == id else { return }
+            self.otaFailure = BLEClientError.writeTimedOut
+            self.resumePendingWrite(with: BLEClientError.writeTimedOut)
         }
         writeTimeoutWorkItem = timeoutWorkItem
-        queue.asyncAfter(deadline: .now() + writeTimeout, execute: timeoutWorkItem)
+        queue.asyncAfter(deadline: .now() + timeout, execute: timeoutWorkItem)
+    }
+
+    private func sendPendingOTAWrite() {
+        guard let data = pendingOTAData, let id = writeID,
+              let peripheral = targetPeripheral, let characteristic = characteristics[.ota] else { return }
+        if pendingOTAWriteType == .withoutResponse && !peripheral.canSendWriteWithoutResponse { return }
+        pendingOTAData = nil
+        if pendingOTAWriteType == .withResponse { outstandingOTAWrites.append(id) }
+        peripheral.writeValue(data, for: characteristic, type: pendingOTAWriteType)
+        if pendingOTAWriteType == .withoutResponse {
+            // Legacy firmware advertises only WRITE_NR and has no per-chunk ACK.
+            // Pace it to the controller's maximum connection interval (60 ms).
+            let delay = data.first == 0x02 && !otaChunkAcknowledgements ? 0.060 : 0
+            queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self, self.writeID == id else { return }
+                self.writeAcknowledgement?.acknowledgeTransport()
+                self.completeOTAWriteIfReady()
+            }
+        }
+    }
+
+    private func completeOTAWriteIfReady() {
+        guard writeAcknowledgement?.isComplete == true else { return }
+        if let response = writeAcknowledgement?.response, response.code == 0x01 {
+            otaChunkAcknowledgements = response.supportsChunkAcknowledgements
+        }
+        resumePendingWrite()
+    }
+
+    private func handleOTAResponse(_ response: AccessoryOTAResponse) {
+        // Legacy controllers reject an abort when no session is active. Cleanup is still complete.
+        if writeAcknowledgement?.command == 0x04, response.code == 0xFF, response.detail == 0x07 {
+            writeAcknowledgement?.receive(AccessoryOTAResponse(code: 0x04, detail: 0))
+        } else if response.isError {
+            let error = BLEClientError.otaRejected(response.statusMessage)
+            otaFailure = error
+            resumePendingWrite(with: error)
+            return
+        } else {
+            writeAcknowledgement?.receive(response)
+        }
+        completeOTAWriteIfReady()
     }
 
     private func resumePendingWrite(with error: Error? = nil) {
         guard let continuation = writeContinuation else { return }
+        let response = writeAcknowledgement?.response
         writeContinuation = nil
+        writeAcknowledgement = nil
+        pendingOTAData = nil
+        writeID = nil
         writeTimeoutWorkItem?.cancel()
         writeTimeoutWorkItem = nil
 
         if let error {
             continuation.resume(throwing: error)
         } else {
-            continuation.resume()
+            continuation.resume(returning: response)
         }
     }
+
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -636,9 +722,13 @@ extension BLEClient: CBPeripheralDelegate {
         error: Error?
     ) {
         performOnQueue { [weak self] in
-            guard let self else { return }
+            guard let self, peripheral == self.targetPeripheral else { return }
 
             if let error {
+                if characteristic.uuid == BLEIdentifiers.ota {
+                    self.otaFailure = error
+                    self.resumePendingWrite(with: error)
+                }
                 if !self.handlePairingErrorIfNeeded(error) {
                     self.emit(.transportError("Characteristic update failed: \(error.localizedDescription)"))
                 }
@@ -686,7 +776,7 @@ extension BLEClient: CBPeripheralDelegate {
 
             case BLEIdentifiers.ota:
                 if let response = AccessoryNotificationParser.otaResponse(from: data) {
-                    self.emit(.otaResponseUpdated(response))
+                    self.handleOTAResponse(response)
                 }
 
             case BLEIdentifiers.lux:
@@ -714,23 +804,36 @@ extension BLEClient: CBPeripheralDelegate {
         emit(.rssiUpdated(RSSI.intValue))
     }
 
+    nonisolated func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
+        performOnQueue { [weak self] in
+            guard let self, peripheral == self.targetPeripheral else { return }
+            self.sendPendingOTAWrite()
+        }
+    }
+
     nonisolated func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         performOnQueue { [weak self] in
-            guard let self else { return }
-
-            if let error {
+            guard let self, peripheral == self.targetPeripheral else { return }
+            if characteristic.uuid == BLEIdentifiers.ota {
+                guard !self.outstandingOTAWrites.isEmpty else { return }
+                let id = self.outstandingOTAWrites.removeFirst()
+                guard id == self.writeID else { return }
+                if let error {
+                    _ = self.handlePairingErrorIfNeeded(error)
+                    self.otaFailure = error
+                    self.resumePendingWrite(with: error)
+                } else {
+                    self.writeAcknowledgement?.acknowledgeTransport()
+                    self.completeOTAWriteIfReady()
+                }
+            } else if let error {
                 if !self.handlePairingErrorIfNeeded(error) {
                     self.emit(.transportError("Failed to write to \(characteristic.uuid.uuidString): \(error.localizedDescription)"))
                 }
-                self.resumePendingWrite(with: error)
-                return
-            }
-
-            if characteristic.uuid == BLEIdentifiers.command {
-                self.resumePendingWrite()
             }
         }
     }
+
 }
 
 // MARK: - Transport internals
@@ -766,7 +869,6 @@ extension BLEClient.Event {
         case .historyDownloaded: return "historyDownloaded"
         case .historyDownloadFailed: return "historyDownloadFailed"
         case .brightnessUpdated: return "brightnessUpdated"
-        case .otaResponseUpdated: return "otaResponseUpdated"
         case .luxUpdated: return "luxUpdated"
         case .scrollTextUpdated: return "scrollTextUpdated"
         case .strobeUpdated: return "strobeUpdated"
@@ -840,6 +942,8 @@ private enum BLEClientError: LocalizedError {
     case writeAlreadyInProgress
     case writeTimedOut
     case missingCharacteristic(String)
+    case invalidOTAPacket
+    case otaRejected(String)
 
     var errorDescription: String? {
         switch self {
@@ -851,6 +955,10 @@ private enum BLEClientError: LocalizedError {
             return "A write with response is already in progress."
         case .writeTimedOut:
             return "The BLE write timed out before the accessory acknowledged it."
+        case .invalidOTAPacket:
+            return "The OTA packet exceeds the negotiated Bluetooth write limit."
+        case .otaRejected(let message):
+            return message
         case .missingCharacteristic(let name):
             return "The \(name) characteristic is not available."
         }

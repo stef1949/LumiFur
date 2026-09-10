@@ -58,10 +58,14 @@ enum AccessoryCommandEncoder {
     }
 
     /// Encodes the OTA start packet.
-    static func otaStart(size: Int) -> Data {
+    static func otaStart(size: Int, requestChunkAcknowledgements: Bool = false) -> Data {
         var payload = Data([0x01])
         var littleEndianSize = UInt32(size).littleEndian
         payload.append(Data(bytes: &littleEndianSize, count: MemoryLayout<UInt32>.size))
+        if requestChunkAcknowledgements {
+            // Older controllers ignore this optional byte and reply with [0x01, 0x00].
+            payload.append(0x01)
+        }
         return payload
     }
 

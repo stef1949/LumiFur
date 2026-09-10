@@ -4,8 +4,26 @@ import Foundation
 
 /// A parsed OTA status payload emitted by the firmware.
 struct AccessoryOTAResponse: Equatable, Sendable {
-    let statusMessage: String
-    let resetsProgress: Bool
+    let code: UInt8
+    let detail: UInt8
+
+    var isAcknowledgement: Bool {
+        (code == 0x01 && detail <= 1) || ((0x02...0x04).contains(code) && detail == 0)
+    }
+
+    var supportsChunkAcknowledgements: Bool { code == 0x01 && detail == 1 }
+    var isError: Bool { code == 0xFF }
+
+    var statusMessage: String {
+        switch code {
+        case 0x01: return "OTA Started"
+        case 0x02: return "OTA chunk written"
+        case 0x03: return "OTA Complete - Rebooting..."
+        case 0x04: return "OTA Aborted"
+        case 0xFF: return "Controller rejected the update (error \(detail))."
+        default: return "OTA Unknown Response"
+        }
+    }
 }
 
 // MARK: - AccessoryNotificationParser
@@ -40,7 +58,7 @@ enum AccessoryNotificationParser {
             sleepModeEnabled: data[2] == 1,
             auroraModeEnabled: data[3] == 1,
             staticColorEnabled: data[4] == 1,
-            mouthBrightnessOverrideEnabled: data[5] == 1
+            mouthBrightnessOverrideEnabled: data.count >= 6 && data[5] == 1
         )
     }
 
@@ -81,21 +99,7 @@ enum AccessoryNotificationParser {
     static func otaResponse(from data: Data) -> AccessoryOTAResponse? {
         guard data.count == 2 else { return nil }
 
-        let code = data[0]
-        let detail = data[1]
-
-        switch (code, detail) {
-        case (0x01, 0x00):
-            return AccessoryOTAResponse(statusMessage: "OTA Started", resetsProgress: false)
-        case (0x03, 0x00):
-            return AccessoryOTAResponse(statusMessage: "OTA Complete - Rebooting...", resetsProgress: false)
-        case (0x04, 0x00):
-            return AccessoryOTAResponse(statusMessage: "OTA Aborted", resetsProgress: true)
-        case (0xFF, _):
-            return AccessoryOTAResponse(statusMessage: "OTA Error \(detail)", resetsProgress: true)
-        default:
-            return AccessoryOTAResponse(statusMessage: "OTA Unknown Response", resetsProgress: false)
-        }
+        return AccessoryOTAResponse(code: data[data.startIndex], detail: data[data.startIndex + 1])
     }
 }
 
