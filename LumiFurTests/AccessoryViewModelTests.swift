@@ -26,7 +26,73 @@ struct AccessoryViewModelLogicTests {
             sleepModeEnabled: true,
             auroraModeEnabled: false
         )
-        #expect(data == Data([1, 0, 1, 0, 0]), "Payload should include the disabled maw brightness override flag")
+        #expect(data == Data([1, 0, 1, 0, 0, 0]), "Payload should include the disabled maw brightness override flag")
+    }
+
+    @Test("Selecting Aurora replaces static color in the BLE payload and saved preferences")
+    @MainActor
+    func testAuroraReplacesStaticColor() {
+        let suiteName = "com.richies3d.LumiFur.tests.\(#function)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = StoredPeripheralStore(defaults: defaults)
+        let vm = AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
+        let staticConfiguration = AccessoryConfiguration(
+            autoBrightness: false,
+            accelerometerEnabled: true,
+            sleepModeEnabled: false,
+            auroraModeEnabled: false,
+            staticColorEnabled: true,
+            mouthBrightnessOverrideEnabled: true
+        )
+        #expect(vm.applyUserConfiguration(staticConfiguration, syncToDevice: false))
+
+        #expect(vm.setAuroraModeEnabled(true, syncToDevice: false))
+
+        #expect(AccessoryCommandEncoder.accessorySettingsPayload(vm.currentConfiguration()) == Data([0, 1, 0, 1, 0, 1]))
+        let restored = AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
+        #expect(restored.currentConfiguration() == vm.currentConfiguration())
+    }
+
+    @Test("Turning Aurora off clears its BLE flag without enabling static color")
+    @MainActor
+    func testDisablingAurora() {
+        let vm = makeViewModel()
+        #expect(vm.setAuroraModeEnabled(true, syncToDevice: false))
+        let previous = vm.currentConfiguration()
+
+        #expect(vm.setAuroraModeEnabled(false, syncToDevice: false))
+
+        var expected = previous
+        expected.auroraModeEnabled = false
+        #expect(vm.currentConfiguration() == expected)
+        #expect(AccessoryCommandEncoder.accessorySettingsPayload(vm.currentConfiguration())[3] == 0)
+        #expect(!vm.staticColorEnabled)
+    }
+
+    @Test("Watch color selections remain mutually exclusive across a configuration round trip")
+    func testColorModeSelectionRoundTrip() throws {
+        var configuration = AccessoryConfiguration(
+            autoBrightness: true,
+            accelerometerEnabled: false,
+            sleepModeEnabled: true,
+            auroraModeEnabled: true,
+            staticColorEnabled: false,
+            mouthBrightnessOverrideEnabled: false
+        )
+        configuration.setStaticColorEnabled(true)
+        #expect(AccessoryCommandEncoder.accessorySettingsPayload(configuration) == Data([1, 0, 1, 0, 1, 0]))
+        configuration.setAuroraModeEnabled(false)
+        #expect(configuration.staticColorEnabled)
+
+        configuration.setAuroraModeEnabled(true)
+        configuration.setStaticColorEnabled(false)
+        let transferred = try JSONDecoder().decode(
+            AccessoryConfiguration.self,
+            from: JSONEncoder().encode(configuration)
+        )
+        #expect(AccessoryCommandEncoder.accessorySettingsPayload(transferred) == Data([1, 0, 1, 1, 0, 0]))
     }
     
     @Test("Saving and loading StoredPeripheral roundtrips")

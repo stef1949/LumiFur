@@ -242,8 +242,7 @@ struct ContentView: View {
         Binding(
             get: { bleModel.auroraModeEnabled },
             set: { newValue in
-                bleModel.auroraModeEnabled = newValue
-                bleModel.writeConfigToCharacteristic()
+                bleModel.setAuroraModeEnabled(newValue)
             }
         )
     }

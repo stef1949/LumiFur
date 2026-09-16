@@ -157,7 +157,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
     }
     func setStaticColorEnabled(_ enabled: Bool) {
         var updated = configuration
-        updated.staticColorEnabled = enabled
+        updated.setStaticColorEnabled(enabled)
         updateConfiguration(updated)
     }
     func setmouthBrightnessOverride(_ enabled: Bool) {
@@ -179,7 +179,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
 
     func setAuroraModeEnabled(_ enabled: Bool) {
         var updated = configuration
-        updated.auroraModeEnabled = enabled
+        updated.setAuroraModeEnabled(enabled)
         updateConfiguration(updated)
     }
 

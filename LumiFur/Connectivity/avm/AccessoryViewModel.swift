@@ -884,6 +884,13 @@ final class AccessoryViewModel: ObservableObject {
     }
 
 
+    @discardableResult
+    func setAuroraModeEnabled(_ enabled: Bool, syncToDevice: Bool = true) -> Bool {
+        var configuration = currentConfiguration()
+        configuration.setAuroraModeEnabled(enabled)
+        return applyUserConfiguration(configuration, syncToDevice: syncToDevice)
+    }
+
     func writeConfigToCharacteristic() {
         _ = applyUserConfiguration(currentConfiguration())
     }

@@ -47,6 +47,21 @@ struct AccessoryConfiguration: Equatable, Codable, Sendable {
     var auroraModeEnabled: Bool
     var staticColorEnabled: Bool
     var mouthBrightnessOverrideEnabled: Bool
+
+    /// Selecting either face color mode replaces the other mode.
+    mutating func setAuroraModeEnabled(_ enabled: Bool) {
+        auroraModeEnabled = enabled
+        if enabled {
+            staticColorEnabled = false
+        }
+    }
+
+    mutating func setStaticColorEnabled(_ enabled: Bool) {
+        staticColorEnabled = enabled
+        if enabled {
+            auroraModeEnabled = false
+        }
+    }
 }
 
 /// Data structure for temperature readings (SHARED)
