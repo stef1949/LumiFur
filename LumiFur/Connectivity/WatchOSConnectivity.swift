@@ -127,7 +127,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 sleepModeEnabled: true,
                 auroraModeEnabled: true,
                 staticColorEnabled: true,
-                mouthBrightnessOverrideEnabled: true
+                mouthBrightnessOverrideEnabled: true,
+                disableBleIndicatorLight: false,
+                disableBleStatusIcon: false,
+                waveshareBrightnessBoost: false,
+                matrixRainInsteadOfPlasma: false,
+                boopMode: 0
             ),
             customMessage: "",
             temperatureText: "--",
@@ -168,7 +173,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
             sleepModeEnabled: message["sleepMode"] as? Bool ?? accessoryViewModel.sleepModeEnabled,
             auroraModeEnabled: ((message["auroraMode"] as? Bool) ?? (message["arouraMode"] as? Bool)) ?? accessoryViewModel.auroraModeEnabled,
             staticColorEnabled: message["staticColor"] as? Bool ?? accessoryViewModel.staticColorEnabled,
-            mouthBrightnessOverrideEnabled: message["mouthBrightnessOverride"] as? Bool ?? accessoryViewModel.mouthBrightnessOverrideEnabled
+            mouthBrightnessOverrideEnabled: message["mouthBrightnessOverride"] as? Bool ?? accessoryViewModel.mouthBrightnessOverrideEnabled,
+            disableBleIndicatorLight: message["disableBleIndicatorLight"] as? Bool ?? accessoryViewModel.disableBleIndicatorLight,
+            disableBleStatusIcon: message["disableBleStatusIcon"] as? Bool ?? accessoryViewModel.disableBleStatusIcon,
+            waveshareBrightnessBoost: message["waveshareBrightnessBoost"] as? Bool ?? accessoryViewModel.waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: message["matrixRainInsteadOfPlasma"] as? Bool ?? accessoryViewModel.matrixRainInsteadOfPlasma,
+            boopMode: message["boopMode"] as? UInt8 ?? accessoryViewModel.boopMode
         )
 
         if message["autoBrightness"] != nil ||

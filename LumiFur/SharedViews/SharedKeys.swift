@@ -40,6 +40,7 @@ struct SharedDataKeys {
 // MARK: - Shared Data Structures
 
 /// The configuration bytes exposed by the accessory config characteristic.
+/// The configuration bytes exposed by the accessory config characteristic.
 struct AccessoryConfiguration: Equatable, Codable, Sendable {
     var autoBrightness: Bool
     var accelerometerEnabled: Bool
@@ -47,6 +48,37 @@ struct AccessoryConfiguration: Equatable, Codable, Sendable {
     var auroraModeEnabled: Bool
     var staticColorEnabled: Bool
     var mouthBrightnessOverrideEnabled: Bool
+    var disableBleIndicatorLight: Bool    // byte 6, NeoPixel off
+    var disableBleStatusIcon: Bool      // byte 7, panel icon off
+    var waveshareBrightnessBoost: Bool   // byte 8, controller reboots
+    var matrixRainInsteadOfPlasma: Bool // byte 9, face masks use matrix rain
+    var boopMode: UInt8 // config byte 10
+
+    init(
+        autoBrightness: Bool,
+        accelerometerEnabled: Bool,
+        sleepModeEnabled: Bool,
+        auroraModeEnabled: Bool,
+        staticColorEnabled: Bool,
+        mouthBrightnessOverrideEnabled: Bool,
+        disableBleIndicatorLight: Bool,
+        disableBleStatusIcon: Bool,
+        waveshareBrightnessBoost: Bool,
+        matrixRainInsteadOfPlasma: Bool,
+        boopMode: UInt8
+    ) {
+        self.autoBrightness = autoBrightness
+        self.accelerometerEnabled = accelerometerEnabled
+        self.sleepModeEnabled = sleepModeEnabled
+        self.auroraModeEnabled = auroraModeEnabled
+        self.staticColorEnabled = staticColorEnabled
+        self.mouthBrightnessOverrideEnabled = mouthBrightnessOverrideEnabled
+        self.disableBleIndicatorLight = disableBleIndicatorLight
+        self.disableBleStatusIcon = disableBleStatusIcon
+        self.waveshareBrightnessBoost = waveshareBrightnessBoost
+        self.matrixRainInsteadOfPlasma = matrixRainInsteadOfPlasma
+        self.boopMode = boopMode
+    }
 }
 
 /// Data structure for temperature readings (SHARED)
@@ -91,6 +123,11 @@ struct WidgetSnapshot: Codable, Equatable, Sendable {
             auroraModeEnabled: true,
             staticColorEnabled: true,
             mouthBrightnessOverrideEnabled: true,
+            disableBleIndicatorLight: false,   // byte 6
+            disableBleStatusIcon: false,       // byte 7
+            waveshareBrightnessBoost: false,   // byte 8
+            matrixRainInsteadOfPlasma: false,  // byte 9
+            boopMode: 3                        // byte 10
         ),
         customMessage: ""
     )

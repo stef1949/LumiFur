@@ -235,8 +235,14 @@ final class AccessoryViewModel: ObservableObject {
     @Published var autoBrightness = true
     @Published var staticColorEnabled = false
     @Published var mouthBrightnessOverrideEnabled = true
+    @Published var disableBleIndicatorLight = false   // byte 6
+    @Published var disableBleStatusIcon = false       // byte 7
+    @Published var waveshareBrightnessBoost = false   // byte 8
+    @Published var autoBrightnessFloor: UInt8 = 15    // separate characteristic, not a config byte
     @Published var accelerometerEnabled = true
     @Published var sleepModeEnabled = true
+    @Published var matrixRainInsteadOfPlasma = false // config byte 9
+    @Published var boopMode: UInt8 = 0 // config byte 10
     @Published var auroraModeEnabled = true
     @Published var customMessage = ""
     @Published var firmwareVersion = "N/A"
@@ -459,6 +465,34 @@ final class AccessoryViewModel: ObservableObject {
             defaultValue: auroraModeEnabled
         )
 
+        disableBleIndicatorLight = persistedBool(
+            in: defaults, 
+            key: "disableBleIndicatorLight", 
+            defaultValue: disableBleIndicatorLight
+        )
+        disableBleStatusIcon = persistedBool(
+            in: defaults, 
+            key: "disableBleStatusIcon", 
+            defaultValue: disableBleStatusIcon
+        )
+        waveshareBrightnessBoost = persistedBool(
+            in: defaults, 
+            key: "waveshareBrightnessBoost", 
+            defaultValue: waveshareBrightnessBoost
+        )
+        matrixRainInsteadOfPlasma = persistedBool(
+            in: defaults, 
+            key: "matrixRainInsteadOfPlasma", 
+            defaultValue: matrixRainInsteadOfPlasma
+        )
+        if let floor = defaults.object(forKey: "autoBrightnessFloor") as? Int {
+            autoBrightnessFloor = UInt8(clamping: floor)
+        }
+
+        if let storedBoop = defaults.object(forKey: "boopMode") as? Int {
+            boopMode = UInt8(clamping: storedBoop)
+        }
+
         if let storedMessage = defaults.object(forKey: "customMessageText") as? String {
             customMessage = storedMessage
         }
@@ -507,9 +541,15 @@ final class AccessoryViewModel: ObservableObject {
         defaults.set(autoBrightness, forKey: "autoBrightness")
         defaults.set(staticColorEnabled, forKey: "staticColor")
         defaults.set(mouthBrightnessOverrideEnabled, forKey: "mouthBrightnessOverride")
+        defaults.set(disableBleIndicatorLight, forKey: "disableBleIndicatorLight")
+        defaults.set(disableBleStatusIcon, forKey: "disableBleStatusIcon")
+        defaults.set(waveshareBrightnessBoost, forKey: "waveshareBrightnessBoost")
+        defaults.set(autoBrightnessFloor, forKey: "autoBrightnessFloor")
         defaults.set(accelerometerEnabled, forKey: "accelerometer")
         defaults.set(sleepModeEnabled, forKey: "sleepMode")
         defaults.set(auroraModeEnabled, forKey: "auroraMode")
+        defaults.set(matrixRainInsteadOfPlasma, forKey: "matrixRainInsteadOfPlasma")
+        defaults.set(boopMode, forKey: "boopMode")
         defaults.removeObject(forKey: "arouraMode")
         defaults.set(customMessage, forKey: "customMessageText")
         defaults.set(!customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: "customMessageEnabled")
@@ -531,6 +571,34 @@ final class AccessoryViewModel: ObservableObject {
             current: &mouthBrightnessOverrideEnabled,
             newValue: configuration.mouthBrightnessOverrideEnabled
         )
+        let didChangeDisableBleIndicatorLight = assignIfChanged(
+            "disableBleIndicatorLight", 
+            current: &disableBleIndicatorLight, 
+            newValue: configuration.disableBleIndicatorLight
+        )
+        let didChangeDisableBleStatusIcon = assignIfChanged(
+            "disableBleStatusIcon", 
+            current: &disableBleStatusIcon, 
+            newValue: configuration.disableBleStatusIcon
+        )
+        let didChangeWaveshareBrightnessBoost = assignIfChanged(
+            "waveshareBrightnessBoost", 
+            current: &waveshareBrightnessBoost, 
+            newValue: configuration.waveshareBrightnessBoost
+        )
+
+        let didChangeMatrixRainInsteadOfPlasma = assignIfChanged(
+            "matrixRainInsteadOfPlasma",
+            current: &matrixRainInsteadOfPlasma,
+            newValue: configuration.matrixRainInsteadOfPlasma
+        )
+
+        let didChangeBoopMode = assignIfChanged(
+            "boopMode",
+            current: &boopMode,
+            newValue: configuration.boopMode
+        )
+
         let didChangeAccelerometer = assignIfChanged(
             "accelerometerEnabled",
             current: &accelerometerEnabled,
@@ -597,7 +665,12 @@ final class AccessoryViewModel: ObservableObject {
                 sleepModeEnabled: true,
                 auroraModeEnabled: true,
                 staticColorEnabled: false,
-                mouthBrightnessOverrideEnabled: true
+                mouthBrightnessOverrideEnabled: true,
+                disableBleIndicatorLight: false,  // byte 6
+                disableBleStatusIcon: false,      // byte 7
+                waveshareBrightnessBoost: false,  // byte 8
+                matrixRainInsteadOfPlasma: false, // byte 9
+                boopMode: 0                       // byte 10
             ),
             syncToDevice: syncToDevice
         )
@@ -688,7 +761,12 @@ final class AccessoryViewModel: ObservableObject {
         mouthBrightnessOverrideEnabled: Bool,
         accelerometerEnabled: Bool,
         sleepModeEnabled: Bool,
-        auroraModeEnabled: Bool
+        auroraModeEnabled: Bool,
+        disableBleIndicatorLight: Bool,   // byte 6
+        disableBleStatusIcon: Bool,       // byte 7
+        waveshareBrightnessBoost: Bool,    // byte 8
+        matrixRainInsteadOfPlasma: Bool,
+        boopMode: UInt8
     ) -> Data {
         AccessoryCommandEncoder.accessorySettingsPayload(
             autoBrightness: autoBrightness,
@@ -696,7 +774,12 @@ final class AccessoryViewModel: ObservableObject {
             sleepModeEnabled: sleepModeEnabled,
             auroraModeEnabled: auroraModeEnabled,
             staticColorEnabled: staticColorEnabled,
-            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled,
+            disableBleIndicatorLight: disableBleIndicatorLight,
+            disableBleStatusIcon: disableBleStatusIcon,
+            waveshareBrightnessBoost: waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: matrixRainInsteadOfPlasma,
+            boopMode: boopMode
         )
     }
 
@@ -859,6 +942,12 @@ final class AccessoryViewModel: ObservableObject {
         client.writeBrightness(value)
     }
 
+    /// Writes the auto-brightness floor. Firmware treats anything below 15 as 15.
+    func setAutoBrightnessFloor(_ value: UInt8) {
+        autoBrightnessFloor = value
+        defaults.set(value, forKey: "autoBrightnessFloor")
+        client.writeAutoBrightnessFloor(value)
+    }
     
     func setStrobeSettings(enabled: Bool, color: Color, cycleMs: UInt16) {
         guard client.canWriteStrobeSettings() else {
@@ -1061,6 +1150,10 @@ final class AccessoryViewModel: ObservableObject {
 
         case .brightnessUpdated(let value):
             assignIfChanged("brightness", current: &brightness, newValue: value)
+
+        case .autoBrightnessFloorUpdated(let value):
+            assignIfChanged("autoBrightnessFloor", current: &autoBrightnessFloor, newValue: value)
+            defaults.set(value, forKey: "autoBrightnessFloor")
 
         case .otaResponseUpdated(let response):
             if !response.statusMessage.isEmpty {
@@ -1345,7 +1438,12 @@ final class AccessoryViewModel: ObservableObject {
             sleepModeEnabled: sleepModeEnabled,
             auroraModeEnabled: auroraModeEnabled,
             staticColorEnabled: staticColorEnabled,
-            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled
+            mouthBrightnessOverrideEnabled: mouthBrightnessOverrideEnabled,
+            disableBleIndicatorLight: disableBleIndicatorLight,
+            disableBleStatusIcon: disableBleStatusIcon,
+            waveshareBrightnessBoost: waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: matrixRainInsteadOfPlasma,
+            boopMode: boopMode
         )
     }
 

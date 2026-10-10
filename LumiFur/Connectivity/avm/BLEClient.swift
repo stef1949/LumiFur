@@ -21,6 +21,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
         case historyDownloaded([TemperatureData])
         case historyDownloadFailed(String)
         case brightnessUpdated(UInt8)
+        case autoBrightnessFloorUpdated(UInt8)
         case otaResponseUpdated(AccessoryOTAResponse)
         case luxUpdated(UInt16)
         case scrollTextUpdated(String)
@@ -178,6 +179,10 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
     func writeBrightness(_ value: UInt8) {
         write(Data([value]), to: .brightness, type: .withResponse)
+    }
+
+    func writeAutoBrightnessFloor(_ value: UInt8) {
+        write(Data([value]), to: .autoBrightnessFloor, type: .withResponse)
     }
 
     func writeScrollText(_ text: String) {
@@ -378,6 +383,11 @@ final class BLEClient: NSObject, @unchecked Sendable {
 
         case BLEIdentifiers.brightness:
             characteristics[.brightness] = characteristic
+            peripheral.setNotifyValue(true, for: characteristic)
+            peripheral.readValue(for: characteristic)
+
+        case BLEIdentifiers.autoBrightnessFloor:
+            characteristics[.autoBrightnessFloor] = characteristic
             peripheral.setNotifyValue(true, for: characteristic)
             peripheral.readValue(for: characteristic)
 
@@ -684,6 +694,11 @@ extension BLEClient: CBPeripheralDelegate {
                     self.emit(.brightnessUpdated(value))
                 }
 
+            case BLEIdentifiers.autoBrightnessFloor:
+                if let value = characteristic.value?.first {
+                    self.emit(.autoBrightnessFloorUpdated(value))
+                }
+
             case BLEIdentifiers.ota:
                 if let response = AccessoryNotificationParser.otaResponse(from: data) {
                     self.emit(.otaResponseUpdated(response))
@@ -742,6 +757,7 @@ private enum AccessoryCharacteristic: Hashable {
     case command
     case temperatureLogs
     case brightness
+    case autoBrightnessFloor   // one-byte floor slider, not a config byte
     case deviceInfo
     case ota
     case lux
@@ -766,6 +782,7 @@ extension BLEClient.Event {
         case .historyDownloaded: return "historyDownloaded"
         case .historyDownloadFailed: return "historyDownloadFailed"
         case .brightnessUpdated: return "brightnessUpdated"
+        case .autoBrightnessFloorUpdated: return "autoBrightnessFloorUpdated"
         case .otaResponseUpdated: return "otaResponseUpdated"
         case .luxUpdated: return "luxUpdated"
         case .scrollTextUpdated: return "scrollTextUpdated"
@@ -813,6 +830,8 @@ private enum BLEIdentifiers {
     static let command = CBUUID(string: "0195eec3-06d2-7fd4-a561-49493be3ee41")
     static let temperatureLogs = CBUUID(string: "0195eec2-ae6e-74a1-bcd5-215e2365477c")
     static let brightness = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ef")
+    /// One-byte auto-brightness floor. Not part of the config characteristic.
+    static let autoBrightnessFloor = CBUUID(string: "BEB5483E-36E1-4688-B7F5-EA07361B26A9")
     static let deviceInfo = CBUUID(string: "cba1d466-344c-4be3-ab3f-189f80dd7599")
     static let ota = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09ee")
     static let lux = CBUUID(string: "01931c44-3867-7427-96ab-8d7ac0ae09f0")
@@ -826,6 +845,7 @@ private enum BLEIdentifiers {
         command,
         temperatureLogs,
         brightness,
+        autoBrightnessFloor,
         deviceInfo,
         ota,
         lux,

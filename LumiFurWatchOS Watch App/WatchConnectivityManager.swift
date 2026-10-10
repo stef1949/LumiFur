@@ -48,7 +48,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
         sleepModeEnabled: false,
         auroraModeEnabled: false,
         staticColorEnabled: false,
-        mouthBrightnessOverrideEnabled: false
+        mouthBrightnessOverrideEnabled: false,
+        disableBleIndicatorLight: false,
+        disableBleStatusIcon: false,
+        waveshareBrightnessBoost: false,
+        matrixRainInsteadOfPlasma: false,
+        boopMode: 0
     )
     @Published private(set) var customMessage = ""
     @Published private(set) var temperatureText = "--"
@@ -373,7 +378,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDeleg
                 ?? (data["arouraMode"] as? Bool)
                 ?? configuration.auroraModeEnabled,
             staticColorEnabled: data["staticColor"] as? Bool ?? configuration.staticColorEnabled,
-            mouthBrightnessOverrideEnabled: data["mouthBrightnessOverride"] as? Bool ?? configuration.mouthBrightnessOverrideEnabled
+            mouthBrightnessOverrideEnabled: data["mouthBrightnessOverride"] as? Bool ?? configuration.mouthBrightnessOverrideEnabled,
+            disableBleIndicatorLight: data["disableBleIndicatorLight"] as? Bool ?? configuration.disableBleIndicatorLight,
+            disableBleStatusIcon: data["disableBleStatusIcon"] as? Bool ?? configuration.disableBleStatusIcon,
+            waveshareBrightnessBoost: data["waveshareBrightnessBoost"] as? Bool ?? configuration.waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: data["matrixRainInsteadOfPlasma"] as? Bool ?? configuration.matrixRainInsteadOfPlasma,
+            boopMode: data["boopMode"] as? UInt8 ?? configuration.boopMode
         )
 
         apply(snapshot: WatchStateSnapshot(
