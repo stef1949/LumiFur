@@ -17,16 +17,22 @@ enum AccessoryCommandEncoder {
         mouthBrightnessOverrideEnabled: Bool,
         disableBleIndicatorLight: Bool,   // byte 6, NeoPixel off
         disableBleStatusIcon: Bool,       // byte 7, on-panel rune off
-    ) -> Data {
+        waveshareBrightnessBoost: Bool,   // byte 8, reboot to apply clock
+        matrixRainInsteadOfPlasma: Bool,    // byte 9, face masks use matrix rain
+        boopMode: UInt8                     // byte 10, boop mode
+        ) -> Data {
         Data([
-            autoBrightness ? 1 : 0,
-            accelerometerEnabled ? 1 : 0,
-            sleepModeEnabled ? 1 : 0,
-            auroraModeEnabled ? 1 : 0,
-            staticColorEnabled ? 1: 0,
-            mouthBrightnessOverrideEnabled ? 1: 0,
-            disableBleIndicatorLight ? 1 : 0,        // 6
-            disableBleStatusIcon ? 1 : 0,            // 7
+            autoBrightness ? 1 : 0,                 // 0
+            accelerometerEnabled ? 1 : 0,           // 1
+            sleepModeEnabled ? 1 : 0,               // 2
+            auroraModeEnabled ? 1 : 0,              // 3
+            staticColorEnabled ? 1 : 0,             // 4
+            mouthBrightnessOverrideEnabled ? 1 : 0, // 5
+            disableBleIndicatorLight ? 1 : 0,       // 6
+            disableBleStatusIcon ? 1 : 0,           // 7
+            waveshareBrightnessBoost ? 1 : 0,       // 8
+            matrixRainInsteadOfPlasma ? 1 : 0,      // 9
+            boopMode                                // 10
         ])
     }
 
@@ -41,6 +47,9 @@ enum AccessoryCommandEncoder {
             mouthBrightnessOverrideEnabled: configuration.mouthBrightnessOverrideEnabled,
             disableBleIndicatorLight: configuration.disableBleIndicatorLight,
             disableBleStatusIcon: configuration.disableBleStatusIcon,
+            waveshareBrightnessBoost: configuration.waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: configuration.matrixRainInsteadOfPlasma,
+            boopMode: configuration.boopMode
         )
     }
 
