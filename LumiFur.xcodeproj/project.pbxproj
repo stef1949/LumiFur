@@ -939,6 +939,7 @@
 				CODE_SIGN_ENTITLEMENTS = "LumiFurWatchOS Watch App/LumiFurWatchOS Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFurWatchOS-Watch-App-Info.plist";
@@ -971,6 +972,7 @@
 				CODE_SIGN_ENTITLEMENTS = "LumiFurWatchOS Watch App/LumiFurWatchOS Watch AppRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFurWatchOS Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFurWatchOS-Watch-App-Info.plist";
@@ -1001,6 +1003,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1016,6 +1019,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.richies3d.LumiFurWatchOS-Watch-AppTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1031,6 +1035,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
@@ -1047,6 +1052,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Richies 3D Ltd. All rights reserved.";
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
@@ -1067,7 +1073,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "LumiFur WidgetExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = Z64L7GR687;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFur Widget/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "LumiFur Widget";
@@ -1099,7 +1105,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = "LumiFur WidgetExtensionRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = Z64L7GR687;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LumiFur Widget/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "LumiFur Widget";
@@ -1163,7 +1169,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14.0.0;
+				CURRENT_PROJECT_VERSION = 14.1.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1243,7 +1249,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMPILATION_CACHE_ENABLE_CACHING = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14.0.0;
+				CURRENT_PROJECT_VERSION = 14.1.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z64L7GR687;
@@ -1288,7 +1294,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
-				DEVELOPMENT_TEAM = Z64L7GR687;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -1347,7 +1353,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"LumiFur/Preview Content\"";
-				DEVELOPMENT_TEAM = Z64L7GR687;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -1400,6 +1406,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFurTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1417,6 +1424,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFurTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1433,6 +1441,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFurUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1449,6 +1458,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = X62WNZQVK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.richies3d.LumiFurUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
