@@ -43,7 +43,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
     private var targetPeripheral: CBPeripheral?
     private var characteristics = CharacteristicRegistry()
     private var historyAssembler = TemperatureHistoryAssembler()
-    private var lastLuxValue: UInt16 = 0
+    private var lastLuxValue: UInt16?
     private var writeContinuation: CheckedContinuation<Void, Error>?
     private var writeTimeoutWorkItem: DispatchWorkItem?
     private var rssiTimer: DispatchSourceTimer?
@@ -398,6 +398,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
         case BLEIdentifiers.lux:
             characteristics[.lux] = characteristic
             peripheral.setNotifyValue(true, for: characteristic)
+            peripheral.readValue(for: characteristic)
 
         case BLEIdentifiers.scrollText:
             characteristics[.scrollText] = characteristic
@@ -440,7 +441,7 @@ final class BLEClient: NSObject, @unchecked Sendable {
         targetPeripheral = nil
         characteristics.reset()
         historyAssembler.reset()
-        lastLuxValue = 0
+        lastLuxValue = nil
     }
 
     private func handlePairingErrorIfNeeded(_ error: Error) -> Bool {
@@ -706,7 +707,9 @@ extension BLEClient: CBPeripheralDelegate {
 
             case BLEIdentifiers.lux:
                 guard let lux = AccessoryNotificationParser.lux(from: data) else { return }
-                guard abs(Int(lux) - Int(self.lastLuxValue)) >= 5 else { return }
+                if let lastLuxValue = self.lastLuxValue {
+                    guard abs(Int(lux) - Int(lastLuxValue)) >= 5 else { return }
+                }
                 self.lastLuxValue = lux
                 self.emit(.luxUpdated(lux))
 
