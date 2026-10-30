@@ -53,16 +53,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -98,16 +98,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -143,16 +143,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -188,16 +188,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -233,16 +233,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -278,16 +278,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -323,16 +323,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>title</key>
@@ -370,16 +370,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -415,16 +415,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -506,16 +506,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -633,16 +633,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            return "checkmark.circle"
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>            return "link.badge.plus"
-        case .connected:
+				<string>        case .connected:
+            return "checkmark.circle"
 </string>
 				<key>trailing</key>
-				<string>        }
-    }
+				<string>    }
 }
+
 </string>
 			</dict>
 			<key>type</key>
@@ -678,16 +678,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>                    rssi: nil,
+				<string>        }
 </string>
 				<key>leading</key>
-				<string>                    leadingIcon: "clock.arrow.circlepath",
-                    title: storedDevice.name,
+				<string>            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 </string>
 				<key>trailing</key>
-				<string>                    isConnecting: accessoryViewModel.isConnecting &amp;&amp;
-                                 accessoryViewModel.connectingPeripheral?.id.uuidString == storedDevice.id,
-                    isDisabled: accessoryViewModel.isConnecting,
+				<string>    }
+
+    // MARK: Image
 </string>
 			</dict>
 			<key>type</key>
@@ -723,16 +723,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            if !accessoryViewModel.isConnected &amp;&amp; !accessoryViewModel.isScanning {
+				<string>                }
 </string>
 				<key>leading</key>
-				<string>                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
+				<string>                    Image(systemName: leadingIcon)
+                        .foregroundStyle(.secondary)
 </string>
 				<key>trailing</key>
-				<string>                Button("Scan for Devices", action: accessoryViewModel.scanForDevices)
-                    .buttonStyle(.borderedProminent)
-                    .padding(.top, 6)
+				<string>                Text(title)
+                    .lineLimit(1)
+                Spacer()
 </string>
 			</dict>
 			<key>type</key>

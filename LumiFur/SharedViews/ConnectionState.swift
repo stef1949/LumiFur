@@ -51,17 +51,20 @@ struct ConnectionFeedbackView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Label {
                 Text(message)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(systemName: "exclamationmark.circle.fill")
                     .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
             }
 
             Spacer(minLength: 8)
 
-            Button("Dismiss", systemImage: "xmark", action: onDismiss)
+            Button("Dismiss", systemImage: "xmark.circle.fill", action: onDismiss)
                 .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
                 .accessibilityHint("Removes this message")
         }
         .font(.callout)
