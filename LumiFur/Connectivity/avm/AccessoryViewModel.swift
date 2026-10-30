@@ -571,29 +571,29 @@ final class AccessoryViewModel: ObservableObject {
             current: &mouthBrightnessOverrideEnabled,
             newValue: configuration.mouthBrightnessOverrideEnabled
         )
-        let didChangeDisableBleIndicatorLight = assignIfChanged(
+        _ = assignIfChanged(
             "disableBleIndicatorLight", 
             current: &disableBleIndicatorLight, 
             newValue: configuration.disableBleIndicatorLight
         )
-        let didChangeDisableBleStatusIcon = assignIfChanged(
+        _ = assignIfChanged(
             "disableBleStatusIcon", 
             current: &disableBleStatusIcon, 
             newValue: configuration.disableBleStatusIcon
         )
-        let didChangeWaveshareBrightnessBoost = assignIfChanged(
+        _ = assignIfChanged(
             "waveshareBrightnessBoost", 
             current: &waveshareBrightnessBoost, 
             newValue: configuration.waveshareBrightnessBoost
         )
 
-        let didChangeMatrixRainInsteadOfPlasma = assignIfChanged(
+        _ = assignIfChanged(
             "matrixRainInsteadOfPlasma",
             current: &matrixRainInsteadOfPlasma,
             newValue: configuration.matrixRainInsteadOfPlasma
         )
 
-        let didChangeBoopMode = assignIfChanged(
+        _ = assignIfChanged(
             "boopMode",
             current: &boopMode,
             newValue: configuration.boopMode

@@ -17,6 +17,9 @@ enum AccessoryCommandEncoder {
         mouthBrightnessOverrideEnabled: Bool,
         disableBleIndicatorLight: Bool,   // byte 6, NeoPixel off
         disableBleStatusIcon: Bool,       // byte 7, on-panel rune off
+        waveshareBrightnessBoost: Bool,   // byte 8
+        matrixRainInsteadOfPlasma: Bool,  // byte 9
+        boopMode: UInt8                    // byte 10
     ) -> Data {
         Data([
             autoBrightness ? 1 : 0,
@@ -27,6 +30,9 @@ enum AccessoryCommandEncoder {
             mouthBrightnessOverrideEnabled ? 1: 0,
             disableBleIndicatorLight ? 1 : 0,        // 6
             disableBleStatusIcon ? 1 : 0,            // 7
+            waveshareBrightnessBoost ? 1 : 0,        // 8
+            matrixRainInsteadOfPlasma ? 1 : 0,       // 9
+            boopMode                                  // 10
         ])
     }
 
@@ -41,6 +47,9 @@ enum AccessoryCommandEncoder {
             mouthBrightnessOverrideEnabled: configuration.mouthBrightnessOverrideEnabled,
             disableBleIndicatorLight: configuration.disableBleIndicatorLight,
             disableBleStatusIcon: configuration.disableBleStatusIcon,
+            waveshareBrightnessBoost: configuration.waveshareBrightnessBoost,
+            matrixRainInsteadOfPlasma: configuration.matrixRainInsteadOfPlasma,
+            boopMode: configuration.boopMode
         )
     }
 
