@@ -1575,7 +1575,8 @@ final class AccessoryViewModel: ObservableObject {
     }
 
     
-    private func luxBucket(for value: UInt16) -> Int {
+    func luxBucket(for value: UInt16) -> Int {
+        guard value > 0 else { return -1 }
         let minLux = 1.0
         let maxLux = 4097.0
         let clamped = min(max(Double(value), minLux), maxLux)

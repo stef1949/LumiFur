@@ -14,6 +14,31 @@ struct AccessoryViewModelLogicTests {
         return AccessoryViewModel(client: BLEClient(), store: store, defaults: defaults)
     }
 
+    @Test("Zero lux has a distinct publication bucket")
+    @MainActor
+    func testLuxZeroBucket() {
+        let vm = makeViewModel()
+
+        #expect(vm.luxBucket(for: 0) != vm.luxBucket(for: 1))
+        #expect(vm.luxBucket(for: 0) != vm.luxBucket(for: 4))
+        #expect(vm.luxBucket(for: 1) == 0)
+    }
+
+    @Test("Lux keeps nearby large readings in the same publication bucket")
+    @MainActor
+    func testLuxSameBucketReadings() {
+        let vm = makeViewModel()
+
+        #expect(vm.luxBucket(for: 2000) == vm.luxBucket(for: 2010))
+        #expect(vm.luxBucket(for: 2000) == 21)
+    }
+
+    @Test("Lux parser decodes little-endian readings", arguments: [UInt16(0), 1, 4, 2000, 65535])
+    func testLuxParser(value: UInt16) {
+        let data = Data([UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8)])
+        #expect(AccessoryNotificationParser.lux(from: data) == value)
+    }
+
     @Test("Accessory settings encoding produces correct payload")
     @MainActor
     func testEncodedAccessorySettingsPayload() throws {
