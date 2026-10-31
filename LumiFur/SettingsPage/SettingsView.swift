@@ -103,15 +103,17 @@ struct SettingsView: View {
             }
 
             if bleModel.isConnected {
-                Section("Controller") {
-                    updateControllerRow
-                        .sheet(isPresented: $showOTAUpdate) {
-                            OTAUpdateView(
-                                viewModel: bleModel,
-                                releaseViewModel: releaseViewModel
-                            )
-                            .compatibleSheetPresentation(cornerRadius: 46)
-                        }
+                if isControllerUpdateAvailable {
+                    Section("Controller") {
+                        updateControllerRow
+                            .sheet(isPresented: $showOTAUpdate) {
+                                OTAUpdateView(
+                                    viewModel: bleModel,
+                                    releaseViewModel: releaseViewModel
+                                )
+                                .compatibleSheetPresentation(cornerRadius: 46)
+                            }
+                    }
                 }
 
                 ConfigSections(
